@@ -29,36 +29,27 @@ Autre solution : sur l'ordinateur, dans Chrome, appuyez sur **F12** puis sur l'i
 
 ---
 
-## 2. Les comptes de démonstration
+## 2. Votre compte
 
-Tous les comptes ont le même mot de passe : **`samastock2026`**
+Il n'y a **plus de comptes de démonstration** : la plateforme est partie de zéro le 19 octobre 2026, pour n'accueillir que de vraies données.
 
-| Email | Rôle | Ce qu'il permet de tester |
-|---|---|---|
-| `awa@demo.sn` | Propriétaire de **Awa Mode & Beauté** | Tout : formule Business, 2 boutiques, caisse, commandes, crédits, rapports, équipe |
-| `fatou@demo.sn` | Gérante chez Awa | Tout sauf l'abonnement, l'équipe et les paramètres |
-| `moussa@demo.sn` | Vendeur chez Awa | Ventes et commandes, **sans** prix d'achat ni bénéfices |
-| `ibrahima@demo.sn` | Magasinier chez Awa | Entrées, sorties, inventaire, transferts, en quantités seulement |
-| `ndiaye@demo.sn` | Propriétaire de **Quincaillerie Ndiaye & Fils** | Formule Essai : 18 produits sur 20, unités sac, mètre et kg |
-| `admin@samastock.sn` | Super-administrateur | L'espace d'administration de Sama Stock |
+- **Votre accès administrateur** : connectez-vous avec **Google** (adresse `dionemhd1@gmail.com`). C'est la seule adresse autorisée à ouvrir l'espace **Administration**.
+- **Pour tester un commerce**, créez-le simplement avec votre compte (page **Essai gratuit**), ou créez un second compte avec une autre adresse.
 
-Sur la page de connexion, le bouton **« Essayer le compte de démonstration »** connecte directement avec le compte d'Awa.
-
-Pour remettre les données de démonstration à zéro, ouvrez une fenêtre de commande dans le dossier et tapez :
-`npm run db:seed -- --force`
+> ⚠️ Votre ordinateur et le site en ligne utilisent **la même base de données**. Tout ce que vous créez en test apparaît aussi en ligne et dans les chiffres de l'administration. Pour supprimer un commerce de test, demandez-le à votre développeur.
 
 ---
 
 ## 3. Scénarios de test
 
-Ces 15 scénarios reprennent la section 9 du cahier des charges. Cochez-les au fur et à mesure.
+Ces scénarios reprennent la section 9 du cahier des charges. Faites-les avec un commerce de test, et cochez-les au fur et à mesure.
 
 ### Inscription et démarrage
 
-- [ ] **1. Créer un compte.** Sur la page d'accueil, cliquez sur **Essai gratuit**. Créez un compte avec un email inventé (ex. `moi@test.sn`), puis remplissez le démarrage guidé. Vous arrivez sur un tableau de bord vide, avec le bandeau « Essai gratuit : 14 jours restants ».
-- [ ] **2. Le compte de démonstration.** Déconnectez-vous (menu rond en haut à droite), puis connectez-vous avec `awa@demo.sn`. Le tableau de bord affiche les ventes, le graphique de la semaine, les alertes de stock et les commandes en cours.
+- [ ] **1. Créer un compte.** Sur la page d'accueil, cliquez sur **Essai gratuit** (ou **Continuer avec Google**), puis remplissez le démarrage guidé. Vous arrivez sur un tableau de bord vide, avec le bandeau « Essai gratuit : 14 jours restants ».
+- [ ] **2. Le tableau de bord.** Après quelques ventes (scénarios suivants), il affiche les ventes, le graphique de la semaine, les alertes de stock et les commandes en cours.
 
-### Produits et stock (avec `awa@demo.sn`)
+### Produits et stock
 
 - [ ] **3. Créer un produit.** Allez dans **Produits**, puis **Nouveau produit**. Ajoutez une photo, choisissez l'unité **Sac**, mettez un seuil d'alerte de 5 et un stock de départ de 6. Vendez-en 2 : le produit passe en **orange** (stock bas).
 - [ ] **4. Recevoir de la marchandise.** Allez dans **Stock**, puis **Entrée / achat**. Choisissez un produit et saisissez une quantité et un prix d'achat différent du prix actuel. Validez : le stock augmente et le prix d'achat moyen est recalculé (visible sur la fiche produit).
@@ -76,25 +67,25 @@ Ces 15 scénarios reprennent la section 9 du cahier des charges. Cochez-les au f
 ### Inventaire et équipe
 
 - [ ] **9. Inventaire.** Allez dans **Stock**, puis **Inventaire**. Saisissez une quantité comptée inférieure à la quantité attendue et validez. Le résumé affiche l'écart et sa valeur en FCFA. La perte apparaît dans **Rapports**.
-- [ ] **10. Les droits d'un vendeur.** Déconnectez-vous et connectez-vous avec `moussa@demo.sn`. Le vendeur peut vendre et gérer les commandes, mais ne voit **ni prix d'achat, ni bénéfices, ni rapports, ni équipe**.
-  Pour tester une invitation : avec `awa@demo.sn`, allez dans **Équipe**, puis **Inviter un employé**. Copiez le lien, ouvrez-le dans une **fenêtre de navigation privée**, puis créez le compte avec l'email indiqué.
+- [ ] **10. Les droits d'un employé.** Dans **Équipe**, cliquez sur **Inviter un employé** avec le rôle **Vendeur**. Copiez le lien, ouvrez-le dans une **fenêtre de navigation privée**, puis créez le compte avec l'email indiqué. Le vendeur peut vendre et gérer les commandes, mais ne voit **ni prix d'achat, ni bénéfices, ni rapports, ni équipe**.
 
 ### Abonnements
 
-- [ ] **11. Les limites de formule.** Connectez-vous avec `ndiaye@demo.sn` (formule Essai, 18 produits). Ajoutez 2 produits, puis essayez d'en ajouter un 21ᵉ : un message vous propose de passer à Pro. Allez dans **Abonnement**, puis **Passer à Pro** (simulation) : la limite passe à 50 produits. Dans **Équipe**, vous pouvez désormais inviter 3 employés ; le 4ᵉ est refusé.
-- [ ] **12. Fin d'essai.** Connectez-vous avec `admin@samastock.sn`. Dans **Administration**, ouvrez « Quincaillerie Ndiaye & Fils » et cliquez sur **Faire expirer maintenant**. Reconnectez-vous avec `ndiaye@demo.sn` : le compte est en **consultation seule** (bandeau orange, boutons d'ajout masqués).
+- [ ] **11. Les limites de formule.** En formule Essai, essayez d'ajouter un 21ᵉ produit : un message vous propose de passer à Pro. Dans l'espace **Administration**, ouvrez votre commerce de test et utilisez **Ajustement manuel** pour le passer en Pro : la limite passe à 50 produits et 3 employés.
+- [ ] **12. Fin d'essai.** Dans **Administration**, ouvrez votre commerce de test et cliquez sur **Faire expirer maintenant**. Le compte passe en **consultation seule** (bandeau orange, boutons d'ajout masqués). Réactivez-le ensuite avec **Ajustement manuel**.
 
 ### Plusieurs boutiques et administration
 
-- [ ] **13. Deux boutiques.** Avec `awa@demo.sn` (formule Business), utilisez le sélecteur **Boutique Médina / Dépôt Liberté 6** en haut de l'écran. Depuis le dépôt, allez dans **Stock**, puis **Transfert**, et envoyez des produits vers la boutique.
-- [ ] **14. Super-administrateur.** Avec `admin@samastock.sn`, consultez les chiffres globaux, ouvrez un commerce, changez sa formule ou suspendez-le.
+- [ ] **13. Deux boutiques.** En formule Business, ajoutez une boutique ou un dépôt dans **Paramètres**, utilisez le sélecteur de boutique en haut de l'écran, puis **Stock → Transfert** pour envoyer des produits d'un lieu à l'autre.
+- [ ] **14. Administration.** Avec votre compte Google, ouvrez **Administration** : tableau de bord, commerces, utilisateurs, abonnements, paiements et connexions.
 - [ ] **15. Téléphone et mode sombre.** Ouvrez l'application sur un téléphone (voir plus haut) ou en mode mobile (F12). Dans le menu rond en haut à droite, choisissez **Apparence**, puis **Sombre**.
 
 ---
 
 ## 4. Bon à savoir
 
-- **Connexion avec Google :** le bouton apparaît dès que la clé Google est renseignée dans le fichier `.env` (`GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET`). Je vous guiderai pour créer cette clé, qui est gratuite.
-- **Paiement de l'abonnement :** il est **simulé** dans cette version. Le vrai paiement par Wave ou Orange Money sera branché au passage en production.
-- **Les données** sont enregistrées dans la base Neon du projet `sama-stock` : elles sont conservées entre deux lancements.
+- **Le site en ligne :** https://sama-stock-one.vercel.app (mis à jour automatiquement à chaque envoi du code sur GitHub).
+- **Connexion avec Google :** active en ligne et sur l'ordinateur (clés `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` du fichier `.env`).
+- **Paiement de l'abonnement :** réel, par Wave ou Orange Money via SasPay. Le client paie exactement le prix de la formule ; les frais SasPay sont retirés de votre part. Les paiements en espèces s'enregistrent depuis l'administration (fiche du commerce).
+- **Les données** sont enregistrées dans la base Neon du projet `sama-stock`, partagée entre l'ordinateur et le site en ligne.
 - **Après une mise à jour du code**, supprimez le dossier `.next` avant de relancer `lancer.bat`, pour que l'application soit reconstruite.

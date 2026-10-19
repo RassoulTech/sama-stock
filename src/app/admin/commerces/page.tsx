@@ -2,7 +2,7 @@ import { AlertTriangle, Ban, Clock, Store, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { BusinessTable } from "@/components/admin/business-table";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
+import { AdminStat } from "@/components/admin/admin-stat";
 import { adminStats, listAllBusinesses } from "@/server/queries/admin";
 
 export const metadata: Metadata = { title: "Commerces" };
@@ -15,11 +15,11 @@ export default async function AdminBusinessesPage() {
     <>
       <PageHeader title="Commerces" description="Tous les commerces inscrits, leur formule et leur activité." />
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard label="Commerces" value={stats.total} icon={Store} tone="neutral" />
-        <StatCard label="En essai" value={stats.trialing} icon={Clock} tone="neutral" />
-        <StatCard label="Payants" value={stats.active} icon={Users} />
-        <StatCard label="Expirés" value={stats.expired} icon={AlertTriangle} tone="saffron" />
-        <StatCard label="Suspendus" value={stats.suspended} icon={Ban} tone="danger" />
+        <AdminStat index={0} label="Commerces" value={stats.total} icon={Store} />
+        <AdminStat index={1} label="En essai" value={stats.trialing} icon={Clock} tone="blue" />
+        <AdminStat index={2} label="Payants" value={stats.active} icon={Users} />
+        <AdminStat index={3} label="Expirés" value={stats.expired} icon={AlertTriangle} tone="saffron" />
+        <AdminStat index={4} label="Suspendus" value={stats.suspended} icon={Ban} tone="red" />
       </div>
       <BusinessTable
         rows={rows.map((r) => ({

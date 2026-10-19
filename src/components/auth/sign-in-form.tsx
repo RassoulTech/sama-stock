@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, PlayCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -10,8 +10,6 @@ import { Label } from "@/components/ui/label";
 import { authClient, authErrorMessage } from "@/lib/auth-client";
 import { GoogleButton, OrSeparator } from "./google-button";
 import { PasswordInput } from "./password-input";
-
-export const DEMO_ACCOUNT = { email: "awa@demo.sn", password: "samastock2026" };
 
 export function SignInForm({ redirectTo, googleEnabled }: { redirectTo: string; googleEnabled: boolean }) {
   const router = useRouter();
@@ -86,27 +84,6 @@ export function SignInForm({ redirectTo, googleEnabled }: { redirectTo: string; 
           Se connecter
         </Button>
       </form>
-
-      <div className="rounded-xl border border-dashed border-primary/30 bg-accent/60 p-4">
-        <p className="text-sm font-semibold text-accent-foreground">Envie de voir l&apos;application en action ?</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Un commerce de démonstration avec produits, ventes et commandes déjà remplis.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          className="mt-3 w-full bg-card"
-          disabled={pending}
-          onClick={() => {
-            setEmail(DEMO_ACCOUNT.email);
-            setPassword(DEMO_ACCOUNT.password);
-            void signIn(DEMO_ACCOUNT);
-          }}
-        >
-          <PlayCircle />
-          Essayer le compte de démonstration
-        </Button>
-      </div>
 
       <p className="text-center text-sm text-muted-foreground">
         Pas encore de compte ?{" "}

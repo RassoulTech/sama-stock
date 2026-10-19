@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BarChart } from "@/components/admin/bar-chart";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
+import { AdminStat } from "@/components/admin/admin-stat";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PLAN_STATUS_LABELS, PLAN_STATUS_TONES } from "@/lib/domain/plans";
@@ -41,58 +41,67 @@ export default async function AdminDashboardPage() {
     <>
       <PageHeader title="Tableau de bord" description="Vue d'ensemble de la plateforme Sama Stock." />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Commerces" value={stats.total} hint={`${stats.trialing} en essai gratuit`} icon={Store} href="/admin/commerces" />
-        <StatCard
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminStat index={0} label="Commerces" value={stats.total} hint={`${stats.trialing} en essai gratuit`} icon={Store} href="/admin/commerces" />
+        <AdminStat
+          index={1}
           label="Abonnés payants"
           value={stats.active}
           hint={`${stats.expired} expiré${stats.expired > 1 ? "s" : ""} · ${stats.suspended} suspendu${stats.suspended > 1 ? "s" : ""}`}
           icon={CreditCard}
           href="/admin/abonnements"
         />
-        <StatCard
+        <AdminStat
+          index={2}
           label="Encaissé ce mois"
-          value={formatFCFA(c.revenue_month)}
+          value={c.revenue_month}
+          unit="FCFA"
           hint={`Mois dernier : ${formatFCFA(c.revenue_prev)}`}
           icon={Coins}
           href="/admin/paiements"
         />
-        <StatCard
+        <AdminStat
+          index={3}
           label="Revenu mensuel récurrent"
-          value={formatFCFA(stats.mrr)}
+          value={stats.mrr}
+          unit="FCFA"
           hint="Abonnements payants en cours"
           icon={TrendingUp}
-          tone="neutral"
         />
-        <StatCard
+        <AdminStat
+          index={4}
           label="Utilisateurs"
-          value={formatNumber(c.users)}
-          hint={`${c.google_users} avec Google · ${c.active_users7} actifs (7 j)`}
+          value={c.users}
+          hint={`${c.google_users} avec Google · ${c.active_users7} actif${c.active_users7 > 1 ? "s" : ""} (7 j)`}
           icon={UserRound}
+          tone="blue"
           href="/admin/utilisateurs"
         />
-        <StatCard
+        <AdminStat
+          index={5}
           label="Connexions actives"
-          value={formatNumber(c.active_sessions)}
+          value={c.active_sessions}
           hint="Sessions ouvertes en ce moment"
           icon={MonitorSmartphone}
+          tone="blue"
           href="/admin/connexions"
-          tone="neutral"
         />
-        <StatCard
+        <AdminStat
+          index={6}
           label="Ventes (30 jours)"
-          value={formatNumber(c.sales30)}
-          hint={`${formatNumber(c.products)} produits suivis`}
+          value={c.sales30}
+          hint={`${formatNumber(c.products)} produits suivis sur la plateforme`}
           icon={ReceiptText}
-          tone="neutral"
+          tone="slate"
         />
-        <StatCard
+        <AdminStat
+          index={7}
           label="Paiements en attente"
           value={c.pending_checkouts}
           hint="Paiements en ligne non confirmés (48 h)"
           icon={CalendarClock}
+          tone={c.pending_checkouts > 0 ? "saffron" : "slate"}
           href="/admin/paiements"
-          tone={c.pending_checkouts > 0 ? "saffron" : "neutral"}
         />
       </div>
 

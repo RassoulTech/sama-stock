@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { PaymentLogo } from "@/components/shared/payment-logo";
-import { StatCard } from "@/components/shared/stat-card";
+import { AdminStat } from "@/components/admin/admin-stat";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PLANS } from "@/lib/domain/plans";
@@ -33,10 +33,10 @@ export default async function AdminPaymentsPage() {
         description="Tout l'argent encaissé pour les abonnements : Wave et Orange Money (via SasPay) et espèces."
       />
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Encaissé ce mois" value={formatFCFA(month)} icon={Coins} />
-        <StatCard label="Total encaissé" value={formatFCFA(total)} icon={Wallet} tone="neutral" />
-        <StatCard label="Wave / Orange Money" value={formatFCFA(sum("saspay", "total"))} hint="Montant payé par les clients" icon={Wallet} tone="neutral" />
-        <StatCard label="Espèces" value={formatFCFA(sum("especes", "total"))} icon={Banknote} tone="neutral" />
+        <AdminStat index={0} label="Encaissé ce mois" value={month} unit="FCFA" icon={Coins} />
+        <AdminStat index={1} label="Total encaissé" value={total} unit="FCFA" icon={Wallet} />
+        <AdminStat index={2} label="Wave / Orange Money" value={sum("saspay", "total")} unit="FCFA" hint="Montant payé par les clients" icon={Wallet} tone="blue" />
+        <AdminStat index={3} label="Espèces" value={sum("especes", "total")} unit="FCFA" icon={Banknote} tone="saffron" />
       </div>
 
       <Card>

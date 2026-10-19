@@ -329,9 +329,9 @@ export default async function HomePage() {
                 ))}
               </div>
               {!session && (
-                <Link href="/demo" className="enter mt-6 inline-flex [--enter-delay:540ms] items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
-                  <PlayCircle className="size-5 text-primary" /> Voir un commerce de démonstration, sans inscription
-                </Link>
+                <a href="#presentation" className="enter mt-6 inline-flex [--enter-delay:540ms] items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+                  <PlayCircle className="size-5 text-primary" /> Voir Sama Stock en action (vidéo de 35 secondes)
+                </a>
               )}
             </div>
 
@@ -344,7 +344,7 @@ export default async function HomePage() {
         </section>
 
         {/* ── Vidéo de présentation ── */}
-        <section className="reveal mx-auto max-w-6xl px-4 pt-20 pb-16 sm:px-6 sm:pt-24">
+        <section id="presentation" className="reveal mx-auto max-w-6xl scroll-mt-24 px-4 pt-20 pb-16 sm:px-6 sm:pt-24">
           <ProductVideo />
         </section>
 
@@ -744,9 +744,9 @@ export default async function HomePage() {
             <a href="#tarifs" className="block text-muted-foreground hover:text-foreground">
               Tarifs
             </a>
-            <Link href="/demo" className="block text-muted-foreground hover:text-foreground">
-              Démonstration
-            </Link>
+            <a href="#presentation" className="block text-muted-foreground hover:text-foreground">
+              Vidéo de présentation
+            </a>
           </div>
           <div className="space-y-2.5">
             <p className="font-medium">Compte</p>

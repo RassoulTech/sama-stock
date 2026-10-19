@@ -2,7 +2,7 @@ import { Activity, LogIn, UserRound, UserX } from "lucide-react";
 import type { Metadata } from "next";
 import { UsersTable } from "@/components/admin/users-table";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
+import { AdminStat } from "@/components/admin/admin-stat";
 import { isSuperAdminEmail, requireSuperAdmin } from "@/server/context";
 import { listAllUsers } from "@/server/queries/admin";
 
@@ -30,10 +30,10 @@ export default async function AdminUsersPage() {
     <>
       <PageHeader title="Utilisateurs" description="Tous les comptes : mode de connexion, commerces, rôle et dernière activité." />
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Comptes" value={rows.length} icon={UserRound} />
-        <StatCard label="Avec Google" value={google} icon={LogIn} tone="neutral" />
-        <StatCard label="Sans commerce" value={orphans} hint="Inscription non terminée" icon={UserX} tone="saffron" />
-        <StatCard label="Connectés" value={online} hint="Au moins une session ouverte" icon={Activity} tone="neutral" />
+        <AdminStat index={0} label="Comptes" value={rows.length} icon={UserRound} tone="blue" />
+        <AdminStat index={1} label="Avec Google" value={google} icon={LogIn} tone="blue" />
+        <AdminStat index={2} label="Sans commerce" value={orphans} hint="Inscription non terminée" icon={UserX} tone="saffron" />
+        <AdminStat index={3} label="Connectés" value={online} hint="Au moins une session ouverte" icon={Activity} />
       </div>
       <UsersTable rows={rows} />
     </>

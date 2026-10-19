@@ -191,15 +191,6 @@ export async function listPayments() {
   return { events: events.rows, checkouts: checkouts.rows, totals: totals.rows };
 }
 
-export async function databaseStatus() {
-  const started = performance.now();
-  const res = await db.execute<{ version: string; size: string; tables: number }>(sql`
-    select split_part(version(), ' ', 2) as version,
-      pg_size_pretty(pg_database_size(current_database())) as size,
-      (select count(*)::int from information_schema.tables where table_schema = 'public') as tables`);
-  return { ...res.rows[0], latencyMs: Math.round(performance.now() - started) };
-}
-
 export async function getBusinessForAdmin(id: string) {
   const rows = await listAllBusinesses();
   const business = rows.find((r) => r.id === id);

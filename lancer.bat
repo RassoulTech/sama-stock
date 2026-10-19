@@ -43,7 +43,6 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-call npm run db:seed --silent
 
 if not exist ".next\BUILD_ID" (
   echo [3/4] Preparation de l'application, 1 a 3 minutes la premiere fois...

@@ -16,7 +16,6 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 + shadcn/ui 
 cp .env.example .env      # puis renseigner DATABASE_URL, BETTER_AUTH_SECRET…
 npm install
 npm run db:migrate        # applique les migrations SQL (dossier drizzle/)
-npm run db:seed           # comptes et données de démonstration
 npm run dev               # http://localhost:3000
 npm test                  # tests unitaires des règles métier
 npm run typecheck

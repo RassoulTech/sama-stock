@@ -2,7 +2,7 @@ import { Monitor, MonitorSmartphone, Smartphone, UserRound } from "lucide-react"
 import type { Metadata } from "next";
 import { SessionsTable } from "@/components/admin/sessions-table";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
+import { AdminStat } from "@/components/admin/admin-stat";
 import { describeDevice } from "@/lib/user-agent";
 import { getSession } from "@/server/context";
 import { listSessions } from "@/server/queries/admin";
@@ -36,10 +36,10 @@ export default async function AdminSessionsPage() {
         description="Les sessions ouvertes en ce moment. Déconnectez un appareil perdu ou une activité suspecte."
       />
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Sessions ouvertes" value={rows.length} icon={MonitorSmartphone} />
-        <StatCard label="Personnes connectées" value={people} icon={UserRound} tone="neutral" />
-        <StatCard label="Sur téléphone" value={mobile} icon={Smartphone} tone="neutral" />
-        <StatCard label="Sur ordinateur" value={rows.length - mobile} icon={Monitor} tone="neutral" />
+        <AdminStat index={0} label="Sessions ouvertes" value={rows.length} icon={MonitorSmartphone} tone="blue" />
+        <AdminStat index={1} label="Personnes connectées" value={people} icon={UserRound} tone="blue" />
+        <AdminStat index={2} label="Sur téléphone" value={mobile} icon={Smartphone} tone="slate" />
+        <AdminStat index={3} label="Sur ordinateur" value={rows.length - mobile} icon={Monitor} tone="slate" />
       </div>
       <SessionsTable rows={rows} />
     </>
