@@ -1,4 +1,4 @@
-// G?n?re les ic?nes de l'application (PWA, Apple) ? partir du logo vectoriel.
+// Génère les icônes de l'application (PWA, Apple) à partir du logo vectoriel.
 import sharp from "sharp";
 import { writeFileSync } from "node:fs";
 
@@ -7,9 +7,8 @@ const mark = (size, padding) => {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
   <rect width="${size}" height="${size}" fill="#0B6E4F"/>
   <g transform="translate(${padding} ${padding}) scale(${inner / 32})">
-    <path d="M16 7.5 24 11.75v8.5L16 24.5 8 20.25v-8.5Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-    <path d="M8 11.75 16 16l8-4.25M16 16v8.5" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="24.5" cy="7.5" r="3.25" fill="#F59E0B" stroke="#0B6E4F" stroke-width="1.5"/>
+    <path d="M21.6 11.4c-.9-1.7-2.9-2.8-5.5-2.8-3.2 0-5.3 1.6-5.3 3.9 0 5.4 11 2.5 11 8 0 2.5-2.3 4.4-5.8 4.4-2.7 0-4.8-1.1-5.8-2.9" fill="none" stroke="#fff" stroke-width="3.1" stroke-linecap="round"/>
+    <circle cx="24.6" cy="7.6" r="2.4" fill="#F59E0B"/>
   </g>
 </svg>`;
 };

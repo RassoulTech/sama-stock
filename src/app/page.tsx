@@ -16,6 +16,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { EmailSignup } from "@/components/landing/email-signup";
 import { LossCalculator } from "@/components/landing/loss-calculator";
+import { ProductVideo } from "@/components/landing/product-video";
 import { StickyCta } from "@/components/landing/sticky-cta";
 import {
   CreditVisual,
@@ -252,6 +253,11 @@ export default async function HomePage() {
               <WhatsAppReceipt className="absolute -right-3 -bottom-12 hidden rotate-2 sm:block lg:-right-8" />
             </div>
           </div>
+        </section>
+
+        {/* ── Vidéo de présentation ── */}
+        <section className="mx-auto max-w-6xl px-4 pt-20 pb-16 sm:px-6 sm:pt-24">
+          <ProductVideo />
         </section>
 
         {/* ── Bandeau de confiance ── */}
