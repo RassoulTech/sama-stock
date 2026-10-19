@@ -3,9 +3,10 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { PLANS } from "@/lib/domain/plans";
 import { formatFCFA, formatNumber } from "@/lib/format";
 
-const PRO_PRICE = 5000;
+const PRO_PRICE = PLANS.pro.price;
 
 function Slider({
   id,

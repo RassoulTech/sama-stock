@@ -32,7 +32,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   pro: {
     id: "pro",
     label: "Pro",
-    price: 5000,
+    price: 6500,
     tagline: "Pour le commerçant qui travaille avec une petite équipe",
     maxProducts: 50,
     maxEmployees: 3,

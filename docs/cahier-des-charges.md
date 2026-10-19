@@ -193,7 +193,7 @@ Vous (propriétaire du SaaS) avez un espace réservé pour superviser tous les c
 
 | | **Essai** | **Pro** | **Business** |
 |---|---|---|---|
-| Prix | 0 FCFA pendant 14 jours | 5 000 FCFA / mois | 11 500 FCFA / mois |
+| Prix | 0 FCFA pendant 14 jours | 6 500 FCFA / mois | 11 500 FCFA / mois |
 | Produits actifs | 20 | 50 | illimité |
 | Employés (hors propriétaire) | 0 | 3 | illimité |
 | Boutiques / dépôts | 1 | 1 | 3 |

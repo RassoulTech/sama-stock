@@ -53,6 +53,8 @@ export function createCheckoutSession(input: {
       customer_name: input.customerName,
       return_url: input.returnUrl,
       metadata: input.metadata,
+      // Le client paie exactement le prix affiché ; les frais SasPay sont retirés du montant reçu par Sama Stock
+      fee_charge_mode: "DEDUCTED",
     }),
   });
 }
