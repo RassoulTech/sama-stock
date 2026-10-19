@@ -3,6 +3,7 @@ import { Instrument_Serif, Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SITE_NAME, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,14 +22,18 @@ const serif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Sama Stock — La gestion de stock des commerçants sénégalais",
     template: "%s · Sama Stock",
   },
   description:
-    "Stock, ventes, commandes WhatsApp et crédits clients au même endroit. Pensé pour les boutiques, quincailleries et e-commerçants du Sénégal.",
-  applicationName: "Sama Stock",
-  appleWebApp: { capable: true, title: "Sama Stock", statusBarStyle: "default" },
+    "Stock, caisse, commandes en ligne et crédits clients au même endroit. Pensé pour les boutiques, e-commerçants et entrepreneurs du Sénégal.",
+  applicationName: SITE_NAME,
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
+  openGraph: { type: "website", siteName: SITE_NAME, locale: "fr_SN" },
+  twitter: { card: "summary_large_image" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {

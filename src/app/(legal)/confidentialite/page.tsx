@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { ContactLine, LegalPage } from "@/components/legal/legal-page";
+import { pageMetadata } from "@/lib/seo";
 import { LEGAL } from "@/lib/legal";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Politique de confidentialité",
-  description: "Quelles données Sama Stock collecte, pourquoi, combien de temps, et comment exercer vos droits.",
-};
+  description: "Quelles données Sama Stock collecte, pourquoi, combien de temps, et comment exercer vos droits selon la loi sénégalaise n° 2008-12.",
+  path: "/confidentialite",
+});
 
 export default function ConfidentialitePage() {
   return (

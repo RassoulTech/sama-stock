@@ -38,14 +38,17 @@ import {
 } from "@/components/landing/visuals";
 import { formatLimit, PAID_PLANS, PLANS } from "@/lib/domain/plans";
 import { LEGAL, LEGAL_PAGES } from "@/lib/legal";
+import { pageMetadata, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { getSession } from "@/server/context";
 
-export const metadata: Metadata = {
-  title: { absolute: "Sama Stock — Arrêtez de perdre de l'argent dans votre commerce" },
+export const metadata: Metadata = pageMetadata({
+  title: "Sama Stock — Arrêtez de perdre de l'argent dans votre commerce",
   description:
-    "Boutiques, e-commerçants et entrepreneurs : stock, caisse, commandes en ligne (WhatsApp, Instagram, TikTok, Facebook, site web) et crédits clients. Sama Stock suit tout et vous prévient avant la rupture. 14 jours gratuits, sans carte bancaire.",
-};
+    "Stock, caisse, commandes en ligne et crédits clients au même endroit, pour les boutiques, e-commerçants et entrepreneurs du Sénégal. 14 jours gratuits.",
+  path: "/",
+  absoluteTitle: true,
+});
 
 const SECTIONS = [
   ["#fonctionnalites", "Fonctionnalités"],
@@ -171,6 +174,59 @@ function Mark({ value }: { value: string | boolean }) {
   if (value === true) return <Check className="mx-auto size-5 text-primary" aria-label="Oui" />;
   if (value === false) return <Minus className="mx-auto size-4 text-muted-foreground/60" aria-label="Non" />;
   return <span className="text-xs text-muted-foreground">{value}</span>;
+}
+
+/** Données structurées : uniquement des informations visibles sur la page (aucun avis ni note inventés). */
+function structuredData() {
+  const logo = `${SITE_URL}/icon-512.png`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${SITE_URL}/#organisation`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        logo,
+        email: LEGAL.email,
+        address: { "@type": "PostalAddress", addressLocality: "Thiès", addressCountry: "SN" },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#site`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        inLanguage: "fr",
+        publisher: { "@id": `${SITE_URL}/#organisation` },
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: SITE_NAME,
+        url: SITE_URL,
+        image: logo,
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web (téléphone, tablette, ordinateur)",
+        description:
+          "Gestion de stock, caisse, commandes en ligne et crédits clients pour les boutiques, e-commerçants et entrepreneurs du Sénégal.",
+        publisher: { "@id": `${SITE_URL}/#organisation` },
+        offers: [PLANS.trial, ...PAID_PLANS].map((p) => ({
+          "@type": "Offer",
+          name: `Formule ${p.label}`,
+          price: p.price,
+          priceCurrency: "XOF",
+          url: `${SITE_URL}/#tarifs`,
+        })),
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQ.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+    ],
+  };
 }
 
 export default async function HomePage() {
@@ -727,6 +783,10 @@ export default async function HomePage() {
 
       {!session && <StickyCta href="/inscription" />}
       <ScrollReveal />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData()).replace(/</g, "\\u003c") }}
+      />
     </div>
   );
 }

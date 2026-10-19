@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/brand/logo";
 import { AppProvider, type ClientAppInfo } from "@/components/shell/app-provider";
@@ -9,7 +10,11 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { UserMenu } from "@/components/shell/user-menu";
 import { initials } from "@/lib/format";
 import { ROLE_LABELS, type Permission } from "@/lib/domain/permissions";
+import { NO_INDEX } from "@/lib/seo";
 import { requireContext } from "@/server/context";
+
+// Espace privé : jamais dans les résultats de recherche
+export const metadata: Metadata = { robots: NO_INDEX };
 
 const ALL_PERMISSIONS: Permission[] = [
   "dashboard.full",

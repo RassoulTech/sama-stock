@@ -1,12 +1,13 @@
 import { Ban } from "lucide-react";
 import type { Metadata } from "next";
+import { NO_INDEX } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { getContext } from "@/server/context";
 import type { BusinessContext } from "@/server/context";
 
-export const metadata: Metadata = { title: "Compte suspendu" };
+export const metadata: Metadata = { title: "Compte suspendu", robots: NO_INDEX };
 
 export default async function SuspenduPage() {
   const ctx = await getContext();

@@ -25,10 +25,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Link>
         <div className="relative mt-auto max-w-md">
           <p className="text-xs font-medium tracking-[0.14em] text-saffron uppercase">En boutique comme en ligne</p>
-          <h1 className="mt-4 text-[2.5rem] leading-[1.08] font-semibold tracking-[-0.035em]">
+          {/* Accroche décorative : le titre principal (h1) de la page est celui du formulaire */}
+          <p className="mt-4 text-[2.5rem] leading-[1.08] font-semibold tracking-[-0.035em]">
             La gestion de stock des commerçants{" "}
             <span className="font-display font-normal tracking-normal text-saffron italic">sénégalais.</span>
-          </h1>
+          </p>
           <ul className="mt-10 space-y-5">
             {POINTS.map(({ icon: Icon, title, text }) => (
               <li key={title} className="flex gap-3.5">

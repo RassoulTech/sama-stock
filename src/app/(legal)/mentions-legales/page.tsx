@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactLine, LegalPage } from "@/components/legal/legal-page";
+import { pageMetadata } from "@/lib/seo";
 import { LEGAL } from "@/lib/legal";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Mentions légales",
-  description: "Éditeur, immatriculation (NINEA, RCCM), hébergement et contact de Sama Stock.",
-};
+  description: "Éditeur, immatriculation (NINEA, RCCM), hébergement et contact de Sama Stock, logiciel de gestion de stock édité à Thiès, Sénégal.",
+  path: "/mentions-legales",
+});
 
 export default function MentionsLegalesPage() {
   return (

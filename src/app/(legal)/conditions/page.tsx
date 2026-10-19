@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactLine, LegalPage } from "@/components/legal/legal-page";
+import { pageMetadata } from "@/lib/seo";
 import { formatLimit, PAID_PLANS, PERIOD_DAYS, PLANS, TRIAL_DAYS } from "@/lib/domain/plans";
 import { formatFCFA } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Conditions d'utilisation et de vente",
-  description: "Règles d'utilisation de Sama Stock, essai gratuit, formules, paiement et résiliation.",
-};
+  description: "Règles d'utilisation de Sama Stock : essai gratuit de 14 jours, formules et prix, paiement Wave, Orange Money ou espèces, résiliation.",
+  path: "/conditions",
+});
 
 export default function ConditionsPage() {
   return (

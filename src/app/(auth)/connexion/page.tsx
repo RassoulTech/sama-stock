@@ -3,9 +3,14 @@ import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { isGoogleEnabled } from "@/lib/auth";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { pageMetadata } from "@/lib/seo";
 import { getSession } from "@/server/context";
 
-export const metadata: Metadata = { title: "Connexion" };
+export const metadata: Metadata = pageMetadata({
+  title: "Connexion",
+  description: "Connectez-vous à Sama Stock pour suivre votre stock, vos ventes, vos commandes en ligne et les crédits de vos clients.",
+  path: "/connexion",
+});
 
 export default async function ConnexionPage({
   searchParams,

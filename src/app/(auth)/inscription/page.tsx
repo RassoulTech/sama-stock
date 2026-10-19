@@ -3,9 +3,14 @@ import { redirect } from "next/navigation";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import { isGoogleEnabled } from "@/lib/auth";
 import { safeRedirect } from "@/lib/safe-redirect";
+import { pageMetadata } from "@/lib/seo";
 import { getSession } from "@/server/context";
 
-export const metadata: Metadata = { title: "Inscription" };
+export const metadata: Metadata = pageMetadata({
+  title: "Créer un compte gratuit",
+  description: "Créez votre compte Sama Stock en quelques minutes : 14 jours gratuits, sans carte bancaire. Pour boutiques, e-commerçants et entrepreneurs.",
+  path: "/inscription",
+});
 
 export default async function InscriptionPage({
   searchParams,

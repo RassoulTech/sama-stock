@@ -1,4 +1,5 @@
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/brand/logo";
 import type { NavItem } from "@/components/shell/nav";
@@ -6,7 +7,10 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { initials } from "@/lib/format";
+import { NO_INDEX } from "@/lib/seo";
 import { requireSuperAdmin } from "@/server/context";
+
+export const metadata: Metadata = { robots: NO_INDEX };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireSuperAdmin();

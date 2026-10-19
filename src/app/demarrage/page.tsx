@@ -1,5 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import { NO_INDEX } from "@/lib/seo";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
@@ -8,7 +9,7 @@ import { SignOutButton } from "@/components/shell/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { getContext } from "@/server/context";
 
-export const metadata: Metadata = { title: "Démarrage" };
+export const metadata: Metadata = { title: "Démarrage", robots: NO_INDEX };
 
 export default async function DemarragePage() {
   const ctx = await getContext();

@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { MailWarning, Store } from "lucide-react";
 import type { Metadata } from "next";
+import { NO_INDEX } from "@/lib/seo";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { AcceptInvitationButton } from "@/components/team/accept-invitation-button";
@@ -11,7 +12,7 @@ import { businesses, invitations, user } from "@/db/schema";
 import { isRole, ROLE_DESCRIPTIONS, ROLE_LABELS } from "@/lib/domain/permissions";
 import { getContext } from "@/server/context";
 
-export const metadata: Metadata = { title: "Invitation" };
+export const metadata: Metadata = { title: "Invitation", robots: NO_INDEX };
 
 export default async function InvitationPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
