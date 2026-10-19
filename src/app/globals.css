@@ -82,8 +82,9 @@
   --border: #e2e7e1;
   --input: #d8dfd7;
   --ring: #0b6e4f;
-  --chart-1: #0b6e4f;
-  --chart-2: #f59e0b;
+  /* Graphiques : paire validée (daltonisme, contraste) sur fond blanc */
+  --chart-1: #0a7a55;
+  --chart-2: #d97706;
   --chart-3: #3ba57f;
   --chart-4: #8aa89a;
   --chart-5: #b45309;
@@ -124,8 +125,9 @@
   --border: #22302a;
   --input: #2b3b34;
   --ring: #27a87c;
-  --chart-1: #27a87c;
-  --chart-2: #f5a524;
+  /* Graphiques : paire validée sur la surface sombre #121c18 */
+  --chart-1: #23a275;
+  --chart-2: #cc7a0e;
   --chart-3: #6fd1a8;
   --chart-4: #5f7a6d;
   --chart-5: #e07a2e;
