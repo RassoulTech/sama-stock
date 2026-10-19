@@ -62,6 +62,13 @@ export const PLAN_STATUS_LABELS: Record<PlanStatus, string> = {
   suspended: "Suspendu",
 };
 
+export const PLAN_STATUS_TONES: Record<PlanStatus, "green" | "saffron" | "red" | "blue"> = {
+  trialing: "blue",
+  active: "green",
+  expired: "saffron",
+  suspended: "red",
+};
+
 export interface PlanState {
   plan: PlanId;
   label: string;
