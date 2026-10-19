@@ -17,6 +17,7 @@ import { Logo } from "@/components/brand/logo";
 import { EmailSignup } from "@/components/landing/email-signup";
 import { LossCalculator } from "@/components/landing/loss-calculator";
 import { ProductVideo } from "@/components/landing/product-video";
+import { PaymentLogo } from "@/components/shared/payment-logo";
 import { StickyCta } from "@/components/landing/sticky-cta";
 import {
   CreditVisual,
@@ -152,26 +153,28 @@ export default async function HomePage() {
         <span className="hidden sm:inline"> · prêt en 5 minutes</span>
       </div>
 
-      <header className="sticky top-0 z-40 border-b border-transparent bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-8 px-4 sm:px-6">
-          <Link href="/" aria-label="Sama Stock, accueil">
+      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-4">
+        <div className="mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-2xl border bg-background/85 px-3 shadow-[0_8px_30px_-12px_rgb(11_19_16/0.18)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-4">
+          <Link href="/" aria-label="Sama Stock, accueil" className="justify-self-start">
             <Logo />
           </Link>
-          <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Sections">
-            <a href="#fonctionnalites" className="transition-colors hover:text-foreground">
-              Fonctionnalités
-            </a>
-            <a href="#calcul" className="transition-colors hover:text-foreground">
-              Vos pertes
-            </a>
-            <a href="#tarifs" className="transition-colors hover:text-foreground">
-              Tarifs
-            </a>
-            <a href="#faq" className="transition-colors hover:text-foreground">
-              Questions
-            </a>
+          <nav className="hidden items-center gap-1 text-sm font-medium text-muted-foreground md:flex" aria-label="Sections">
+            {[
+              ["#fonctionnalites", "Fonctionnalités"],
+              ["#calcul", "Vos pertes"],
+              ["#tarifs", "Tarifs"],
+              ["#faq", "Questions"],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-full px-3.5 py-1.5 transition-colors hover:bg-muted hover:text-foreground"
+              >
+                {label}
+              </a>
+            ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-self-end">
             {session ? (
               <Link
                 href="/tableau-de-bord"
@@ -267,9 +270,20 @@ export default async function HomePage() {
               Pour <span className="font-medium text-foreground">les boutiques, quincailleries, supérettes et vendeurs WhatsApp</span>
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {["Espèces", "Wave", "Orange Money", "Crédit"].map((m) => (
-                <span key={m} className="rounded-md border bg-card px-2.5 py-1 text-xs font-medium text-foreground">
-                  {m}
+              {(
+                [
+                  ["Espèces", null],
+                  ["Wave", "wave"],
+                  ["Orange Money", "orange_money"],
+                  ["Crédit", null],
+                ] as const
+              ).map(([label, logo]) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2.5 py-1 text-xs font-medium text-foreground"
+                >
+                  {logo && <PaymentLogo method={logo} className="size-4 rounded-[4px]" />}
+                  {label}
                 </span>
               ))}
             </div>

@@ -19,10 +19,10 @@ export function LogoMark({ className }: { className?: string }) {
 export function Logo({ className, inverted = false }: { className?: string; inverted?: boolean }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <LogoMark className="size-7" />
+      <LogoMark className={cn("size-7", inverted && "rounded-[9px] ring-1 ring-white/30")} />
       <span
         className={cn(
-          "text-[1.0625rem] font-semibold tracking-[-0.03em]",
+          "text-[1.0625rem] font-bold tracking-[-0.035em]",
           inverted ? "text-white" : "text-foreground",
         )}
       >

@@ -341,3 +341,26 @@ export const subscriptionEvents = pgTable(
   },
   (t) => [index("subscription_events_business_idx").on(t.businessId)],
 );
+
+/** Paiement d'abonnement en ligne (SasPay : Wave, Orange Money), activé seulement une fois confirmé par SasPay. */
+export const subscriptionCheckouts = pgTable(
+  "subscription_checkouts",
+  {
+    id: id(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    plan: text("plan").notNull(),
+    amount: integer("amount").notNull(),
+    sessionId: text("session_id").notNull(),
+    status: text("status").notNull().default("pending"), // pending | paid | failed
+    transactionId: text("transaction_id"),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("subscription_checkouts_session_idx").on(t.sessionId),
+    index("subscription_checkouts_business_idx").on(t.businessId),
+  ],
+);

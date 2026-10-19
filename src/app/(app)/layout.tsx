@@ -62,20 +62,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           items={nav}
           footer={
             <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-accent text-xs font-semibold text-sidebar-foreground ring-1 ring-sidebar-border">
                 {initials(ctx.business.name)}
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-[0.8125rem] font-medium">{ctx.business.name}</span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-xs text-sidebar-foreground/65">
                   {ctx.plan.label} · {ROLE_LABELS[ctx.role]}
                 </span>
               </span>
             </div>
           }
         />
-        <div className="flex min-w-0 flex-col">
-          <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 print:hidden">
+        <div className="flex min-w-0 flex-col bg-white dark:bg-background">
+          <header className="sticky top-0 z-30 border-b bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/70 dark:bg-background/85 dark:supports-[backdrop-filter]:bg-background/70 print:hidden">
             <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
               <Link href="/tableau-de-bord" className="flex min-w-0 items-center gap-2.5 lg:hidden" aria-label="Accueil">
                 <LogoMark className="size-7" />

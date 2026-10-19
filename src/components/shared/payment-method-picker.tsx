@@ -1,6 +1,7 @@
 "use client";
 
 import { Banknote, CreditCard, HandCoins, Smartphone } from "lucide-react";
+import { isBrandedMethod, PaymentLogo } from "@/components/shared/payment-logo";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,7 @@ export function PaymentMethodPicker<M extends PaymentMethod>({
               active && "border-primary bg-accent text-accent-foreground ring-2 ring-primary/20",
             )}
           >
-            <Icon className="size-4 shrink-0" />
+            {isBrandedMethod(m) ? <PaymentLogo method={m} /> : <Icon className="size-4 shrink-0" />}
             <span className="truncate">{PAYMENT_METHODS[m]}</span>
             <span className={cn("absolute top-2 right-2 size-1.5 rounded-full", dot)} />
           </button>

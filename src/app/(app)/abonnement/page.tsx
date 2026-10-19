@@ -1,18 +1,28 @@
-import { eq, desc } from "drizzle-orm";
-import { Check, CreditCard, Info, Sparkles } from "lucide-react";
+import { desc, eq } from "drizzle-orm";
+import { Banknote, Check, Clock, CreditCard, Info, ShieldCheck, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
+import { CheckoutButton, RefreshCheckoutButton } from "@/components/billing/checkout-buttons";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmAction } from "@/components/shared/confirm-action";
+import { PaymentLogo } from "@/components/shared/payment-logo";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { subscriptionEvents } from "@/db/schema";
-import { formatDate, formatFCFA } from "@/lib/format";
+import { formatDate, formatDateTime, formatFCFA } from "@/lib/format";
 import { formatLimit, PAID_PLANS, PLAN_STATUS_LABELS, PLANS, type PlanDefinition } from "@/lib/domain/plans";
 import { cn } from "@/lib/utils";
 import { simulatePayment } from "@/server/actions/billing";
 import { requireContext } from "@/server/context";
+import { isPaymentSimulation, isSaspayEnabled } from "@/server/saspay";
+import { listPendingCheckouts } from "@/server/services/subscription";
+
+const METHOD_LABELS: Record<string, string> = {
+  saspay: "Wave / Orange Money",
+  simulation: "Simulation",
+  admin: "Espèces (enregistré par l'équipe)",
+};
 
 export const metadata: Metadata = { title: "Abonnement" };
 
@@ -35,6 +45,7 @@ export default async function AbonnementPage() {
     .where(eq(subscriptionEvents.businessId, ctx.business.id))
     .orderBy(desc(subscriptionEvents.createdAt))
     .limit(24);
+  const pendingCheckouts = isSaspayEnabled ? await listPendingCheckouts(ctx.business.id) : [];
   const plan = ctx.plan;
   const statusTone = plan.status === "active" || plan.status === "trialing" ? "green" : "red";
 
@@ -64,13 +75,56 @@ export default async function AbonnementPage() {
         </CardContent>
       </Card>
 
-      <div className="mb-4 flex items-start gap-2 rounded-xl bg-saffron/15 p-4 text-sm">
-        <Info className="mt-0.5 size-4 shrink-0 text-warning dark:text-saffron" />
-        <span>
-          <strong>Version de démonstration :</strong> le paiement est simulé. Le paiement réel par Wave ou Orange Money sera
-          activé lors de la mise en production.
-        </span>
-      </div>
+      {pendingCheckouts.map((c) => (
+        <div key={c.id} className="mb-4 flex flex-col gap-3 rounded-xl border bg-card p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-start gap-2">
+            <Clock className="mt-0.5 size-4 shrink-0 text-warning dark:text-saffron" />
+            <span>
+              <strong>Paiement en attente</strong> — formule {PLANS[c.plan as keyof typeof PLANS]?.label ?? c.plan},{" "}
+              {formatFCFA(c.amount)} ({formatDateTime(c.createdAt)}). Vous avez payé ? Vérifiez-le ici.
+            </span>
+          </span>
+          <RefreshCheckoutButton checkoutId={c.id} />
+        </div>
+      ))}
+
+      {isSaspayEnabled ? (
+        <div className="mb-4 flex flex-col gap-3 rounded-xl border bg-card p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
+            <span>
+              <strong>Paiement sécurisé</strong> par Wave ou Orange Money. Votre formule s&apos;active dès que le paiement est
+              confirmé.
+            </span>
+          </span>
+          <span className="flex items-center gap-2 text-xs font-medium">
+            <PaymentLogo method="wave" className="size-7" /> Wave
+            <PaymentLogo method="orange_money" className="ml-2 size-7" /> Orange Money
+          </span>
+        </div>
+      ) : (
+        <div className="mb-4 flex items-start gap-2 rounded-xl bg-saffron/15 p-4 text-sm">
+          <Info className="mt-0.5 size-4 shrink-0 text-warning dark:text-saffron" />
+          <span>
+            {isPaymentSimulation ? (
+              <>
+                <strong>Version de démonstration :</strong> le paiement est simulé. Le paiement réel par Wave ou Orange
+                Money s&apos;active dès que la clé SasPay est ajoutée.
+              </>
+            ) : (
+              <>
+                <strong>Paiement en ligne bientôt disponible</strong> (Wave, Orange Money).
+              </>
+            )}
+          </span>
+        </div>
+      )}
+
+      <p className="mb-4 flex items-start gap-2 text-sm text-muted-foreground">
+        <Banknote className="mt-0.5 size-4 shrink-0" />
+        Vous préférez payer en espèces ? Réglez auprès de l&apos;équipe Sama Stock : elle active votre formule depuis son
+        espace d&apos;administration.
+      </p>
 
       <div className="grid gap-5 md:grid-cols-3">
         {[PLANS.trial, ...PAID_PLANS].map((p) => {
@@ -105,6 +159,16 @@ export default async function AbonnementPage() {
                 <div className="mt-auto">
                   {p.id === "trial" ? (
                     <p className="text-center text-xs text-muted-foreground">Offert à l&apos;inscription</p>
+                  ) : isSaspayEnabled ? (
+                    <CheckoutButton
+                      plan={p.id}
+                      featured={featured}
+                      label={`${current && plan.status === "active" ? "Renouveler" : current ? "Réactiver" : `Passer à ${p.label}`} · ${formatFCFA(p.price)}`}
+                    />
+                  ) : !isPaymentSimulation ? (
+                    <Button className="w-full" variant="outline" disabled>
+                      Bientôt disponible
+                    </Button>
                   ) : (
                     <ConfirmAction
                       trigger={
@@ -142,7 +206,7 @@ export default async function AbonnementPage() {
                     <span className="font-semibold">Formule {PLANS[h.plan as keyof typeof PLANS]?.label ?? h.plan}</span>
                     <span className="block text-xs text-muted-foreground">
                       {formatDate(h.createdAt)} · du {h.periodStart ? formatDate(h.periodStart) : "—"} au{" "}
-                      {h.periodEnd ? formatDate(h.periodEnd) : "—"} · {h.method === "simulation" ? "Simulation" : h.method === "admin" ? "Administrateur" : h.method}
+                      {h.periodEnd ? formatDate(h.periodEnd) : "—"} · {METHOD_LABELS[h.method] ?? h.method}
                     </span>
                   </span>
                   <span className="num font-semibold">{formatFCFA(h.amount)}</span>
