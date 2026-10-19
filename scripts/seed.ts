@@ -5,7 +5,7 @@
  */
 import "dotenv/config";
 import { hashPassword } from "better-auth/crypto";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, like, or } from "drizzle-orm";
 import { db } from "../src/db";
 import {
   account,
@@ -67,7 +67,11 @@ async function insertChunks<T>(insert: (rows: T[]) => Promise<unknown>, rows: T[
 
 async function cleanup() {
   const emails = DEMO_USERS.map((u) => u.email);
-  const users = await db.select({ id: user.id }).from(user).where(inArray(user.email, emails));
+  // Comptes de démonstration + comptes créés pendant les tests sur le domaine fictif @demo.sn
+  const users = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(or(inArray(user.email, emails), like(user.email, "%@demo.sn")));
   const ids = users.map((u) => u.id);
   if (ids.length > 0) {
     await db.delete(businesses).where(inArray(businesses.ownerId, ids));
