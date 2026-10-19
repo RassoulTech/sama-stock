@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { saleItems, sales } from "@/db/schema";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
+import { SALE_METHODS } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
 import { nextNumber } from "../services/numbering";
@@ -19,7 +19,7 @@ const saleSchema = z.object({
     .max(200),
   discount: z.coerce.number().int().min(0, "Remise invalide.").default(0),
   customerId: z.string().nullable().optional(),
-  paymentMethod: z.enum(Object.keys(PAYMENT_METHODS) as [PaymentMethod, ...PaymentMethod[]]),
+  paymentMethod: z.enum(SALE_METHODS),
   amountReceived: z.coerce.number().int().min(0).default(0),
   note: z.string().trim().max(300).optional().default(""),
 });

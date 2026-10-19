@@ -49,7 +49,7 @@ const FEATURES = [
   {
     kicker: "Caisse",
     title: "Encaissez en trois touches, envoyez le reçu sur WhatsApp",
-    text: "Espèces, Wave, Orange Money, Free Money ou à crédit. Le stock baisse tout seul, le reçu part chez le client en un clic.",
+    text: "Espèces, Wave, Orange Money ou à crédit. Le stock baisse tout seul, le reçu part chez le client en un clic.",
     points: ["Monnaie rendue calculée", "Paiement partiel et crédit", "Reçu imprimable"],
     visual: <PosVisual />,
   },
@@ -267,7 +267,7 @@ export default async function HomePage() {
               Pour <span className="font-medium text-foreground">les boutiques, quincailleries, supérettes et vendeurs WhatsApp</span>
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {["Espèces", "Wave", "Orange Money", "Free Money", "Crédit"].map((m) => (
+              {["Espèces", "Wave", "Orange Money", "Crédit"].map((m) => (
                 <span key={m} className="rounded-md border bg-card px-2.5 py-1 text-xs font-medium text-foreground">
                   {m}
                 </span>

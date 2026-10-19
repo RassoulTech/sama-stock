@@ -86,7 +86,7 @@ export function PaymentDialog({ customerId, customerName, debt }: { customerId: 
           <FormField label="Mode de paiement">
             <PaymentMethodPicker
               value={method}
-              onChange={(m) => m !== "credit" && setMethod(m)}
+              onChange={setMethod}
               methods={PAYING_METHODS}
             />
           </FormField>

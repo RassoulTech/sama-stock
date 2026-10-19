@@ -9,8 +9,15 @@ export const PAYMENT_METHODS = {
 
 export type PaymentMethod = keyof typeof PAYMENT_METHODS;
 
-/** Modes utilisables pour un remboursement ou un paiement (pas « à crédit »). */
-export const PAYING_METHODS = ["cash", "wave", "orange_money", "free_money", "card"] as const satisfies readonly PaymentMethod[];
+/**
+ * Modes proposés pour un remboursement ou un paiement (pas « à crédit ») : espèces et mobile money.
+ * Free Money et carte restent dans PAYMENT_METHODS uniquement pour afficher les anciennes ventes.
+ */
+export const PAYING_METHODS = ["cash", "wave", "orange_money"] as const satisfies readonly PaymentMethod[];
+
+/** Modes proposés à la caisse. */
+export const SALE_METHODS = [...PAYING_METHODS, "credit"] as const satisfies readonly PaymentMethod[];
+export type SaleMethod = (typeof SALE_METHODS)[number];
 
 export function isPaymentMethod(value: string): value is PaymentMethod {
   return value in PAYMENT_METHODS;

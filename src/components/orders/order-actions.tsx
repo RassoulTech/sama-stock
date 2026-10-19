@@ -131,7 +131,7 @@ export function OrderPaymentDialog({ id, rest }: { id: string; rest: number }) {
               onChange={(e) => setAmount(e.target.value === "" ? "" : Number(e.target.value))}
             />
           </FormField>
-          <PaymentMethodPicker value={method} onChange={(m) => m !== "credit" && setMethod(m)} methods={PAYING_METHODS} />
+          <PaymentMethodPicker value={method} onChange={setMethod} methods={PAYING_METHODS} />
           <FormError message={error} />
           <DialogFooter>
             <Button type="submit" disabled={pending} className="w-full sm:w-auto">

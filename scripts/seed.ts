@@ -568,7 +568,7 @@ async function main() {
         status: "completed",
         customerId,
         userId: sellerId,
-        method: pick(["cash", "cash", "wave", "wave", "orange_money", "free_money"]),
+        method: pick(["cash", "cash", "wave", "wave", "orange_money", "orange_money"]),
         paidRatio: credit ? pick([0, 0.5]) : 1,
         completedAt: createdAt,
       });

@@ -13,14 +13,14 @@ const STYLES: Record<PaymentMethod, { icon: typeof Banknote; dot: string }> = {
   credit: { icon: HandCoins, dot: "bg-amber-500" },
 };
 
-export function PaymentMethodPicker({
+export function PaymentMethodPicker<M extends PaymentMethod>({
   value,
   onChange,
   methods,
 }: {
-  value: PaymentMethod;
-  onChange: (method: PaymentMethod) => void;
-  methods: readonly PaymentMethod[];
+  value: M;
+  onChange: (method: M) => void;
+  methods: readonly M[];
 }) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Mode de paiement">

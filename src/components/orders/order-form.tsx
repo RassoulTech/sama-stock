@@ -181,7 +181,7 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
               />
             </FormField>
             {Number(paid) > 0 && (
-              <PaymentMethodPicker value={method} onChange={(m) => m !== "credit" && setMethod(m)} methods={PAYING_METHODS} />
+              <PaymentMethodPicker value={method} onChange={setMethod} methods={PAYING_METHODS} />
             )}
             <FormField label="Note (facultative)" htmlFor="note">
               <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Taille, couleur, heure de livraison…" />

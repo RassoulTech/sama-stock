@@ -9,10 +9,10 @@ import { PaymentMethodPicker } from "@/components/shared/payment-method-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatFCFA } from "@/lib/format";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
+import { SALE_METHODS, type SaleMethod } from "@/lib/domain/sales";
 import { cn } from "@/lib/utils";
 
-const ALL_METHODS = Object.keys(PAYMENT_METHODS) as PaymentMethod[];
+const ALL_METHODS: readonly SaleMethod[] = SALE_METHODS;
 
 function quickAmounts(total: number) {
   const steps = [500, 1000, 2000, 5000, 10000];
@@ -26,7 +26,7 @@ function quickAmounts(total: number) {
 }
 
 export interface CheckoutResult {
-  paymentMethod: PaymentMethod;
+  paymentMethod: SaleMethod;
   amountReceived: number;
   customerId: string | null;
 }
@@ -60,7 +60,7 @@ export function CheckoutDialog({
 }
 
 function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending, error }: CheckoutProps) {
-  const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [method, setMethod] = useState<SaleMethod>("cash");
   const [received, setReceived] = useState<number | "">(total);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
   const change = method === "cash" ? Math.max(0, amount - total) : 0;
   const needsCustomer = rest > 0;
 
-  function changeMethod(m: PaymentMethod) {
+  function changeMethod(m: SaleMethod) {
     setMethod(m);
     setLocalError(null);
     if (m !== "credit" && received === "") setReceived(total);
