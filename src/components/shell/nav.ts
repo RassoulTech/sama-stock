@@ -13,7 +13,12 @@ export type NavIcon =
   | "team"
   | "billing"
   | "settings"
-  | "admin";
+  | "admin"
+  | "store"
+  | "users"
+  | "payments"
+  | "sessions"
+  | "system";
 
 export interface NavItem {
   href: string;

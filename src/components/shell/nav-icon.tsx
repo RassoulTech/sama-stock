@@ -1,15 +1,20 @@
 import {
+  Activity,
   BarChart3,
   CreditCard,
   LayoutDashboard,
+  MonitorSmartphone,
   Package,
   ReceiptText,
   Settings,
   ShieldCheck,
   ShoppingCart,
+  Store,
   Truck,
   UserCog,
+  UserRound,
   Users,
+  Wallet,
   Warehouse,
   Bike,
   type LucideIcon,
@@ -30,6 +35,11 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   billing: CreditCard,
   settings: Settings,
   admin: ShieldCheck,
+  store: Store,
+  users: UserRound,
+  payments: Wallet,
+  sessions: MonitorSmartphone,
+  system: Activity,
 };
 
 export function NavIconView({ icon, className }: { icon: NavIcon; className?: string }) {

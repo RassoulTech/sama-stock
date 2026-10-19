@@ -8,9 +8,9 @@ import { formatDate, formatFCFA, formatPhone } from "@/lib/format";
 import { isRole, ROLE_LABELS } from "@/lib/domain/permissions";
 import { PLAN_STATUS_LABELS, PLAN_STATUS_TONES, PLANS } from "@/lib/domain/plans";
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
-import { getBusinessForAdmin } from "@/server/queries/admin";
+import { getBusinessForAdmin, SUBSCRIPTION_METHOD_LABELS } from "@/server/queries/admin";
 
-export const metadata: Metadata = { title: "Commerce · Administration" };
+export const metadata: Metadata = { title: "Fiche commerce" };
 
 export default async function AdminBusinessPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,7 +21,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
   return (
     <>
       <PageHeader
-        backHref="/admin"
+        backHref="/admin/commerces"
         title={b.name}
         description={
           <span className="flex flex-wrap items-center gap-2">
@@ -94,7 +94,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
                 {history.map((h) => (
                   <li key={h.id} className="flex justify-between gap-3 py-2.5">
                     <span>
-                      {PLANS[h.plan as keyof typeof PLANS]?.label ?? h.plan} · {h.method}
+                      {PLANS[h.plan as keyof typeof PLANS]?.label ?? h.plan} · {SUBSCRIPTION_METHOD_LABELS[h.method] ?? h.method}
                       <span className="block text-xs text-muted-foreground">
                         {formatDate(h.createdAt)} → fin le {h.periodEnd ? formatDate(h.periodEnd) : "—"}
                         {h.note && <> · {h.note}</>}

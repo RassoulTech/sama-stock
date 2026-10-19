@@ -11,10 +11,18 @@ export type CheckoutOutcome = "paid" | "pending" | "failed";
 
 const FAILED = new Set(["FAILED", "EXPIRED", "CANCELLED", "CANCELED"]);
 
-/** Ajoute 30 jours ; une même formule encore en cours est prolongée à partir de sa date de fin. */
+/** Ajoute une période (30 jours par défaut) ; une même formule encore en cours est prolongée à partir de sa date de fin. */
 export async function grantPeriod(
   tx: Tx,
-  input: { businessId: string; plan: PaidPlan; amount: number; method: string; userId: string | null },
+  input: {
+    businessId: string;
+    plan: PaidPlan;
+    amount: number;
+    method: string;
+    userId: string | null;
+    days?: number;
+    note?: string;
+  },
 ) {
   const [business] = await tx
     .select({ plan: businesses.plan, periodEndsAt: businesses.periodEndsAt })
@@ -24,7 +32,7 @@ export async function grantPeriod(
   const now = new Date();
   const extend = business.plan === input.plan && business.periodEndsAt && business.periodEndsAt > now;
   const start = extend ? business.periodEndsAt! : now;
-  const end = new Date(start.getTime() + PERIOD_DAYS * 86_400_000);
+  const end = new Date(start.getTime() + (input.days ?? PERIOD_DAYS) * 86_400_000);
 
   await tx.update(businesses).set({ plan: input.plan, periodEndsAt: end }).where(eq(businesses.id, input.businessId));
   await tx.insert(subscriptionEvents).values({
@@ -34,6 +42,7 @@ export async function grantPeriod(
     periodStart: start,
     periodEnd: end,
     method: input.method,
+    note: input.note,
     userId: input.userId,
   });
   return end;
