@@ -44,3 +44,5 @@ next-env.d.ts
 
 # captures des tests navigateur
 .playwright-mcp/
+.vercel
+.env*
