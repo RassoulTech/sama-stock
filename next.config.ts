@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   turbopack: {
     rules: {
       "*.css": {
@@ -9,9 +10,11 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  serverActions: {
-    // Les photos produits compressées transitent par les Server Actions
-    bodySizeLimit: "2mb",
+  experimental: {
+    serverActions: {
+      // Les photos produits compressées transitent par les Server Actions
+      bodySizeLimit: "2mb",
+    },
   },
 };
 
