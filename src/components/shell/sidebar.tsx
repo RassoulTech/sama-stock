@@ -24,7 +24,7 @@ export function Sidebar({ items, footer }: { items: NavItem[]; footer?: React.Re
     .filter((g) => g.items.length > 0);
 
   return (
-    <aside className="sticky top-0 hidden h-dvh flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+    <aside className="sticky top-0 hidden h-dvh flex-col border-r border-sidebar-border bg-sidebar lg:flex print:hidden">
       <div className="flex h-16 items-center px-5">
         <Link href="/tableau-de-bord" aria-label="Accueil Sama Stock">
           <Logo />

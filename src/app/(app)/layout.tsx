@@ -69,7 +69,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           }
         />
         <div className="flex min-w-0 flex-col">
-          <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+          <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75 print:hidden">
             <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
               <Link href="/tableau-de-bord" className="flex min-w-0 items-center gap-2.5 lg:hidden">
                 <LogoMark />
@@ -91,8 +91,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </div>
             </div>
           </header>
-          <PlanBanner plan={ctx.plan} canManageBilling={ctx.can("billing.manage")} />
-          <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">
+          <div className="print:hidden">
+            <PlanBanner plan={ctx.plan} canManageBilling={ctx.can("billing.manage")} />
+          </div>
+          <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12 print:p-0">
             {children}
           </main>
         </div>
