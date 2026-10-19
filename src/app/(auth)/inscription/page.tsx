@@ -16,5 +16,12 @@ export default async function InscriptionPage({
   const redirectTo = params.redirect ? safeRedirect(params.redirect, "/demarrage") : null;
   if (await getSession()) redirect(redirectTo ?? "/tableau-de-bord");
   const email = typeof params.email === "string" ? params.email : undefined;
-  return <SignUpForm redirectTo={redirectTo} googleEnabled={isGoogleEnabled} defaultEmail={email} />;
+  return (
+    <SignUpForm
+      redirectTo={redirectTo}
+      googleEnabled={isGoogleEnabled}
+      defaultEmail={email}
+      lockEmail={Boolean(redirectTo?.startsWith("/invitation/"))}
+    />
+  );
 }

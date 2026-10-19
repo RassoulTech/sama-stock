@@ -15,10 +15,13 @@ export function SignUpForm({
   redirectTo,
   googleEnabled,
   defaultEmail,
+  lockEmail = false,
 }: {
   redirectTo: string | null;
   googleEnabled: boolean;
   defaultEmail?: string;
+  /** Email imposé par une invitation : non modifiable */
+  lockEmail?: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -83,7 +86,7 @@ export function SignUpForm({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="vous@exemple.sn"
-            readOnly={Boolean(defaultEmail)}
+            readOnly={lockEmail}
           />
         </div>
         <div className="space-y-2">
