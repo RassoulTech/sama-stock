@@ -88,9 +88,9 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
 
   return (
     <>
-      <div className="rounded-2xl bg-primary px-5 py-4 text-primary-foreground">
+      <div className="rounded-xl bg-primary px-5 py-4 text-primary-foreground">
         <p className="text-sm opacity-80">Total à payer</p>
-        <p className="num text-3xl font-extrabold tracking-tight">{formatFCFA(total)}</p>
+        <p className="num text-3xl font-semibold tracking-tight">{formatFCFA(total)}</p>
       </div>
 
       <div className="space-y-5">
@@ -134,7 +134,7 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
             )}
           >
             <span className="text-sm font-medium">{change > 0 ? "Monnaie à rendre" : "Reste à payer (crédit)"}</span>
-            <span className="num text-lg font-extrabold">{formatFCFA(change > 0 ? change : rest)}</span>
+            <span className="num text-lg font-semibold">{formatFCFA(change > 0 ? change : rest)}</span>
           </div>
         )}
 

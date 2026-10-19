@@ -74,7 +74,7 @@ export function OnboardingForm({ userName }: { userName: string }) {
     <form onSubmit={onSubmit} className="space-y-7">
       <div className="space-y-1.5">
         <p className="text-sm font-semibold text-primary">Bienvenue {userName.split(" ")[0]} !</p>
-        <h1 className="text-2xl font-extrabold sm:text-3xl">Parlez-nous de votre commerce</h1>
+        <h1 className="text-2xl font-semibold sm:text-3xl">Parlez-nous de votre commerce</h1>
         <p className="text-sm text-muted-foreground">
           Deux minutes, et Sama Stock s&apos;adapte à votre façon de travailler.
         </p>
@@ -95,7 +95,7 @@ export function OnboardingForm({ userName }: { userName: string }) {
               onClick={() => setActivity(id)}
               aria-pressed={activity === id}
               className={cn(
-                "flex flex-col items-start gap-2 rounded-2xl border bg-card p-4 text-left transition-colors hover:border-primary/50",
+                "flex flex-col items-start gap-2 rounded-xl border bg-card p-4 text-left transition-colors hover:border-primary/50",
                 activity === id && "border-primary bg-accent ring-2 ring-primary/20",
               )}
             >

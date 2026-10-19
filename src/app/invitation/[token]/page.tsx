@@ -35,25 +35,25 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
         <Link href="/" className="mx-auto block w-fit">
           <Logo />
         </Link>
-        <div className="space-y-5 rounded-3xl border bg-card p-6 text-center shadow-sm sm:p-8">
+        <div className="space-y-5 rounded-2xl border bg-card p-6 text-center shadow-sm sm:p-8">
           {!valid || !row ? (
             <>
               <MailWarning className="mx-auto size-12 text-warning" />
-              <h1 className="text-xl font-extrabold">Invitation invalide ou expirée</h1>
+              <h1 className="text-xl font-semibold">Invitation invalide ou expirée</h1>
               <p className="text-sm text-muted-foreground">
                 Ce lien n&apos;est plus valable. Demandez au propriétaire du commerce de vous renvoyer une invitation.
               </p>
             </>
           ) : (
             <>
-              <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-accent text-primary">
+              <span className="mx-auto grid size-14 place-items-center rounded-xl bg-accent text-primary">
                 <Store className="size-7" />
               </span>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">{row.inviterName ?? "Le propriétaire"} vous invite à rejoindre</p>
-                <h1 className="text-2xl font-extrabold">{row.businessName}</h1>
+                <h1 className="text-2xl font-semibold">{row.businessName}</h1>
               </div>
-              <div className="rounded-2xl bg-muted/60 p-4 text-left">
+              <div className="rounded-xl bg-muted/60 p-4 text-left">
                 <p className="text-sm font-semibold">Rôle : {roleLabel}</p>
                 <p className="text-xs text-muted-foreground">{roleDescription}</p>
               </div>

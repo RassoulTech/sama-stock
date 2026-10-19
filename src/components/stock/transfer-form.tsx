@@ -73,7 +73,7 @@ export function TransferForm({
 
         <ul className="space-y-3">
           {lines.map((l, i) => (
-            <li key={l.product.id} className="flex flex-wrap items-center gap-3 rounded-2xl border p-3">
+            <li key={l.product.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
               <ProductThumb name={l.product.name} imageUrl={l.product.imageUrl} className="size-10" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{l.product.name}</p>

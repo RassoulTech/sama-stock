@@ -50,8 +50,8 @@ export default async function VentesPage({
             key={key}
             href={`/ventes?periode=${key}`}
             className={cn(
-              "inline-flex h-9 shrink-0 items-center rounded-full border bg-card px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground",
-              period === key && "border-primary bg-primary text-primary-foreground hover:text-primary-foreground",
+              "inline-flex h-8 shrink-0 items-center rounded-full border bg-card px-3 text-[0.8125rem] font-medium text-muted-foreground hover:text-foreground",
+              period === key && "border-primary/30 bg-accent text-accent-foreground hover:text-accent-foreground",
             )}
           >
             {p.label}
@@ -74,7 +74,7 @@ export default async function VentesPage({
       {sales.length === 0 ? (
         <EmptyState icon={ReceiptText} title="Aucune vente sur cette période" description="Les ventes de la caisse apparaîtront ici." />
       ) : (
-        <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/[0.07]">
+        <ul className="divide-y overflow-hidden rounded-xl bg-card border">
           {sales.map((s) => (
             <li key={s.id}>
               <Link href={`/ventes/${s.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
@@ -90,7 +90,7 @@ export default async function VentesPage({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className={cn("num font-bold", s.status === "cancelled" && "text-muted-foreground line-through")}>
+                  <p className={cn("num font-semibold", s.status === "cancelled" && "text-muted-foreground line-through")}>
                     {formatFCFA(s.total)}
                   </p>
                   <div className="flex items-center justify-end gap-1.5">

@@ -16,9 +16,9 @@ export function PlanUsage({
   const pct = limit === 0 ? 100 : Math.min(100, Math.round((used / limit) * 100));
   const full = used >= limit;
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-card px-4 py-3 ring-1 ring-foreground/[0.07]">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-card px-4 py-3 border">
       <p className="text-sm">
-        <span className="num font-bold">
+        <span className="num font-semibold">
           {used} / {limit}
         </span>{" "}
         <span className="text-muted-foreground">{label}</span>

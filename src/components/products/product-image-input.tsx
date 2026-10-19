@@ -38,7 +38,7 @@ export function ProductImageInput({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="relative grid size-24 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed bg-muted/50 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+        className="relative grid size-24 shrink-0 place-items-center overflow-hidden rounded-xl border-2 border-dashed bg-muted/50 text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
         aria-label="Choisir une photo"
       >
         {busy ? (

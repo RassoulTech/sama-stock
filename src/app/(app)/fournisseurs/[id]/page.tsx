@@ -89,7 +89,7 @@ export default async function FournisseurPage({ params }: { params: Promise<{ id
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="font-bold">Historique des achats</CardTitle>
+          <CardTitle className="font-semibold">Historique des achats</CardTitle>
         </CardHeader>
         <CardContent>
           {purchases.length === 0 ? (

@@ -79,16 +79,16 @@ export function PurchaseForm({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
       <Card>
         <CardContent className="space-y-4">
-          <h2 className="font-bold">Produits reçus</h2>
+          <h2 className="font-semibold">Produits reçus</h2>
           {lines.length === 0 && (
-            <div className="flex flex-col items-center gap-2 rounded-2xl bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">
+            <div className="flex flex-col items-center gap-2 rounded-xl bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">
               <PackagePlus className="size-8 text-primary" />
               Ajoutez les produits que vous venez de recevoir.
             </div>
           )}
           <ul className="space-y-3">
             {lines.map((l, i) => (
-              <li key={l.product.id} className="rounded-2xl border p-3">
+              <li key={l.product.id} className="rounded-xl border p-3">
                 <div className="flex items-center gap-3">
                   <ProductThumb name={l.product.name} imageUrl={l.product.imageUrl} className="size-10" />
                   <div className="min-w-0 flex-1">
@@ -174,7 +174,7 @@ export function PurchaseForm({
             {showCost && (
               <div className="flex items-center justify-between rounded-xl bg-muted/60 px-4 py-3">
                 <span className="text-sm text-muted-foreground">Total de l&apos;achat</span>
-                <span className="num text-lg font-extrabold">{formatFCFA(total)}</span>
+                <span className="num text-lg font-semibold">{formatFCFA(total)}</span>
               </div>
             )}
             {showCost && (

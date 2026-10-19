@@ -33,10 +33,10 @@ export default async function RapportsPage({
         <PageHeader title="Rapports" />
         <Card className="mx-auto max-w-xl text-center">
           <CardContent className="flex flex-col items-center gap-4 py-10">
-            <span className="grid size-14 place-items-center rounded-2xl bg-accent text-primary">
+            <span className="grid size-14 place-items-center rounded-xl bg-accent text-primary">
               <Lock className="size-7" />
             </span>
-            <h2 className="text-xl font-extrabold">Les rapports avancés sont inclus dans Pro et Business</h2>
+            <h2 className="text-xl font-semibold">Les rapports avancés sont inclus dans Pro et Business</h2>
             <p className="max-w-md text-sm text-muted-foreground">
               Évolution de vos ventes et de votre bénéfice, meilleurs produits, produits qui dorment, ventes par canal et par
               mode de paiement, pertes… tout pour piloter votre commerce.
@@ -81,8 +81,8 @@ export default async function RapportsPage({
                 key={key}
                 href={`/rapports?periode=${key}`}
                 className={cn(
-                  "inline-flex h-9 items-center rounded-full border bg-card px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground",
-                  period === key && "border-primary bg-primary text-primary-foreground hover:text-primary-foreground",
+                  "inline-flex h-8 items-center rounded-full border bg-card px-3 text-[0.8125rem] font-medium text-muted-foreground hover:text-foreground",
+                  period === key && "border-primary/30 bg-accent text-accent-foreground hover:text-accent-foreground",
                 )}
               >
                 {p.label}
@@ -107,7 +107,7 @@ export default async function RapportsPage({
 
       <Card className="mb-5">
         <CardHeader>
-          <CardTitle className="font-bold">Évolution des ventes et du bénéfice</CardTitle>
+          <CardTitle className="font-semibold">Évolution des ventes et du bénéfice</CardTitle>
           <p className="text-sm text-muted-foreground">Par jour, en FCFA · {REPORT_PERIODS[period].label}</p>
         </CardHeader>
         <CardContent>
@@ -122,7 +122,7 @@ export default async function RapportsPage({
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-bold">
+            <CardTitle className="flex items-center gap-2 font-semibold">
               <ShoppingBag className="size-4 text-primary" /> Meilleures ventes
             </CardTitle>
             <p className="text-sm text-muted-foreground">Par chiffre d&apos;affaires</p>
@@ -135,7 +135,7 @@ export default async function RapportsPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-bold">
+            <CardTitle className="flex items-center gap-2 font-semibold">
               <TrendingUp className="size-4 text-primary" /> Produits les plus rentables
             </CardTitle>
             <p className="text-sm text-muted-foreground">Par bénéfice</p>
@@ -146,7 +146,7 @@ export default async function RapportsPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="font-bold">Ventes par canal</CardTitle>
+            <CardTitle className="font-semibold">Ventes par canal</CardTitle>
             <p className="text-sm text-muted-foreground">Boutique, WhatsApp, Instagram…</p>
           </CardHeader>
           <CardContent>
@@ -161,7 +161,7 @@ export default async function RapportsPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="font-bold">Ventes par mode de paiement</CardTitle>
+            <CardTitle className="font-semibold">Ventes par mode de paiement</CardTitle>
             <p className="text-sm text-muted-foreground">Mode choisi au moment de la vente</p>
           </CardHeader>
           <CardContent>
@@ -176,7 +176,7 @@ export default async function RapportsPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-bold">
+            <CardTitle className="flex items-center gap-2 font-semibold">
               <PackageMinus className="size-4 text-warning dark:text-saffron" /> Produits qui dorment
             </CardTitle>
             <p className="text-sm text-muted-foreground">En stock, mais aucune vente depuis 30 jours</p>
@@ -205,7 +205,7 @@ export default async function RapportsPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-bold">
+            <CardTitle className="flex items-center gap-2 font-semibold">
               <ShieldAlert className="size-4 text-destructive" /> Pertes enregistrées
             </CardTitle>
             <p className="text-sm text-muted-foreground">Valorisées au prix d&apos;achat</p>

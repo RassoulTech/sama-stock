@@ -45,11 +45,11 @@ export default async function AbonnementPage() {
       <Card className="mb-6">
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <span className="grid size-12 place-items-center rounded-2xl bg-accent text-primary">
+            <span className="grid size-12 place-items-center rounded-xl bg-accent text-primary">
               <CreditCard className="size-6" />
             </span>
             <div>
-              <p className="flex items-center gap-2 text-lg font-extrabold">
+              <p className="flex items-center gap-2 text-lg font-semibold">
                 Formule {plan.label} <StatusPill tone={statusTone}>{PLAN_STATUS_LABELS[plan.status]}</StatusPill>
               </p>
               <p className="text-sm text-muted-foreground">
@@ -64,7 +64,7 @@ export default async function AbonnementPage() {
         </CardContent>
       </Card>
 
-      <div className="mb-4 flex items-start gap-2 rounded-2xl bg-saffron/15 p-4 text-sm">
+      <div className="mb-4 flex items-start gap-2 rounded-xl bg-saffron/15 p-4 text-sm">
         <Info className="mt-0.5 size-4 shrink-0 text-warning dark:text-saffron" />
         <span>
           <strong>Version de démonstration :</strong> le paiement est simulé. Le paiement réel par Wave ou Orange Money sera
@@ -82,17 +82,17 @@ export default async function AbonnementPage() {
               className={cn("relative", featured && "ring-2 ring-primary", current && "bg-accent/40")}
             >
               {featured && (
-                <span className="absolute top-4 right-4 inline-flex items-center gap-1 rounded-full bg-saffron px-2.5 py-0.5 text-xs font-bold text-saffron-foreground">
+                <span className="absolute top-4 right-4 inline-flex items-center gap-1 rounded-full bg-saffron px-2.5 py-0.5 text-xs font-semibold text-saffron-foreground">
                   <Sparkles className="size-3" /> Le plus complet
                 </span>
               )}
               <CardHeader>
-                <CardTitle className="text-lg font-extrabold">{p.label}</CardTitle>
+                <CardTitle className="text-lg font-semibold">{p.label}</CardTitle>
                 <p className="text-sm text-muted-foreground">{p.tagline}</p>
               </CardHeader>
               <CardContent className="flex h-full flex-col gap-5">
                 <p>
-                  <span className="num text-3xl font-extrabold">{formatFCFA(p.price)}</span>
+                  <span className="num text-3xl font-semibold">{formatFCFA(p.price)}</span>
                   <span className="text-sm text-muted-foreground">{p.id === "trial" ? " · 14 jours" : " / mois"}</span>
                 </p>
                 <ul className="space-y-2 text-sm">
@@ -129,7 +129,7 @@ export default async function AbonnementPage() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="font-bold">Historique des paiements</CardTitle>
+          <CardTitle className="font-semibold">Historique des paiements</CardTitle>
         </CardHeader>
         <CardContent>
           {history.length === 0 ? (

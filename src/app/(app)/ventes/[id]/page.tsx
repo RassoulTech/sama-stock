@@ -49,7 +49,7 @@ export default async function VentePage({
             <span className="grid size-16 place-items-center rounded-full bg-success/10 text-success">
               <CheckCircle2 className="size-9" />
             </span>
-            <h1 className="text-2xl font-extrabold">Vente enregistrée !</h1>
+            <h1 className="text-2xl font-semibold">Vente enregistrée !</h1>
             <p className="text-sm text-muted-foreground">Le stock a été mis à jour automatiquement.</p>
           </div>
         ) : (
@@ -79,11 +79,11 @@ export default async function VentePage({
             )}
           </div>
           {sale.profit !== null && sale.status === "completed" && (
-            <div className="flex items-center justify-between rounded-2xl bg-accent px-4 py-3 text-accent-foreground">
+            <div className="flex items-center justify-between rounded-xl bg-accent px-4 py-3 text-accent-foreground">
               <span className="flex items-center gap-2 text-sm font-medium">
                 <TrendingUp className="size-4" /> Bénéfice
               </span>
-              <span className="num font-extrabold">{formatFCFA(sale.profit)}</span>
+              <span className="num font-semibold">{formatFCFA(sale.profit)}</span>
             </div>
           )}
           {sale.customer && (

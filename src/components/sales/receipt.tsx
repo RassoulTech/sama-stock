@@ -9,15 +9,15 @@ export function Receipt({ sale, business }: { sale: SaleDetail; business: Busine
   const method = sale.paymentMethod ? (PAYMENT_METHODS[sale.paymentMethod as PaymentMethod] ?? sale.paymentMethod) : null;
 
   return (
-    <article className="relative mx-auto w-full max-w-md rounded-3xl bg-card p-6 shadow-[0_8px_30px_-12px_rgba(14,26,22,0.25)] ring-1 ring-foreground/[0.07] print:max-w-none print:shadow-none print:ring-0">
+    <article className="relative mx-auto w-full max-w-md rounded-2xl bg-card p-6 shadow-[0_8px_30px_-12px_rgba(14,26,22,0.25)] border print:max-w-none print:shadow-none print:ring-0">
       <header className="flex flex-col items-center gap-2 border-b border-dashed pb-5 text-center">
         {business.logo ? (
           // eslint-disable-next-line @next/next/no-img-element -- logo en data URL
-          <img src={business.logo} alt="" className="size-14 rounded-2xl object-cover" />
+          <img src={business.logo} alt="" className="size-14 rounded-xl object-cover" />
         ) : (
           <LogoMark className="size-12" />
         )}
-        <h2 className="text-lg font-extrabold">{business.name}</h2>
+        <h2 className="text-lg font-semibold">{business.name}</h2>
         <p className="text-xs text-muted-foreground">
           {[business.address, business.city].filter(Boolean).join(", ")}
           {business.phone && <> · {formatPhone(business.phone)}</>}
@@ -77,8 +77,8 @@ export function Receipt({ sale, business }: { sale: SaleDetail; business: Busine
           </div>
         )}
         <div className="flex items-baseline justify-between pt-1">
-          <dt className="font-bold">Total</dt>
-          <dd className="num text-2xl font-extrabold">{formatFCFA(sale.total)}</dd>
+          <dt className="font-semibold">Total</dt>
+          <dd className="num text-2xl font-semibold">{formatFCFA(sale.total)}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-muted-foreground">Payé{method && sale.amountPaid > 0 ? ` (${method})` : ""}</dt>

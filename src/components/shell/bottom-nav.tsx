@@ -31,7 +31,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
                   className="-mt-5 flex flex-col items-center gap-1 text-[11px] font-semibold"
                   aria-current={active ? "page" : undefined}
                 >
-                  <span className="grid size-14 place-items-center rounded-2xl bg-saffron text-saffron-foreground shadow-lg shadow-saffron/30 ring-4 ring-background">
+                  <span className="grid size-14 place-items-center rounded-xl bg-saffron text-saffron-foreground shadow-lg shadow-saffron/30 ring-4 ring-background">
                     <NavIconView icon={item.icon} className="size-6" />
                   </span>
                   {item.short ?? item.label}
@@ -80,7 +80,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
                     href={item.href}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex flex-col items-center gap-2 rounded-2xl border bg-card p-3 text-center text-xs font-medium",
+                      "flex flex-col items-center gap-2 rounded-xl border bg-card p-3 text-center text-xs font-medium",
                       isActive(pathname, item.href) && "border-primary bg-accent text-accent-foreground",
                     )}
                   >

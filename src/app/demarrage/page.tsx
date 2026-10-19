@@ -23,7 +23,7 @@ export default async function DemarragePage() {
       </header>
       <main className="mx-auto max-w-xl px-4 pb-16">
         {ctx.isSuperAdmin && (
-          <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl border bg-card p-4">
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border bg-card p-4">
             <span className="flex items-center gap-2 text-sm font-medium">
               <ShieldCheck className="size-5 text-primary" /> Vous êtes super-administrateur.
             </span>
@@ -32,7 +32,7 @@ export default async function DemarragePage() {
             </Button>
           </div>
         )}
-        <div className="rounded-3xl border bg-card p-6 shadow-sm sm:p-8">
+        <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
           <OnboardingForm userName={ctx.user.name} />
         </div>
       </main>

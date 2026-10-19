@@ -75,23 +75,23 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
             <ProductThumb
               name={product.name}
               imageUrl={product.imageUrl}
-              className="aspect-[4/3] size-auto w-full rounded-2xl text-4xl"
+              className="aspect-[4/3] size-auto w-full rounded-xl text-4xl"
             />
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <dt className="text-muted-foreground">Prix de vente</dt>
-                <dd className="num text-lg font-bold">{formatFCFA(product.salePrice)}</dd>
+                <dd className="num text-lg font-semibold">{formatFCFA(product.salePrice)}</dd>
               </div>
               {product.costPrice !== null && (
                 <div>
                   <dt className="text-muted-foreground">Prix d&apos;achat moyen</dt>
-                  <dd className="num text-lg font-bold">{formatFCFA(product.costPrice)}</dd>
+                  <dd className="num text-lg font-semibold">{formatFCFA(product.costPrice)}</dd>
                 </div>
               )}
               {margin !== null && (
                 <div className="col-span-2 rounded-xl bg-muted/60 p-3">
                   <dt className="text-muted-foreground">Marge par {unitLabel(product.unit)}</dt>
-                  <dd className={`num text-lg font-bold ${margin < 0 ? "text-destructive" : "text-success"}`}>
+                  <dd className={`num text-lg font-semibold ${margin < 0 ? "text-destructive" : "text-success"}`}>
                     {formatFCFA(margin)}
                     {product.salePrice > 0 && (
                       <span className="ml-1 text-sm font-medium">({Math.round((margin / product.salePrice) * 100)} %)</span>
@@ -119,7 +119,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Disponible · {current.locationName}</p>
-                    <p className="num mt-1 text-4xl font-extrabold tracking-tight">
+                    <p className="num mt-1 text-4xl font-semibold tracking-tight">
                       {formatQty(current.available, product.unit)}
                     </p>
                   </div>
@@ -128,16 +128,16 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
                 <div className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                   <div className="rounded-xl bg-muted/60 p-3">
                     <p className="text-muted-foreground">En rayon</p>
-                    <p className="num font-bold">{formatQty(current.physical, product.unit)}</p>
+                    <p className="num font-semibold">{formatQty(current.physical, product.unit)}</p>
                   </div>
                   <div className="rounded-xl bg-muted/60 p-3">
                     <p className="text-muted-foreground">Réservé (commandes)</p>
-                    <p className="num font-bold">{formatQty(current.reserved, product.unit)}</p>
+                    <p className="num font-semibold">{formatQty(current.reserved, product.unit)}</p>
                   </div>
                   {product.costPrice !== null && (
                     <div className="rounded-xl bg-muted/60 p-3">
                       <p className="text-muted-foreground">Valeur du stock</p>
-                      <p className="num font-bold">{formatFCFA(Math.max(0, current.physical) * product.costPrice)}</p>
+                      <p className="num font-semibold">{formatFCFA(Math.max(0, current.physical) * product.costPrice)}</p>
                     </div>
                   )}
                 </div>
@@ -163,7 +163,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base font-bold">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <History className="size-4 text-primary" /> Derniers mouvements
               </CardTitle>
             </CardHeader>

@@ -17,7 +17,7 @@ export default async function ParametresPage() {
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         <Card>
           <CardHeader>
-            <CardTitle className="font-bold">Mon commerce</CardTitle>
+            <CardTitle className="font-semibold">Mon commerce</CardTitle>
           </CardHeader>
           <CardContent>
             <BusinessForm business={ctx.business} disabled={disabled} />
@@ -26,7 +26,7 @@ export default async function ParametresPage() {
         <div className="space-y-5">
           <Card>
             <CardHeader>
-              <CardTitle className="font-bold">Modules</CardTitle>
+              <CardTitle className="font-semibold">Modules</CardTitle>
               <p className="text-sm text-muted-foreground">Activez seulement ce dont vous avez besoin.</p>
             </CardHeader>
             <CardContent>
@@ -35,7 +35,7 @@ export default async function ParametresPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="font-bold">Boutiques et dépôts</CardTitle>
+              <CardTitle className="font-semibold">Boutiques et dépôts</CardTitle>
             </CardHeader>
             <CardContent>
               <LocationsManager

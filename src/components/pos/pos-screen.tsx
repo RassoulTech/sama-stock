@@ -96,7 +96,7 @@ export function PosScreen({
   const cartPanel = (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between pb-3">
-        <h2 className="flex items-center gap-2 text-lg font-bold">
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
           <ShoppingCart className="size-5 text-primary" /> Panier
           {itemCount > 0 && <span className="num rounded-full bg-primary px-2 text-xs text-primary-foreground">{itemCount}</span>}
         </h2>
@@ -107,13 +107,13 @@ export function PosScreen({
         )}
       </div>
       {itemCount === 0 ? (
-        <div className="grid flex-1 place-items-center rounded-2xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+        <div className="grid flex-1 place-items-center rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
           Touchez un produit pour l&apos;ajouter au panier.
         </div>
       ) : (
         <ul className="-mx-1 flex-1 space-y-2 overflow-y-auto px-1">
           {lines.map(({ product, qty }) => (
-            <li key={product.id} className="rounded-2xl border bg-card p-3">
+            <li key={product.id} className="rounded-xl border bg-card p-3">
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{product.name}</p>
@@ -146,7 +146,7 @@ export function PosScreen({
                     inputMode={unitAllowsDecimals(product.unit) ? "decimal" : "numeric"}
                     onChange={(e) => setQty(product.id, Number(e.target.value))}
                     aria-label={`Quantité de ${product.name}`}
-                    className="num w-14 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                    className="num w-14 bg-transparent text-center font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
@@ -158,7 +158,7 @@ export function PosScreen({
                     <Plus className="size-4" />
                   </button>
                 </div>
-                <span className="num font-bold">{formatFCFA(Math.round(qty * product.salePrice))}</span>
+                <span className="num font-semibold">{formatFCFA(Math.round(qty * product.salePrice))}</span>
               </div>
             </li>
           ))}
@@ -213,7 +213,7 @@ export function PosScreen({
           )}
           <div className="flex items-baseline justify-between">
             <dt className="font-semibold">Total</dt>
-            <dd className="num text-2xl font-extrabold">{formatFCFA(total)}</dd>
+            <dd className="num text-2xl font-semibold">{formatFCFA(total)}</dd>
           </div>
         </dl>
         <Button
@@ -245,8 +245,8 @@ export function PosScreen({
                   type="button"
                   onClick={() => setCategory(c.id)}
                   className={cn(
-                    "h-9 shrink-0 rounded-full border bg-card px-3.5 text-sm font-medium text-muted-foreground",
-                    category === c.id && "border-primary bg-primary text-primary-foreground",
+                    "h-8 shrink-0 rounded-full border bg-card px-3 text-[0.8125rem] font-medium text-muted-foreground",
+                    category === c.id && "border-primary/30 bg-accent text-accent-foreground",
                   )}
                 >
                   {c.name}
@@ -269,24 +269,24 @@ export function PosScreen({
                       disabled={out || maxed}
                       onClick={() => add(p.id)}
                       className={cn(
-                        "group relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-card text-left ring-1 ring-foreground/[0.07] transition-all hover:ring-primary/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
-                        inCart > 0 && "ring-2 ring-primary",
+                        "surface group relative flex h-full w-full flex-col gap-3 p-3 text-left transition-[border-color,box-shadow] hover:border-primary/40 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50",
+                        inCart > 0 && "border-primary ring-1 ring-primary",
                       )}
                     >
-                      <ProductThumb
-                        name={p.name}
-                        imageUrl={p.imageUrl}
-                        className="aspect-[16/10] size-auto w-full rounded-none text-2xl"
-                      />
+                      {p.imageUrl ? (
+                        <ProductThumb name={p.name} imageUrl={p.imageUrl} className="aspect-[4/3] size-auto w-full" />
+                      ) : (
+                        <ProductThumb name={p.name} imageUrl={null} />
+                      )}
                       {inCart > 0 && (
-                        <span className="num absolute top-2 right-2 grid min-w-7 place-items-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground shadow">
+                        <span className="num absolute top-2.5 right-2.5 grid h-6 min-w-6 place-items-center rounded-md bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
                           {formatQty(inCart)}
                         </span>
                       )}
-                      <span className="flex flex-1 flex-col gap-1 p-3">
-                        <span className="line-clamp-2 text-sm leading-snug font-semibold">{p.name}</span>
-                        <span className="num mt-auto font-extrabold text-primary">{formatFCFA(p.salePrice)}</span>
-                        <span className={cn("num text-xs", out ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                      <span className="flex flex-1 flex-col gap-0.5">
+                        <span className="line-clamp-2 text-[0.8125rem] leading-snug font-medium">{p.name}</span>
+                        <span className="num mt-auto pt-1.5 text-[0.9375rem] font-semibold">{formatFCFA(p.salePrice)}</span>
+                        <span className={cn("num text-xs", out ? "font-medium text-destructive" : "text-muted-foreground")}>
                           {out ? "Rupture" : `${formatQty(p.available, p.unit)} dispo`}
                         </span>
                       </span>
@@ -298,7 +298,7 @@ export function PosScreen({
           )}
         </section>
 
-        <aside className="sticky top-24 hidden h-[calc(100dvh-8rem)] rounded-3xl bg-card p-5 ring-1 ring-foreground/[0.07] lg:block">
+        <aside className="sticky top-24 hidden h-[calc(100dvh-8rem)] rounded-2xl bg-card p-5 border lg:block">
           {cartPanel}
         </aside>
       </div>
@@ -309,12 +309,12 @@ export function PosScreen({
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="flex h-14 w-full items-center justify-between rounded-2xl bg-primary px-5 text-primary-foreground shadow-xl shadow-primary/30"
+            className="flex h-14 w-full items-center justify-between rounded-xl bg-primary px-5 text-primary-foreground shadow-xl shadow-primary/30"
           >
             <span className="flex items-center gap-2 font-semibold">
               <ShoppingCart className="size-5" /> Panier · {itemCount} article{itemCount > 1 ? "s" : ""}
             </span>
-            <span className="num text-lg font-extrabold">{formatFCFA(total)}</span>
+            <span className="num text-lg font-semibold">{formatFCFA(total)}</span>
           </button>
         </div>
       )}

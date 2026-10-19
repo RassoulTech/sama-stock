@@ -7,6 +7,7 @@ import { buildNav } from "@/components/shell/nav";
 import { PlanBanner } from "@/components/shell/plan-banner";
 import { Sidebar } from "@/components/shell/sidebar";
 import { UserMenu } from "@/components/shell/user-menu";
+import { initials } from "@/lib/format";
 import { ROLE_LABELS, type Permission } from "@/lib/domain/permissions";
 import { requireContext } from "@/server/context";
 
@@ -56,28 +57,39 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <AppProvider value={info}>
-      <div className="min-h-dvh lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
+      <div className="min-h-dvh lg:grid lg:grid-cols-[244px_minmax(0,1fr)]">
         <Sidebar
           items={nav}
           footer={
-            <div className="rounded-xl bg-muted/70 px-3 py-2.5">
-              <p className="truncate text-sm font-semibold">{ctx.business.name}</p>
-              <p className="text-xs text-muted-foreground">
-                Formule {ctx.plan.label} · {ROLE_LABELS[ctx.role]}
-              </p>
+            <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+                {initials(ctx.business.name)}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[0.8125rem] font-medium">{ctx.business.name}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {ctx.plan.label} · {ROLE_LABELS[ctx.role]}
+                </span>
+              </span>
             </div>
           }
         />
         <div className="flex min-w-0 flex-col">
-          <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75 print:hidden">
-            <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 print:hidden">
+            <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
               <Link href="/tableau-de-bord" className="flex min-w-0 items-center gap-2.5 lg:hidden" aria-label="Accueil">
-                <LogoMark />
-                <span className={ctx.locations.length > 1 ? "sr-only" : "truncate font-bold"}>{ctx.business.name}</span>
+                <LogoMark className="size-7" />
+                <span className={ctx.locations.length > 1 ? "sr-only" : "truncate text-[0.9375rem] font-semibold"}>
+                  {ctx.business.name}
+                </span>
               </Link>
-              <p className="hidden truncate text-sm text-muted-foreground lg:block">
-                <span className="font-semibold text-foreground">{ctx.business.name}</span>
-                {ctx.locations.length < 2 && <> · {ctx.location.name}</>}
+              <p className="hidden min-w-0 items-center gap-2 truncate text-[0.8125rem] text-muted-foreground lg:flex">
+                <span className="font-medium text-foreground">{ctx.business.name}</span>
+                {ctx.locations.length < 2 && (
+                  <>
+                    <span className="text-border">/</span> {ctx.location.name}
+                  </>
+                )}
               </p>
               <div className="ml-auto flex items-center gap-2">
                 <LocationSwitcher locations={locationList} currentId={ctx.location.id} />
@@ -94,7 +106,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="print:hidden">
             <PlanBanner plan={ctx.plan} canManageBilling={ctx.can("billing.manage")} />
           </div>
-          <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12 print:p-0">
+          <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:px-6 lg:px-8 lg:pt-7 lg:pb-12 print:p-0">
             {children}
           </main>
         </div>

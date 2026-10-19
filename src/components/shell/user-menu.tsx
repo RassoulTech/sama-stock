@@ -41,7 +41,7 @@ export function UserMenu({
         aria-label="Mon compte"
       >
         <Avatar className="size-10 ring-2 ring-primary/15">
-          <AvatarFallback className="bg-primary text-sm font-bold text-primary-foreground">
+          <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
             {initials(user.name) || "?"}
           </AvatarFallback>
         </Avatar>

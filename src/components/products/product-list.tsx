@@ -90,7 +90,7 @@ export function ProductList({
               <li key={p.id}>
                 <Link
                   href={`/produits/${p.id}`}
-                  className="flex items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-foreground/[0.07] active:bg-muted"
+                  className="flex items-center gap-3 rounded-xl bg-card p-3 border active:bg-muted"
                 >
                   <ProductThumb name={p.name} imageUrl={p.imageUrl} />
                   <div className="min-w-0 flex-1">
@@ -109,7 +109,7 @@ export function ProductList({
           </ul>
 
           {/* Ordinateur : tableau */}
-          <div className="hidden overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/[0.07] md:block">
+          <div className="hidden overflow-hidden rounded-xl bg-card border md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

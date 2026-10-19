@@ -53,7 +53,7 @@ export function InventoryForm({ products, showCost }: { products: InventoryProdu
     return (
       <Card className="mx-auto max-w-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-bold">
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold">
             <ClipboardCheck className="size-5 text-primary" /> Inventaire terminé
           </CardTitle>
         </CardHeader>
@@ -63,13 +63,13 @@ export function InventoryForm({ products, showCost }: { products: InventoryProdu
             {result.lines.length === 0 ? "aucun écart, bravo !" : `${result.lines.length} écart(s) corrigé(s)`}
           </p>
           {showCost && lossValue < 0 && (
-            <div className="rounded-2xl bg-destructive/10 p-4 text-destructive">
+            <div className="rounded-xl bg-destructive/10 p-4 text-destructive">
               <p className="text-sm font-medium">Valeur des produits manquants</p>
-              <p className="num text-2xl font-extrabold">{formatFCFA(-lossValue)}</p>
+              <p className="num text-2xl font-semibold">{formatFCFA(-lossValue)}</p>
             </div>
           )}
           {result.lines.length > 0 && (
-            <ul className="divide-y rounded-2xl border">
+            <ul className="divide-y rounded-xl border">
               {result.lines.map((l) => (
                 <li key={l.productId} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                   <div className="min-w-0">
@@ -98,7 +98,7 @@ export function InventoryForm({ products, showCost }: { products: InventoryProdu
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-accent/60 p-4 text-sm text-accent-foreground">
+      <div className="rounded-xl bg-accent/60 p-4 text-sm text-accent-foreground">
         Comptez vos produits et saisissez la quantité réelle. Laissez vide ce que vous n&apos;avez pas compté. Le
         bouton <Check className="inline size-3.5" /> indique « quantité conforme ».
       </div>
@@ -111,7 +111,7 @@ export function InventoryForm({ products, showCost }: { products: InventoryProdu
             <li
               key={p.id}
               className={cn(
-                "flex flex-wrap items-center gap-3 rounded-2xl bg-card p-3 ring-1 ring-foreground/[0.07]",
+                "flex flex-wrap items-center gap-3 rounded-xl bg-card p-3 border",
                 diff !== null && diff !== 0 && "ring-saffron/60",
               )}
             >

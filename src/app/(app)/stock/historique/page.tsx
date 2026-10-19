@@ -30,8 +30,8 @@ export default async function HistoriquePage({
             key={key}
             href={key === "all" ? "/stock/historique" : `/stock/historique?type=${key}`}
             className={cn(
-              "inline-flex h-9 shrink-0 items-center rounded-full border bg-card px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground",
-              group === key && "border-primary bg-primary text-primary-foreground hover:text-primary-foreground",
+              "inline-flex h-8 shrink-0 items-center rounded-full border bg-card px-3 text-[0.8125rem] font-medium text-muted-foreground hover:text-foreground",
+              group === key && "border-primary/30 bg-accent text-accent-foreground hover:text-accent-foreground",
             )}
           >
             {g.label}
@@ -42,7 +42,7 @@ export default async function HistoriquePage({
       {movements.length === 0 ? (
         <EmptyState icon={History} title="Aucun mouvement" description="Les entrées, ventes et pertes apparaîtront ici." />
       ) : (
-        <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/[0.07]">
+        <ul className="divide-y overflow-hidden rounded-xl bg-card border">
           {movements.map((m) => (
             <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <div className="min-w-0">

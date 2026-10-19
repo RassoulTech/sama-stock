@@ -24,19 +24,20 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <Logo inverted />
         </Link>
         <div className="relative mt-auto max-w-md">
-          <p className="text-sm font-semibold tracking-wide text-saffron uppercase">En boutique comme en ligne</p>
-          <h1 className="mt-3 text-4xl leading-tight font-extrabold">
-            La gestion de stock des commerçants sénégalais.
+          <p className="text-xs font-medium tracking-[0.14em] text-saffron uppercase">En boutique comme en ligne</p>
+          <h1 className="mt-4 text-[2.5rem] leading-[1.08] font-semibold tracking-[-0.035em]">
+            La gestion de stock des commerçants{" "}
+            <span className="font-display font-normal tracking-normal text-saffron italic">sénégalais.</span>
           </h1>
           <ul className="mt-10 space-y-5">
             {POINTS.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="flex gap-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/10 ring-1 ring-white/15">
-                  <Icon className="size-5" />
+              <li key={title} className="flex gap-3.5">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/10 ring-1 ring-white/15 ring-inset">
+                  <Icon className="size-4" />
                 </span>
                 <span>
-                  <span className="block font-semibold">{title}</span>
-                  <span className="text-sm text-white/75">{text}</span>
+                  <span className="block text-[0.9375rem] font-medium">{title}</span>
+                  <span className="text-sm text-white/70">{text}</span>
                 </span>
               </li>
             ))}

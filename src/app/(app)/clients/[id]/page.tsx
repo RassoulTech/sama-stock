@@ -65,7 +65,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">{debt > 0 ? "Reste à payer" : "Situation"}</p>
-                <p className={`num mt-1 text-3xl font-extrabold ${debt > 0 ? "text-destructive" : "text-success"}`}>
+                <p className={`num mt-1 text-3xl font-semibold ${debt > 0 ? "text-destructive" : "text-success"}`}>
                   {debt > 0 ? formatFCFA(debt) : "À jour"}
                 </p>
               </div>
@@ -105,7 +105,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="font-bold">Historique</CardTitle>
+            <CardTitle className="font-semibold">Historique</CardTitle>
           </CardHeader>
           <CardContent>
             {timeline.length === 0 ? (

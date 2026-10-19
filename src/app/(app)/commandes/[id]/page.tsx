@@ -69,7 +69,7 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
                   <span className={cn("h-1 flex-1 rounded-full", i === 0 ? "bg-transparent" : i <= stepIndex ? "bg-primary" : "bg-border")} />
                   <span
                     className={cn(
-                      "grid size-9 shrink-0 place-items-center rounded-full border-2 text-sm font-bold",
+                      "grid size-9 shrink-0 place-items-center rounded-full border-2 text-sm font-semibold",
                       done && "border-primary bg-primary text-primary-foreground",
                       current && "border-primary bg-accent text-primary",
                       !done && !current && "border-border bg-card text-muted-foreground",
@@ -92,7 +92,7 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
         <div className="space-y-5 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="font-bold">Produits</CardTitle>
+              <CardTitle className="font-semibold">Produits</CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="divide-y">
@@ -124,8 +124,8 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
                   <dd className="num">{formatFCFA(order.deliveryFee)}</dd>
                 </div>
                 <div className="flex items-baseline justify-between">
-                  <dt className="font-bold">Total</dt>
-                  <dd className="num text-xl font-extrabold">{formatFCFA(order.total)}</dd>
+                  <dt className="font-semibold">Total</dt>
+                  <dd className="num text-xl font-semibold">{formatFCFA(order.total)}</dd>
                 </div>
                 <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">
@@ -145,7 +145,7 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
                   <span className="flex items-center gap-2">
                     <TrendingUp className="size-4" /> Bénéfice
                   </span>
-                  <span className="num font-bold">{formatFCFA(order.profit)}</span>
+                  <span className="num font-semibold">{formatFCFA(order.profit)}</span>
                 </p>
               )}
             </CardContent>
@@ -163,7 +163,7 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
           {writable && !closed && status !== "delivered" && (
             <Card>
               <CardHeader>
-                <CardTitle className="font-bold">Étape suivante</CardTitle>
+                <CardTitle className="font-semibold">Étape suivante</CardTitle>
               </CardHeader>
               <CardContent>
                 <OrderStatusButtons id={order.id} next={nextStatuses(status)} />
@@ -172,7 +172,7 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
           )}
           <Card>
             <CardHeader>
-              <CardTitle className="font-bold">Client et livraison</CardTitle>
+              <CardTitle className="font-semibold">Client et livraison</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {order.customer ? (

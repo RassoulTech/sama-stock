@@ -87,8 +87,8 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
                     onClick={() => setChannel(c)}
                     aria-pressed={channel === c}
                     className={cn(
-                      "h-10 rounded-full border bg-card px-4 text-sm font-medium text-muted-foreground",
-                      channel === c && "border-primary bg-primary text-primary-foreground",
+                      "h-9 rounded-full border bg-card px-3.5 text-[0.8125rem] font-medium text-muted-foreground",
+                      channel === c && "border-primary/30 bg-accent text-accent-foreground",
                     )}
                   >
                     {CHANNELS[c]}
@@ -101,16 +101,16 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
 
         <Card>
           <CardContent className="space-y-4">
-            <h2 className="font-bold">Produits commandés</h2>
+            <h2 className="font-semibold">Produits commandés</h2>
             {lines.length === 0 && (
-              <div className="flex flex-col items-center gap-2 rounded-2xl bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">
+              <div className="flex flex-col items-center gap-2 rounded-xl bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">
                 <ShoppingBag className="size-8 text-primary" />
                 Les produits ajoutés seront réservés pour ce client.
               </div>
             )}
             <ul className="space-y-3">
               {lines.map((l, i) => (
-                <li key={l.product.id} className="flex flex-wrap items-center gap-3 rounded-2xl border p-3">
+                <li key={l.product.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3">
                   <ProductThumb name={l.product.name} imageUrl={l.product.imageUrl} className="size-10" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{l.product.name}</p>
@@ -200,8 +200,8 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
                 <dd className="num">{formatFCFA(Number(deliveryFee) || 0)}</dd>
               </div>
               <div className="flex items-baseline justify-between pt-1">
-                <dt className="font-bold">Total</dt>
-                <dd className="num text-2xl font-extrabold">{formatFCFA(total)}</dd>
+                <dt className="font-semibold">Total</dt>
+                <dd className="num text-2xl font-semibold">{formatFCFA(total)}</dd>
               </div>
             </dl>
           </CardContent>

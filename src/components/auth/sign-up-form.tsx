@@ -49,7 +49,7 @@ export function SignUpForm({
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
-        <h1 className="text-2xl font-extrabold">Créez votre compte</h1>
+        <h1 className="text-2xl font-semibold">Créez votre compte</h1>
         <p className="text-sm text-muted-foreground">14 jours d&apos;essai gratuit, sans engagement.</p>
       </div>
 

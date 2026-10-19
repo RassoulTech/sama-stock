@@ -45,7 +45,7 @@ export function CustomerList({ customers }: { customers: CustomerRow[] }) {
           description={sort === "debt" && !q ? "Tous vos clients sont à jour. Bravo !" : undefined}
         />
       ) : (
-        <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/[0.07]">
+        <ul className="divide-y overflow-hidden rounded-xl bg-card border">
           {rows.map((c) => (
             <li key={c.id}>
               <Link href={`/clients/${c.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
@@ -61,7 +61,7 @@ export function CustomerList({ customers }: { customers: CustomerRow[] }) {
                 </div>
                 {c.debt > 0 ? (
                   <div className="text-right">
-                    <p className="num font-bold text-destructive">{formatFCFA(c.debt)}</p>
+                    <p className="num font-semibold text-destructive">{formatFCFA(c.debt)}</p>
                     <p className="text-xs text-muted-foreground">à payer</p>
                   </div>
                 ) : (

@@ -51,7 +51,7 @@ export function BusinessTable({ rows }: { rows: AdminRow[] }) {
       {filtered.length === 0 ? (
         <EmptyState icon={Store} title="Aucun commerce" />
       ) : (
-        <ul className="divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/[0.07]">
+        <ul className="divide-y overflow-hidden rounded-xl bg-card border">
           {filtered.map((r) => (
             <li key={r.id}>
               <Link href={`/admin/commerces/${r.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">

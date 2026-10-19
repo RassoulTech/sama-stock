@@ -28,30 +28,26 @@ export function StatCard({
 }) {
   const body = (
     <>
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", TONES[tone])}>
-          <Icon className="size-5" />
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[0.8125rem] font-medium text-muted-foreground">{label}</p>
+        <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", TONES[tone])}>
+          <Icon className="size-4" />
         </span>
       </div>
-      <p className="num mt-2 text-xl leading-tight font-extrabold tracking-tight sm:text-2xl xl:text-[1.65rem]">
+      <p className="num mt-3 text-[1.375rem] leading-none font-semibold tracking-[-0.03em] sm:text-[1.625rem]">
         {typeof value === "string" && value.endsWith(" FCFA") ? (
           <>
             {value.slice(0, -5)}
-            <span className="ml-1 text-xs font-bold text-muted-foreground sm:text-sm">FCFA</span>
+            <span className="ml-1 text-xs font-medium tracking-normal text-muted-foreground sm:text-[0.8125rem]">FCFA</span>
           </>
         ) : (
           value
         )}
       </p>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
     </>
   );
-  const classes = cn(
-    "block rounded-2xl bg-card p-5 shadow-[0_1px_2px_rgba(14,26,22,0.04),0_4px_16px_-8px_rgba(14,26,22,0.08)] ring-1 ring-foreground/[0.07]",
-    href && "transition-colors hover:ring-primary/30",
-    className,
-  );
+  const classes = cn("surface block p-4 sm:p-5", href && "transition-colors hover:border-primary/40", className);
   return href ? (
     <Link href={href} className={classes}>
       {body}

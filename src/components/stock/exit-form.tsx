@@ -54,7 +54,7 @@ export function ExitForm({ products, initialProductId }: { products: ExitProduct
       <CardContent className="space-y-5">
         <FormField label="Produit">
           {product ? (
-            <div className="flex items-center gap-3 rounded-2xl border p-3">
+            <div className="flex items-center gap-3 rounded-xl border p-3">
               <ProductThumb name={product.name} imageUrl={product.imageUrl} className="size-10" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{product.name}</p>
@@ -74,7 +74,7 @@ export function ExitForm({ products, initialProductId }: { products: ExitProduct
           )}
         </FormField>
 
-        <div className="grid grid-cols-2 gap-2 rounded-2xl bg-muted p-1">
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
           {(
             [
               ["loss", "Perte", ShieldAlert, "Casse, vol, péremption…"],

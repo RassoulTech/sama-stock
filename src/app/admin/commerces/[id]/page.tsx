@@ -35,7 +35,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="font-bold">Actions</CardTitle>
+            <CardTitle className="font-semibold">Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <AdminActions businessId={b.id} plan={b.state.plan} suspended={b.state.status === "suspended"} />
@@ -43,7 +43,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="font-bold">Informations</CardTitle>
+            <CardTitle className="font-semibold">Informations</CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="space-y-2 text-sm">
@@ -67,7 +67,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="font-bold">Membres ({members.length})</CardTitle>
+            <CardTitle className="font-semibold">Membres ({members.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2 text-sm">
@@ -84,7 +84,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="font-bold">Historique d&apos;abonnement</CardTitle>
+            <CardTitle className="font-semibold">Historique d&apos;abonnement</CardTitle>
           </CardHeader>
           <CardContent>
             {history.length === 0 ? (

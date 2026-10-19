@@ -118,7 +118,7 @@ export default async function DashboardPage() {
         <Card className="mb-6 overflow-hidden bg-gradient-to-br from-accent to-card">
           <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex-1">
-              <p className="font-bold">Pour bien démarrer</p>
+              <p className="font-semibold">Pour bien démarrer</p>
               <p className="text-sm text-muted-foreground">Trois étapes pour profiter pleinement de Sama Stock.</p>
             </div>
             <ol className="grid flex-[2] gap-2 sm:grid-cols-3">
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                   <Link
                     href={c.href}
                     className={cn(
-                      "flex h-full items-center gap-2 rounded-xl bg-card px-3 py-2.5 text-sm font-medium ring-1 ring-foreground/[0.07] hover:ring-primary/40",
+                      "flex h-full items-center gap-2 rounded-xl bg-card px-3 py-2.5 text-sm font-medium border hover:ring-primary/40",
                       c.done && "text-muted-foreground line-through",
                     )}
                   >
@@ -198,7 +198,7 @@ export default async function DashboardPage() {
         {series && (
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="font-bold">Ventes des 7 derniers jours</CardTitle>
+              <CardTitle className="font-semibold">Ventes des 7 derniers jours</CardTitle>
               <p className="text-sm text-muted-foreground">Chiffre d&apos;affaires par jour, en FCFA</p>
             </CardHeader>
             <CardContent>
@@ -209,7 +209,7 @@ export default async function DashboardPage() {
 
         <Card className={cn(!series && "lg:col-span-2")}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-bold">
+            <CardTitle className="flex items-center gap-2 font-semibold">
               <AlertTriangle className="size-4 text-warning dark:text-saffron" /> Alertes de stock
             </CardTitle>
             {alerts.length > 0 && (
@@ -255,7 +255,7 @@ export default async function DashboardPage() {
         {orders && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-bold">
+              <CardTitle className="flex items-center gap-2 font-semibold">
                 <Bike className="size-4 text-primary" /> Commandes en cours
                 <span className="num rounded-full bg-muted px-2 text-xs">{orders.length}</span>
               </CardTitle>
@@ -279,7 +279,7 @@ export default async function DashboardPage() {
                           </span>
                           <SaleStatus kind="order" status={o.status} />
                         </span>
-                        <span className="num text-sm font-bold">{formatFCFA(o.total)}</span>
+                        <span className="num text-sm font-semibold">{formatFCFA(o.total)}</span>
                       </Link>
                     </li>
                   ))}
@@ -292,7 +292,7 @@ export default async function DashboardPage() {
         {recent && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-bold">
+              <CardTitle className="flex items-center gap-2 font-semibold">
                 <ShoppingCart className="size-4 text-primary" /> {seller ? "Mes dernières ventes" : "Dernières ventes"}
               </CardTitle>
               <CardAction>
@@ -314,7 +314,7 @@ export default async function DashboardPage() {
                           <span className="text-xs text-muted-foreground">{formatDateTime(s.createdAt)}</span>
                         </span>
                         <span className="flex flex-col items-end gap-0.5">
-                          <span className="num text-sm font-bold">{formatFCFA(s.total)}</span>
+                          <span className="num text-sm font-semibold">{formatFCFA(s.total)}</span>
                           {s.amountPaid < s.total && <PaymentStatus total={s.total} amountPaid={s.amountPaid} />}
                         </span>
                       </Link>
@@ -334,7 +334,7 @@ export default async function DashboardPage() {
                 <Package className="size-5 opacity-80" />
               </div>
               <div>
-                <p className="num text-3xl font-extrabold tracking-tight">{formatFCFA(value)}</p>
+                <p className="num text-3xl font-semibold tracking-tight">{formatFCFA(value)}</p>
                 <p className="text-sm opacity-80">
                   {products.length} produit{products.length > 1 ? "s" : ""} · au prix d&apos;achat moyen
                 </p>
@@ -349,7 +349,7 @@ export default async function DashboardPage() {
         {ctx.role === "storekeeper" && writable && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-bold">Actions rapides</CardTitle>
+              <CardTitle className="font-semibold">Actions rapides</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
               <Button asChild variant="outline">

@@ -1,28 +1,32 @@
 import { STOCK_STATUS_LABELS, type StockStatus } from "@/lib/domain/stock";
 import { cn } from "@/lib/utils";
 
-const STYLES: Record<StockStatus, string> = {
-  ok: "bg-success/10 text-success",
-  low: "bg-saffron/15 text-warning dark:text-saffron",
-  out: "bg-destructive/10 text-destructive",
-};
+const TONES = {
+  green: "bg-success/8 text-success ring-success/20",
+  saffron: "bg-saffron/12 text-warning ring-saffron/30 dark:text-saffron",
+  red: "bg-destructive/8 text-destructive ring-destructive/20",
+  blue: "bg-sky-500/8 text-sky-700 ring-sky-600/20 dark:text-sky-300",
+  gray: "bg-muted text-muted-foreground ring-border",
+} as const;
 
-const DOTS: Record<StockStatus, string> = {
-  ok: "bg-success",
-  low: "bg-saffron",
-  out: "bg-destructive",
-};
+const DOTS = {
+  green: "bg-success",
+  saffron: "bg-saffron",
+  red: "bg-destructive",
+  blue: "bg-sky-500",
+  gray: "bg-muted-foreground",
+} as const;
+
+const STOCK_TONES: Record<StockStatus, keyof typeof TONES> = { ok: "green", low: "saffron", out: "red" };
+
+const base =
+  "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset";
 
 export function StockBadge({ status, className }: { status: StockStatus; className?: string }) {
+  const tone = STOCK_TONES[status];
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
-        STYLES[status],
-        className,
-      )}
-    >
-      <span className={cn("size-1.5 rounded-full", DOTS[status])} />
+    <span className={cn(base, TONES[tone], className)}>
+      <span className={cn("size-1.5 rounded-full", DOTS[tone])} />
       {STOCK_STATUS_LABELS[status]}
     </span>
   );
@@ -33,26 +37,9 @@ export function StatusPill({
   children,
   className,
 }: {
-  tone: "green" | "saffron" | "red" | "blue" | "gray";
+  tone: keyof typeof TONES;
   children: React.ReactNode;
   className?: string;
 }) {
-  const tones = {
-    green: "bg-success/10 text-success",
-    saffron: "bg-saffron/15 text-warning dark:text-saffron",
-    red: "bg-destructive/10 text-destructive",
-    blue: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
-    gray: "bg-muted text-muted-foreground",
-  } as const;
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
-        tones[tone],
-        className,
-      )}
-    >
-      {children}
-    </span>
-  );
+  return <span className={cn(base, TONES[tone], className)}>{children}</span>;
 }

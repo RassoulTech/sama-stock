@@ -43,7 +43,7 @@ export default async function FournisseursPage() {
             <li key={s.id}>
               <Link
                 href={`/fournisseurs/${s.id}`}
-                className="flex h-full items-start gap-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/[0.07] transition-colors hover:ring-primary/30"
+                className="flex h-full items-start gap-3 rounded-xl bg-card p-4 border transition-colors hover:ring-primary/30"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-primary">
                   <Truck className="size-5" />

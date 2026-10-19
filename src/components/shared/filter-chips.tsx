@@ -23,8 +23,8 @@ export function FilterChips<T extends string>({
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-            value === o.value && "border-primary bg-primary text-primary-foreground hover:text-primary-foreground",
+            "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3 text-[0.8125rem] font-medium text-muted-foreground transition-colors hover:text-foreground",
+            value === o.value && "border-primary/30 bg-accent text-accent-foreground hover:text-accent-foreground",
           )}
         >
           {o.label}
@@ -32,7 +32,7 @@ export function FilterChips<T extends string>({
             <span
               className={cn(
                 "num rounded-full bg-muted px-1.5 text-xs",
-                value === o.value && "bg-primary-foreground/20 text-primary-foreground",
+                value === o.value && "bg-primary/10 text-accent-foreground",
               )}
             >
               {o.count}

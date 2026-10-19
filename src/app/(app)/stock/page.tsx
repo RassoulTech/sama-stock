@@ -88,16 +88,16 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 rounded-2xl p-4 text-sm font-semibold ring-1 transition-colors ${
+      className={`flex items-center gap-3 rounded-xl border p-3.5 text-[0.8125rem] font-medium shadow-[0_1px_2px_rgb(11_19_16/0.04)] transition-colors ${
         primary
-          ? "bg-primary text-primary-foreground ring-primary hover:bg-primary/90"
-          : "bg-card ring-foreground/[0.07] hover:ring-primary/30"
+          ? "border-primary bg-primary text-primary-foreground hover:bg-[#095f44]"
+          : "bg-card hover:border-primary/40"
       }`}
     >
       <span
-        className={`grid size-10 place-items-center rounded-xl ${primary ? "bg-white/15" : "bg-accent text-primary"}`}
+        className={`grid size-8 place-items-center rounded-lg ${primary ? "bg-white/15" : "bg-accent text-primary"}`}
       >
-        <Icon className="size-5" />
+        <Icon className="size-4" />
       </span>
       {label}
     </Link>

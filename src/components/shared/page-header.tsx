@@ -26,8 +26,8 @@ export function PageHeader({
             <ArrowLeft className="size-4" /> Retour
           </Link>
         )}
-        <h1 className="text-2xl font-extrabold sm:text-[1.75rem]">{title}</h1>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+        <h1 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.025em] sm:text-2xl">{title}</h1>
+        {description && <p className="text-[0.875rem] text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>

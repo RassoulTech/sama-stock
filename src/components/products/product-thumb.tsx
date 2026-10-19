@@ -1,13 +1,13 @@
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+// Teintes très légères + bordure : lisibles, sans effet « bonbon »
 const PALETTE = [
-  "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
-  "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  "bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300",
-  "bg-lime-100 text-lime-800 dark:bg-lime-950 dark:text-lime-300",
-  "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300",
-  "bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300",
+  "bg-emerald-50 text-emerald-800 ring-emerald-900/10 dark:bg-emerald-950/60 dark:text-emerald-300",
+  "bg-stone-100 text-stone-700 ring-stone-900/10 dark:bg-stone-900 dark:text-stone-300",
+  "bg-amber-50 text-amber-800 ring-amber-900/10 dark:bg-amber-950/60 dark:text-amber-300",
+  "bg-teal-50 text-teal-800 ring-teal-900/10 dark:bg-teal-950/60 dark:text-teal-300",
+  "bg-slate-100 text-slate-700 ring-slate-900/10 dark:bg-slate-900 dark:text-slate-300",
 ];
 
 function colorFor(name: string) {
@@ -32,7 +32,7 @@ export function ProductThumb({
         src={imageUrl}
         alt=""
         loading="lazy"
-        className={cn("size-11 shrink-0 rounded-xl bg-muted object-cover", className)}
+        className={cn("size-10 shrink-0 rounded-lg bg-muted object-cover ring-1 ring-foreground/10", className)}
       />
     );
   }
@@ -40,7 +40,7 @@ export function ProductThumb({
     <span
       aria-hidden
       className={cn(
-        "grid size-11 shrink-0 place-items-center rounded-xl text-sm font-bold",
+        "grid size-10 shrink-0 place-items-center rounded-lg text-[0.8125rem] font-semibold tracking-tight ring-1 ring-inset",
         colorFor(name),
         className,
       )}

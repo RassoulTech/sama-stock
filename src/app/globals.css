@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-heading: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-serif), ui-serif, Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -55,21 +56,21 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Sama Stock — vert profond (confiance) + safran (action) */
+/* Sama Stock — neutres sobres, vert profond (confiance), safran réservé à l'action */
 :root {
-  --background: #f7f8f5;
-  --foreground: #0e1a16;
+  --background: #f8f9f8;
+  --foreground: #0b1310;
   --card: #ffffff;
-  --card-foreground: #0e1a16;
+  --card-foreground: #0b1310;
   --popover: #ffffff;
-  --popover-foreground: #0e1a16;
+  --popover-foreground: #0b1310;
   --primary: #0b6e4f;
   --primary-foreground: #ffffff;
-  --secondary: #edf2ee;
-  --secondary-foreground: #0e1a16;
-  --muted: #eff2ee;
-  --muted-foreground: #4f5f58;
-  --accent: #e4f1ea;
+  --secondary: #f1f3f1;
+  --secondary-foreground: #0b1310;
+  --muted: #f3f5f3;
+  --muted-foreground: #58635e;
+  --accent: #ecf4ef;
   --accent-foreground: #0a4d38;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
@@ -79,8 +80,8 @@
   --warning-foreground: #ffffff;
   --saffron: #f59e0b;
   --saffron-foreground: #1c1408;
-  --border: #e2e7e1;
-  --input: #d8dfd7;
+  --border: #e5e8e5;
+  --input: #d9ddd9;
   --ring: #0b6e4f;
   /* Graphiques : paire validée (daltonisme, contraste) sur fond blanc */
   --chart-1: #0a7a55;
@@ -88,31 +89,31 @@
   --chart-3: #3ba57f;
   --chart-4: #8aa89a;
   --chart-5: #b45309;
-  --radius: 0.75rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0e1a16;
+  --radius: 0.5rem;
+  --sidebar: #fbfcfb;
+  --sidebar-foreground: #0b1310;
   --sidebar-primary: #0b6e4f;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e4f1ea;
-  --sidebar-accent-foreground: #0a4d38;
-  --sidebar-border: #e2e7e1;
+  --sidebar-accent: #eef1ee;
+  --sidebar-accent-foreground: #0b1310;
+  --sidebar-border: #e5e8e5;
   --sidebar-ring: #0b6e4f;
 }
 
 .dark {
-  --background: #0b1210;
-  --foreground: #e6eee9;
-  --card: #121c18;
-  --card-foreground: #e6eee9;
-  --popover: #141f1b;
-  --popover-foreground: #e6eee9;
+  --background: #09100d;
+  --foreground: #e7eee9;
+  --card: #101714;
+  --card-foreground: #e7eee9;
+  --popover: #121a17;
+  --popover-foreground: #e7eee9;
   --primary: #27a87c;
   --primary-foreground: #04130d;
-  --secondary: #1a2621;
-  --secondary-foreground: #e6eee9;
-  --muted: #18231f;
-  --muted-foreground: #9db1a7;
-  --accent: #1b2b25;
+  --secondary: #18211d;
+  --secondary-foreground: #e7eee9;
+  --muted: #161f1b;
+  --muted-foreground: #95a59d;
+  --accent: #17251f;
   --accent-foreground: #cdeadc;
   --destructive: #f05252;
   --destructive-foreground: #1a0505;
@@ -122,22 +123,22 @@
   --warning-foreground: #1c1408;
   --saffron: #f5a524;
   --saffron-foreground: #1c1408;
-  --border: #22302a;
-  --input: #2b3b34;
+  --border: #1f2a25;
+  --input: #283530;
   --ring: #27a87c;
-  /* Graphiques : paire validée sur la surface sombre #121c18 */
+  /* Graphiques : paire validée sur la surface sombre #101714 */
   --chart-1: #23a275;
   --chart-2: #cc7a0e;
   --chart-3: #6fd1a8;
   --chart-4: #5f7a6d;
   --chart-5: #e07a2e;
-  --sidebar: #0f1714;
-  --sidebar-foreground: #e6eee9;
+  --sidebar: #0c1310;
+  --sidebar-foreground: #e7eee9;
   --sidebar-primary: #27a87c;
   --sidebar-primary-foreground: #04130d;
-  --sidebar-accent: #1b2b25;
-  --sidebar-accent-foreground: #cdeadc;
-  --sidebar-border: #1e2b26;
+  --sidebar-accent: #17211d;
+  --sidebar-accent-foreground: #e7eee9;
+  --sidebar-border: #1c2622;
   --sidebar-ring: #27a87c;
 }
 
@@ -151,7 +152,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "cv11", "ss01";
+    /* Inter : « a » à un étage, chiffres et ponctuation plus lisibles */
+    font-feature-settings: "cv11", "ss01", "ss03", "cv05";
+    letter-spacing: -0.006em;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -160,7 +163,7 @@
   h1,
   h2,
   h3 {
-    @apply tracking-tight;
+    letter-spacing: -0.022em;
   }
 }
 
@@ -168,6 +171,11 @@
   /* Montants alignés en colonnes */
   .num {
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum", "cv11", "ss01";
+  }
+  /* Surface standard : carte bordée, ombre très légère */
+  .surface {
+    @apply rounded-xl border bg-card shadow-[0_1px_2px_rgb(11_19_16/0.04)];
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);

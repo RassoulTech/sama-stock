@@ -52,12 +52,12 @@ export default async function CommandesPage({
             key={key}
             href={key === "open" ? "/commandes" : `/commandes?filtre=${key}`}
             className={cn(
-              "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium text-muted-foreground hover:text-foreground",
-              filter === key && "border-primary bg-primary text-primary-foreground hover:text-primary-foreground",
+              "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3 text-[0.8125rem] font-medium text-muted-foreground hover:text-foreground",
+              filter === key && "border-primary/30 bg-accent text-accent-foreground hover:text-accent-foreground",
             )}
           >
             {f.label}
-            <span className={cn("num rounded-full bg-muted px-1.5 text-xs", filter === key && "bg-white/20")}>{countFor(key)}</span>
+            <span className={cn("num rounded-full bg-muted px-1.5 text-xs", filter === key && "bg-primary/10")}>{countFor(key)}</span>
           </Link>
         ))}
       </div>
@@ -83,11 +83,11 @@ export default async function CommandesPage({
             <li key={o.id}>
               <Link
                 href={`/commandes/${o.id}`}
-                className="flex h-full items-center gap-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/[0.07] transition-colors hover:ring-primary/30"
+                className="flex h-full items-center gap-3 rounded-xl bg-card p-4 border transition-colors hover:ring-primary/30"
               >
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold">{o.number}</span>
+                    <span className="font-semibold">{o.number}</span>
                     <SaleStatus kind="order" status={o.status} />
                     <StatusPill tone="gray">{CHANNELS[o.channel as Channel] ?? o.channel}</StatusPill>
                   </div>
@@ -97,7 +97,7 @@ export default async function CommandesPage({
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  <span className="num font-bold">{formatFCFA(o.total)}</span>
+                  <span className="num font-semibold">{formatFCFA(o.total)}</span>
                   <PaymentStatus total={o.total} amountPaid={o.amountPaid} />
                 </div>
                 <ChevronRight className="size-4 text-muted-foreground" />

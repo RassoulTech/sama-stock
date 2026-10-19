@@ -40,7 +40,7 @@ export default async function EquipePage() {
       />
 
       {max === 0 ? (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-accent/70 p-4 text-sm text-accent-foreground">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-accent/70 p-4 text-sm text-accent-foreground">
           <span>L&apos;essai gratuit est réservé au propriétaire. Avec Pro, invitez jusqu&apos;à 3 employés.</span>
           <Link href="/abonnement" className="font-semibold text-primary hover:underline">
             Voir les formules
@@ -56,7 +56,7 @@ export default async function EquipePage() {
         <div className="space-y-5 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-bold">
+              <CardTitle className="flex items-center gap-2 font-semibold">
                 <Users className="size-4 text-primary" /> Membres ({team.length})
               </CardTitle>
             </CardHeader>
@@ -86,7 +86,7 @@ export default async function EquipePage() {
           {pending.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-bold">
+                <CardTitle className="flex items-center gap-2 font-semibold">
                   <Clock className="size-4 text-warning dark:text-saffron" /> Invitations en attente
                 </CardTitle>
               </CardHeader>
@@ -126,7 +126,7 @@ export default async function EquipePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-bold">
+            <CardTitle className="flex items-center gap-2 font-semibold">
               <ShieldCheck className="size-4 text-primary" /> Les rôles
             </CardTitle>
           </CardHeader>

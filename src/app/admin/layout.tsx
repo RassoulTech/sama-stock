@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
           <Link href="/admin" className="flex items-center gap-3">
             <Logo />
-            <span className="hidden items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground sm:inline-flex">
+            <span className="hidden items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground sm:inline-flex">
               <ShieldCheck className="size-3.5" /> Administration
             </span>
           </Link>

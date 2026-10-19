@@ -64,7 +64,7 @@ export function BusinessForm({
           type="button"
           disabled={disabled}
           onClick={() => fileRef.current?.click()}
-          className="relative grid size-20 shrink-0 place-items-center overflow-hidden rounded-2xl border-2 border-dashed bg-muted/50 text-muted-foreground hover:border-primary/50"
+          className="relative grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl border-2 border-dashed bg-muted/50 text-muted-foreground hover:border-primary/50"
           aria-label="Changer le logo"
         >
           {logo ? (
@@ -168,7 +168,7 @@ export function ModulesForm({ modulePos, moduleOrders, disabled }: { modulePos: 
   return (
     <ul className="space-y-3">
       {items.map((i) => (
-        <li key={i.key} className="flex items-center justify-between gap-4 rounded-2xl border p-4">
+        <li key={i.key} className="flex items-center justify-between gap-4 rounded-xl border p-4">
           <div>
             <Label htmlFor={i.key} className="font-semibold">
               {i.label}
@@ -178,7 +178,7 @@ export function ModulesForm({ modulePos, moduleOrders, disabled }: { modulePos: 
           <Switch id={i.key} checked={state[i.key]} disabled={disabled || pending} onCheckedChange={(v) => toggle(i.key, v)} />
         </li>
       ))}
-      <li className="rounded-2xl bg-muted/60 p-4 text-xs text-muted-foreground">
+      <li className="rounded-xl bg-muted/60 p-4 text-xs text-muted-foreground">
         La gestion du stock (produits, entrées, sorties, inventaire) est toujours active.
       </li>
     </ul>
@@ -263,7 +263,7 @@ export function LocationsManager({
     <div className="space-y-3">
       <ul className="space-y-2">
         {locations.map((l) => (
-          <li key={l.id} className="flex items-center gap-3 rounded-2xl border p-3">
+          <li key={l.id} className="flex items-center gap-3 rounded-xl border p-3">
             <span className="grid size-10 place-items-center rounded-xl bg-accent text-primary">
               {l.kind === "depot" ? <Warehouse className="size-5" /> : <Building2 className="size-5" />}
             </span>

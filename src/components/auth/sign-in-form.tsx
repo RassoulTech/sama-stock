@@ -36,7 +36,7 @@ export function SignInForm({ redirectTo, googleEnabled }: { redirectTo: string; 
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
-        <h1 className="text-2xl font-extrabold">Bon retour !</h1>
+        <h1 className="text-2xl font-semibold">Bon retour !</h1>
         <p className="text-sm text-muted-foreground">Connectez-vous pour retrouver votre commerce.</p>
       </div>
 
@@ -87,7 +87,7 @@ export function SignInForm({ redirectTo, googleEnabled }: { redirectTo: string; 
         </Button>
       </form>
 
-      <div className="rounded-2xl border border-dashed border-primary/30 bg-accent/60 p-4">
+      <div className="rounded-xl border border-dashed border-primary/30 bg-accent/60 p-4">
         <p className="text-sm font-semibold text-accent-foreground">Envie de voir l&apos;application en action ?</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Un commerce de démonstration avec produits, ventes et commandes déjà remplis.
