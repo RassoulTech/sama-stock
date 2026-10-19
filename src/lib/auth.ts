@@ -7,10 +7,14 @@ import { account, session, user, verification } from "@/db/schema";
 
 export const isGoogleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
+const isLocal = (process.env.BETTER_AUTH_URL ?? "").includes("localhost");
+
 export const auth = betterAuth({
   appName: "Sama Stock",
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
+  // En local, autorise aussi l'accès depuis un téléphone du même réseau Wi-Fi (ex. http://192.168.1.4:3000)
+  trustedOrigins: isLocal ? ["http://192.168.*:3000", "http://10.*:3000", "http://172.*:3000"] : [],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: { user, session, account, verification },
