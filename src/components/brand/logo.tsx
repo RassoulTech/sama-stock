@@ -22,7 +22,7 @@ export function Logo({ className, inverted = false }: { className?: string; inve
       <LogoMark className={cn("size-7", inverted && "rounded-[9px] ring-1 ring-white/30")} />
       <span
         className={cn(
-          "text-[1.0625rem] font-bold tracking-[-0.035em]",
+          "text-[1.0625rem] font-bold tracking-[-0.035em] whitespace-nowrap",
           inverted ? "text-white" : "text-foreground",
         )}
       >

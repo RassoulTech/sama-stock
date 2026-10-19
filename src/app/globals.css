@@ -219,6 +219,29 @@
     scale: 1 0;
   }
 }
+@keyframes slide-in-x {
+  from {
+    opacity: 0;
+    translate: -28px 0;
+  }
+}
+@keyframes marquee-right {
+  from {
+    translate: -50% 0;
+  }
+}
+@keyframes progress-x {
+  from {
+    scale: 0 1;
+  }
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 -6px;
+  }
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .enter {
@@ -236,6 +259,26 @@
     transform-origin: bottom;
     animation: grow-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--enter-delay, 0ms) + var(--i, 0) * 70ms);
+  }
+
+  .slide-in {
+    animation: slide-in-x 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--slide-delay, 0ms) both;
+  }
+  .marquee-track {
+    animation: marquee-right 45s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+  .segment-progress {
+    width: 100%;
+    animation: progress-x var(--segment-ms, 5s) linear both;
+  }
+  .menu-in {
+    animation: menu-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .menu-item {
+    animation: slide-in-x 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   html.reveal-on .reveal {

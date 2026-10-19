@@ -21,7 +21,10 @@ import { EmailSignup } from "@/components/landing/email-signup";
 import { LossCalculator } from "@/components/landing/loss-calculator";
 import { ProductVideo } from "@/components/landing/product-video";
 import { PaymentLogo } from "@/components/shared/payment-logo";
+import { MobileMenu } from "@/components/landing/mobile-menu";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
+import { Segments, SegmentsMarquee } from "@/components/landing/segments";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { StickyCta } from "@/components/landing/sticky-cta";
 import {
   CreditVisual,
@@ -41,8 +44,16 @@ import { getSession } from "@/server/context";
 export const metadata: Metadata = {
   title: { absolute: "Sama Stock — Arrêtez de perdre de l'argent dans votre commerce" },
   description:
-    "Stock, caisse, commandes WhatsApp et Instagram, crédits clients : Sama Stock suit tout et vous prévient avant la rupture. 14 jours gratuits, sans carte bancaire.",
+    "Boutiques, e-commerçants et entrepreneurs : stock, caisse, commandes en ligne (WhatsApp, Instagram, TikTok, Facebook, site web) et crédits clients. Sama Stock suit tout et vous prévient avant la rupture. 14 jours gratuits, sans carte bancaire.",
 };
+
+const SECTIONS = [
+  ["#fonctionnalites", "Fonctionnalités"],
+  ["#pour-qui", "Pour qui ?"],
+  ["#calcul", "Vos pertes"],
+  ["#tarifs", "Tarifs"],
+  ["#faq", "Questions"],
+] as const;
 
 const TRUST = [
   {
@@ -77,8 +88,8 @@ const FEATURES = [
   },
   {
     kicker: "Commandes en ligne",
-    title: "Les commandes WhatsApp et Instagram, enfin sous contrôle",
-    text: "Chaque commande réserve ses produits : vous ne vendez plus deux fois le même article. Suivez-la jusqu'à la livraison et au paiement.",
+    title: "Vos commandes en ligne, enfin sous contrôle",
+    text: "WhatsApp, Instagram, TikTok, Facebook ou votre site : chaque commande réserve ses produits, vous ne vendez plus deux fois le même article. Suivez-la jusqu'à la livraison et au paiement.",
     points: ["Réservation automatique du stock", "Suivi : préparation, livraison, livrée", "Récapitulatif envoyé au client"],
     visual: <OrderVisual />,
   },
@@ -175,17 +186,12 @@ export default async function HomePage() {
       </div>
 
       <header className="sticky top-0 z-40 px-3 pt-3 sm:px-4">
-        <div className="enter mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-2xl border bg-background/85 px-3 shadow-[0_8px_30px_-12px_rgb(11_19_16/0.18)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-4">
-          <Link href="/" aria-label="Sama Stock, accueil" className="justify-self-start">
+        <div className="enter relative mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 rounded-2xl border bg-background/85 px-3 shadow-[0_8px_30px_-12px_rgb(11_19_16/0.18)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-4 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+          <Link href="/" aria-label="Sama Stock, accueil" className="shrink-0 justify-self-start">
             <Logo />
           </Link>
-          <nav className="hidden items-center gap-1 text-sm font-medium text-muted-foreground md:flex" aria-label="Sections">
-            {[
-              ["#fonctionnalites", "Fonctionnalités"],
-              ["#calcul", "Vos pertes"],
-              ["#tarifs", "Tarifs"],
-              ["#faq", "Questions"],
-            ].map(([href, label]) => (
+          <nav className="hidden items-center gap-1 text-sm font-medium text-muted-foreground lg:flex" aria-label="Sections">
+            {SECTIONS.map(([href, label]) => (
               <a
                 key={href}
                 href={href}
@@ -195,27 +201,29 @@ export default async function HomePage() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2 justify-self-end">
+          <div className="flex items-center gap-1.5 justify-self-end">
+            <ThemeToggle className="hidden sm:inline-flex" />
             {session ? (
               <Link
                 href="/tableau-de-bord"
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground hover:bg-[#095f44]"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium whitespace-nowrap text-primary-foreground hover:bg-[#095f44]"
               >
                 Mon espace <ArrowRight className="size-4" />
               </Link>
             ) : (
               <>
-                <Link href="/connexion" className="hidden h-9 items-center px-3 text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
+                <Link href="/connexion" className="hidden h-9 items-center px-3 text-sm font-medium text-muted-foreground hover:text-foreground lg:inline-flex">
                   Connexion
                 </Link>
                 <Link
                   href="/inscription"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-foreground px-3.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-foreground px-3.5 text-sm font-medium whitespace-nowrap text-background transition-opacity hover:opacity-90"
                 >
                   Essai gratuit
                 </Link>
               </>
             )}
+            <MobileMenu sections={SECTIONS} loggedIn={Boolean(session)} />
           </div>
         </div>
       </header>
@@ -235,15 +243,15 @@ export default async function HomePage() {
             <div>
               <p className="enter inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-[0_1px_2px_rgb(11_19_16/0.04)] [--enter-delay:80ms]">
                 <span className="size-1.5 rounded-full bg-primary" />
-                Boutiques, quincailleries et vendeurs en ligne du Sénégal
+                Boutiques, e-commerçants et entrepreneurs du Sénégal
               </p>
               <h1 className="enter mt-6 text-[2.75rem] [--enter-delay:160ms] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-[3.5rem] lg:text-[4rem]">
                 Votre commerce perd de l&apos;argent chaque jour.{" "}
                 <span className="font-display font-normal tracking-[-0.01em] text-primary italic">Plus maintenant.</span>
               </h1>
               <p className="enter mt-6 max-w-xl text-[1.125rem] leading-relaxed text-muted-foreground [--enter-delay:280ms]">
-                Ruptures de stock, crédits oubliés, marchandise qui disparaît : Sama Stock suit tout, en boutique comme sur
-                WhatsApp et Instagram, et vous prévient avant qu&apos;il ne soit trop tard.
+                Ruptures de stock, crédits oubliés, commandes perdues : Sama Stock suit tout, en boutique comme en ligne
+                (WhatsApp, Instagram, TikTok, Facebook ou votre site), et vous prévient avant qu&apos;il ne soit trop tard.
               </p>
               <div className="enter mt-8 [--enter-delay:380ms]">
                 {session ? (
@@ -288,7 +296,7 @@ export default async function HomePage() {
         <section className="border-y bg-card/60">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-6 text-sm text-muted-foreground sm:px-6 md:flex-row">
             <p>
-              Pour <span className="font-medium text-foreground">les boutiques, quincailleries, supérettes et vendeurs WhatsApp</span>
+              Pour <span className="font-medium text-foreground">les boutiques physiques, e-commerçants, vendeurs en ligne et entrepreneurs</span>
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {(
@@ -308,6 +316,23 @@ export default async function HomePage() {
                 </span>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── Pour qui ── */}
+        <section id="pour-qui" className="scroll-mt-24 overflow-hidden py-24">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <SectionTitle
+              kicker="Pour qui ?"
+              title="En boutique, en ligne, ou les deux"
+              text="Boutiques physiques, e-commerçants, vendeurs sur les réseaux sociaux, grossistes, entrepreneurs : Sama Stock s'adapte à votre façon de vendre."
+            />
+          </div>
+          <div className="reveal mt-10">
+            <SegmentsMarquee />
+          </div>
+          <div className="reveal mx-auto mt-10 max-w-6xl px-4 sm:px-6">
+            <Segments />
           </div>
         </section>
 
