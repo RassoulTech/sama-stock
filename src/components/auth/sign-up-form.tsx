@@ -112,6 +112,17 @@ export function SignUpForm({
           {pending && <Loader2 className="animate-spin" />}
           Créer mon compte
         </Button>
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          En créant votre compte, vous acceptez les{" "}
+          <Link href="/conditions" className="underline underline-offset-2 hover:text-foreground">
+            conditions d&apos;utilisation
+          </Link>{" "}
+          et la{" "}
+          <Link href="/confidentialite" className="underline underline-offset-2 hover:text-foreground">
+            politique de confidentialité
+          </Link>
+          .
+        </p>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">

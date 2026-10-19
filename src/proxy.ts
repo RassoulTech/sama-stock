@@ -1,7 +1,15 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = new Set(["/", "/connexion", "/inscription", "/demo"]);
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/connexion",
+  "/inscription",
+  "/demo",
+  "/mentions-legales",
+  "/confidentialite",
+  "/conditions",
+]);
 
 // Vérification « optimiste » : seule la présence du cookie est testée ici.
 // La vraie vérification (session valide, droits) se fait côté serveur dans chaque page et action.

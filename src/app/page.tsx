@@ -1,12 +1,15 @@
 import {
   ArrowRight,
+  BadgeCheck,
   BellRing,
   Check,
   Clock,
   CreditCard,
   Lock,
   Minus,
+  Mail,
   PlayCircle,
+  Scale,
   ShieldCheck,
   Smartphone,
   X,
@@ -18,6 +21,7 @@ import { EmailSignup } from "@/components/landing/email-signup";
 import { LossCalculator } from "@/components/landing/loss-calculator";
 import { ProductVideo } from "@/components/landing/product-video";
 import { PaymentLogo } from "@/components/shared/payment-logo";
+import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { StickyCta } from "@/components/landing/sticky-cta";
 import {
   CreditVisual,
@@ -30,6 +34,7 @@ import {
   WhatsAppReceipt,
 } from "@/components/landing/visuals";
 import { formatLimit, PAID_PLANS, PLANS } from "@/lib/domain/plans";
+import { LEGAL, LEGAL_PAGES } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 import { getSession } from "@/server/context";
 
@@ -39,12 +44,28 @@ export const metadata: Metadata = {
     "Stock, caisse, commandes WhatsApp et Instagram, crédits clients : Sama Stock suit tout et vous prévient avant la rupture. 14 jours gratuits, sans carte bancaire.",
 };
 
-const LEGAL = {
-  editor: "Dione Mouhamed, entreprise individuelle",
-  ninea: "013218369",
-  rccm: "SN.THS.2026.A.4360",
-  city: "Thiès, Sénégal",
-};
+const TRUST = [
+  {
+    icon: BadgeCheck,
+    title: "Entreprise immatriculée au Sénégal",
+    text: `NINEA ${LEGAL.ninea} · RCCM ${LEGAL.rccm}. Un éditeur identifié, basé à Thiès.`,
+  },
+  {
+    icon: Lock,
+    title: "Paiements sécurisés",
+    text: "Wave et Orange Money via SasPay. Sama Stock ne voit jamais votre code secret.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Données protégées",
+    text: "Connexion chiffrée, mots de passe chiffrés, hébergement professionnel en Europe.",
+  },
+  {
+    icon: Scale,
+    title: "Conforme à la loi sénégalaise",
+    text: "Loi n° 2008-12 sur les données personnelles. Vos données vous appartiennent, jamais revendues.",
+  },
+];
 
 const FEATURES = [
   {
@@ -121,13 +142,13 @@ const FAQ = [
   },
   {
     q: "Comment payer l'abonnement ?",
-    a: "Par Wave ou Orange Money, directement depuis l'application. Dans cette version de démonstration, le paiement est simulé.",
+    a: "Par Wave ou Orange Money depuis l'application, sur une page de paiement sécurisée, ou en espèces auprès de l'équipe Sama Stock. Aucun prélèvement automatique : vous renouvelez quand vous le décidez.",
   },
 ];
 
 function SectionTitle({ kicker, title, text, className }: { kicker: string; title: React.ReactNode; text?: string; className?: string }) {
   return (
-    <div className={cn("mx-auto max-w-2xl text-center", className)}>
+    <div className={cn("reveal mx-auto max-w-2xl text-center", className)}>
       <p className="text-xs font-medium tracking-[0.14em] text-primary uppercase">{kicker}</p>
       <h2 className="mt-3 text-[2rem] leading-[1.1] font-semibold tracking-[-0.035em] text-balance sm:text-[2.5rem]">{title}</h2>
       {text && <p className="mt-4 text-[1.0625rem] leading-relaxed text-muted-foreground">{text}</p>}
@@ -154,7 +175,7 @@ export default async function HomePage() {
       </div>
 
       <header className="sticky top-0 z-40 px-3 pt-3 sm:px-4">
-        <div className="mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-2xl border bg-background/85 px-3 shadow-[0_8px_30px_-12px_rgb(11_19_16/0.18)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-4">
+        <div className="enter mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-2xl border bg-background/85 px-3 shadow-[0_8px_30px_-12px_rgb(11_19_16/0.18)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-4">
           <Link href="/" aria-label="Sama Stock, accueil" className="justify-self-start">
             <Logo />
           </Link>
@@ -212,19 +233,19 @@ export default async function HomePage() {
           />
           <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pt-14 pb-20 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:pt-20 lg:pb-28">
             <div>
-              <p className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-[0_1px_2px_rgb(11_19_16/0.04)]">
+              <p className="enter inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-[0_1px_2px_rgb(11_19_16/0.04)] [--enter-delay:80ms]">
                 <span className="size-1.5 rounded-full bg-primary" />
                 Boutiques, quincailleries et vendeurs en ligne du Sénégal
               </p>
-              <h1 className="mt-6 text-[2.75rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-[3.5rem] lg:text-[4rem]">
+              <h1 className="enter mt-6 text-[2.75rem] [--enter-delay:160ms] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-[3.5rem] lg:text-[4rem]">
                 Votre commerce perd de l&apos;argent chaque jour.{" "}
                 <span className="font-display font-normal tracking-[-0.01em] text-primary italic">Plus maintenant.</span>
               </h1>
-              <p className="mt-6 max-w-xl text-[1.125rem] leading-relaxed text-muted-foreground">
+              <p className="enter mt-6 max-w-xl text-[1.125rem] leading-relaxed text-muted-foreground [--enter-delay:280ms]">
                 Ruptures de stock, crédits oubliés, marchandise qui disparaît : Sama Stock suit tout, en boutique comme sur
                 WhatsApp et Instagram, et vous prévient avant qu&apos;il ne soit trop tard.
               </p>
-              <div className="mt-8">
+              <div className="enter mt-8 [--enter-delay:380ms]">
                 {session ? (
                   <Link
                     href="/tableau-de-bord"
@@ -236,7 +257,7 @@ export default async function HomePage() {
                   <EmailSignup />
                 )}
               </div>
-              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+              <div className="enter mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground [--enter-delay:460ms]">
                 {["Sans carte bancaire", "Sans engagement", "Prêt en 5 minutes"].map((t) => (
                   <span key={t} className="inline-flex items-center gap-1.5">
                     <Check className="size-4 text-primary" /> {t}
@@ -244,22 +265,22 @@ export default async function HomePage() {
                 ))}
               </div>
               {!session && (
-                <Link href="/demo" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+                <Link href="/demo" className="enter mt-6 inline-flex [--enter-delay:540ms] items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
                   <PlayCircle className="size-5 text-primary" /> Voir un commerce de démonstration, sans inscription
                 </Link>
               )}
             </div>
 
-            <div className="relative">
+            <div className="enter-pop relative [--enter-delay:240ms]">
               <DashboardPreview />
-              <StockAlertToast className="absolute -top-7 -left-4 hidden sm:flex lg:-left-14" />
-              <WhatsAppReceipt className="absolute -right-3 -bottom-12 hidden rotate-2 sm:block lg:-right-8" />
+              <StockAlertToast className="enter-float absolute -top-7 -left-4 hidden [--enter-delay:900ms] sm:flex lg:-left-14" />
+              <WhatsAppReceipt className="enter-float absolute -right-3 -bottom-12 hidden rotate-2 [--enter-delay:1150ms] sm:block lg:-right-8" />
             </div>
           </div>
         </section>
 
         {/* ── Vidéo de présentation ── */}
-        <section className="mx-auto max-w-6xl px-4 pt-20 pb-16 sm:px-6 sm:pt-24">
+        <section className="reveal mx-auto max-w-6xl px-4 pt-20 pb-16 sm:px-6 sm:pt-24">
           <ProductVideo />
         </section>
 
@@ -561,6 +582,36 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* ── Confiance ── */}
+        <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6" aria-labelledby="confiance">
+          <SectionTitle
+            kicker="Confiance"
+            title={<span id="confiance">Une entreprise sénégalaise, identifiable et responsable</span>}
+            text="Vous confiez à Sama Stock le cœur de votre commerce. Voici qui nous sommes et comment nous protégeons vos données."
+          />
+          <ul className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {TRUST.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="reveal surface p-6">
+                <span className="grid size-10 place-items-center rounded-lg bg-accent text-primary">
+                  <Icon className="size-5" />
+                </span>
+                <p className="mt-4 font-semibold">{title}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{text}</p>
+              </li>
+            ))}
+          </ul>
+          <p className="reveal mt-6 text-center text-sm text-muted-foreground">
+            {LEGAL_PAGES.map((p, i) => (
+              <span key={p.href}>
+                {i > 0 && " · "}
+                <Link href={p.href} className="underline-offset-4 hover:text-foreground hover:underline">
+                  {p.label}
+                </Link>
+              </span>
+            ))}
+          </p>
+        </section>
+
         {/* ── Appel final ── */}
         <section className="px-4 pb-24 sm:px-6">
           <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-[#0a3d2d] px-6 py-16 text-center text-white sm:px-12 sm:py-20">
@@ -597,7 +648,7 @@ export default async function HomePage() {
       </main>
 
       <footer className="border-t bg-card/60">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 text-sm sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 text-sm sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1.3fr]">
           <div className="space-y-3">
             <Logo />
             <p className="max-w-sm text-muted-foreground">
@@ -625,6 +676,17 @@ export default async function HomePage() {
               Connexion
             </Link>
           </div>
+          <div className="space-y-2.5">
+            <p className="font-medium">Légal</p>
+            {LEGAL_PAGES.map((p) => (
+              <Link key={p.href} href={p.href} className="block text-muted-foreground hover:text-foreground">
+                {p.label}
+              </Link>
+            ))}
+            <a href={`mailto:${LEGAL.email}`} className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+              <Mail className="size-3.5" /> {LEGAL.email}
+            </a>
+          </div>
         </div>
         <div className="border-t">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:px-6 md:flex-row md:items-center md:justify-between">
@@ -639,6 +701,7 @@ export default async function HomePage() {
       </footer>
 
       {!session && <StickyCta href="/inscription" />}
+      <ScrollReveal />
     </div>
   );
 }

@@ -81,12 +81,12 @@ export function DashboardPreview() {
           <div className="grid grid-cols-[1.4fr_1fr] gap-2">
             <div className="rounded-lg border p-2">
               <p className="text-[9px] font-medium">Ventes des 7 derniers jours</p>
-              <div className="mt-2 flex h-16 items-end gap-1">
+              <div className="grow-bars mt-2 flex h-16 items-end gap-1" style={{ "--enter-delay": "700ms" } as React.CSSProperties}>
                 {bars.map((h, i) => (
                   <span
                     key={i}
                     className={cn("flex-1 rounded-t-[3px]", i === bars.length - 1 ? "bg-[#0a7a55]" : "bg-[#0a7a55]/25")}
-                    style={{ height: `${h}%` }}
+                    style={{ height: `${h}%`, "--i": i } as React.CSSProperties}
                   />
                 ))}
               </div>
