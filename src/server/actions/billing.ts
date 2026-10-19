@@ -8,7 +8,7 @@ import { subscriptionCheckouts } from "@/db/schema";
 import { PLANS } from "@/lib/domain/plans";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
-import { createCheckoutSession, isPaymentSimulation, isSaspayEnabled } from "../saspay";
+import { createCheckoutAtPrice, isPaymentSimulation, isSaspayEnabled } from "../saspay";
 import { confirmCheckout, grantPeriod } from "../services/subscription";
 
 const planSchema = z.enum(["pro", "business"], { message: "Formule inconnue." });
@@ -43,8 +43,9 @@ export async function startCheckout(plan: string) {
     const amount = PLANS[target].price;
     const checkoutId = crypto.randomUUID();
 
-    const session = await createCheckoutSession({
-      amount,
+    // Le client paie exactement le prix de la formule ; les frais SasPay sont pris sur la part de Sama Stock
+    const { session, requestedAmount } = await createCheckoutAtPrice({
+      price: amount,
       description: `Sama Stock — formule ${PLANS[target].label} (30 jours)`,
       customerEmail: ctx.user.email,
       customerName: ctx.user.name || ctx.business.name,
@@ -60,6 +61,7 @@ export async function startCheckout(plan: string) {
       businessId: ctx.business.id,
       plan: target,
       amount,
+      requestedAmount,
       sessionId: session.id,
       userId: ctx.user.id,
     });

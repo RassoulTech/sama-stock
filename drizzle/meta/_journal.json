@@ -15,6 +15,13 @@
       "when": 1792434446794,
       "tag": "0001_subscription_checkouts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792440023862,
+      "tag": "0002_checkout_requested_amount",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "subscription_checkouts" ADD COLUMN "requested_amount" integer;

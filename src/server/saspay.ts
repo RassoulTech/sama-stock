@@ -42,7 +42,7 @@ export function createCheckoutSession(input: {
   returnUrl: string;
   metadata: Record<string, string>;
 }) {
-  return call<{ id: string; checkout_url: string; status: string }>("/checkout-sessions/", {
+  return call<{ id: string; slug: string; checkout_url: string; status: string }>("/checkout-sessions/", {
     method: "POST",
     body: JSON.stringify({
       amount: toAmount(input.amount),
@@ -57,6 +57,49 @@ export function createCheckoutSession(input: {
       fee_charge_mode: "DEDUCTED",
     }),
   });
+}
+
+export function cancelCheckoutSession(sessionId: string) {
+  return call<unknown>(`/checkout-sessions/${encodeURIComponent(sessionId)}/cancel/`, { method: "POST" });
+}
+
+/** Moyens de paiement retenus pour Sama Stock : le total payé par le client doit y être exact. */
+const TARGET_NETWORKS = ["wave_sn", "orange_sn"];
+/** Estimation de départ des frais Wave / Orange Money ; le total réel est ensuite mesuré et corrigé. */
+const ESTIMATED_FEE_RATE = 0.0515;
+
+/** Total (frais compris) que la page de paiement SasPay demandera au client, par moyen de paiement. */
+async function checkoutTotals(slug: string): Promise<number | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/checkout/${encodeURIComponent(slug)}/networks/?country=SN`, { cache: "no-store" });
+    const body = (await res.json()) as { data?: { networks?: { code: string; total: string; currency: string }[] } };
+    const totals = (body.data?.networks ?? [])
+      .filter((n) => TARGET_NETWORKS.includes(n.code) && n.currency === "XOF")
+      .map((n) => Math.round(Number(n.total)));
+    return totals.length ? Math.max(...totals) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Crée une page de paiement où le client paie EXACTEMENT `price` (frais compris).
+ * Selon le réglage du compte SasPay, les frais sont ajoutés au montant demandé : on demande donc un montant
+ * de base, on mesure le total réellement affiché au client, et on corrige jusqu'à tomber juste.
+ * Les frais sont ainsi toujours retirés de ce que reçoit Sama Stock, jamais ajoutés au prix du client.
+ */
+export async function createCheckoutAtPrice(input: Omit<Parameters<typeof createCheckoutSession>[0], "amount"> & { price: number }) {
+  const { price, ...rest } = input;
+  let amount = Math.floor(price / (1 + ESTIMATED_FEE_RATE));
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const session = await createCheckoutSession({ ...rest, amount });
+    const total = await checkoutTotals(session.slug);
+    if (total === null || total === price) return { session, requestedAmount: amount };
+    await cancelCheckoutSession(session.id).catch(() => undefined);
+    amount += price - total;
+    if (amount <= 0) break;
+  }
+  throw new Error("Impossible d'ajuster le montant du paiement au prix de la formule");
 }
 
 export function getCheckoutStatus(sessionId: string) {

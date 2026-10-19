@@ -351,7 +351,10 @@ export const subscriptionCheckouts = pgTable(
       .notNull()
       .references(() => businesses.id, { onDelete: "cascade" }),
     plan: text("plan").notNull(),
+    /** Prix de la formule, payé par le client (frais compris). */
     amount: integer("amount").notNull(),
+    /** Montant de base demandé à SasPay (prix moins les frais quand SasPay les ajoute au client). */
+    requestedAmount: integer("requested_amount"),
     sessionId: text("session_id").notNull(),
     status: text("status").notNull().default("pending"), // pending | paid | failed
     transactionId: text("transaction_id"),

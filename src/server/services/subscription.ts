@@ -83,7 +83,8 @@ export async function confirmCheckout(checkoutId: string): Promise<CheckoutOutco
 
   const payment = await verifyPayment(session.transaction_id);
   if (payment.status !== "SUCCESS") return "pending";
-  if (payment.currency !== "XOF" || Number(payment.requested_amount) < row.amount) {
+  // SasPay confirme le montant de base demandé ; le client, lui, a payé le prix de la formule (row.amount)
+  if (payment.currency !== "XOF" || Number(payment.requested_amount) < (row.requestedAmount ?? row.amount)) {
     console.error("[saspay] montant inattendu", { checkoutId: row.id, transaction: payment.id });
     return "pending";
   }
