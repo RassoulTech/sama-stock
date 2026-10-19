@@ -71,9 +71,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex min-w-0 flex-col">
           <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75 print:hidden">
             <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-              <Link href="/tableau-de-bord" className="flex min-w-0 items-center gap-2.5 lg:hidden">
+              <Link href="/tableau-de-bord" className="flex min-w-0 items-center gap-2.5 lg:hidden" aria-label="Accueil">
                 <LogoMark />
-                <span className="truncate font-bold">{ctx.business.name}</span>
+                <span className={ctx.locations.length > 1 ? "sr-only" : "truncate font-bold"}>{ctx.business.name}</span>
               </Link>
               <p className="hidden truncate text-sm text-muted-foreground lg:block">
                 <span className="font-semibold text-foreground">{ctx.business.name}</span>

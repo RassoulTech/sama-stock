@@ -172,6 +172,13 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* Rangées de filtres défilantes, sans barre visible */
+  .scroll-row {
+    scrollbar-width: none;
+  }
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

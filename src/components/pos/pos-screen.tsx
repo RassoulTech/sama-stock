@@ -238,7 +238,7 @@ export function PosScreen({
         <section className="space-y-4">
           <SearchInput value={q} onChange={setQ} placeholder="Rechercher un produit…" />
           {categories.length > 0 && (
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            <div className="scroll-row -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
               {[{ id: "all", name: "Tout" }, ...categories].map((c) => (
                 <button
                   key={c.id}
@@ -276,7 +276,7 @@ export function PosScreen({
                       <ProductThumb
                         name={p.name}
                         imageUrl={p.imageUrl}
-                        className="aspect-[4/3] size-auto w-full rounded-none text-2xl"
+                        className="aspect-[16/10] size-auto w-full rounded-none text-2xl"
                       />
                       {inCart > 0 && (
                         <span className="num absolute top-2 right-2 grid min-w-7 place-items-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-bold text-primary-foreground shadow">

@@ -3,6 +3,7 @@ import {
   formatFCFA,
   formatPhone,
   formatQty,
+  initials,
   normalizePhone,
   unitAllowsDecimals,
 } from "./format";
@@ -64,6 +65,15 @@ describe("normalizePhone", () => {
     expect(normalizePhone("12345")).toBeNull();
     expect(normalizePhone("57 123 45 67")).toBeNull();
     expect(normalizePhone("")).toBeNull();
+  });
+});
+
+describe("initials", () => {
+  it("skips small linking words", () => {
+    expect(initials("Sac à main simili cuir")).toBe("SM");
+    expect(initials("Awa Mode & Beauté")).toBe("AM");
+    expect(initials("Awa Diop")).toBe("AD");
+    expect(initials("Ciment 50 kg")).toBe("CK");
   });
 });
 

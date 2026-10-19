@@ -24,7 +24,7 @@ export default async function HistoriquePage({
   return (
     <>
       <PageHeader title="Historique du stock" description={`150 derniers mouvements · ${ctx.location.name}`} backHref="/stock" />
-      <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="scroll-row -mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
         {(Object.entries(MOVEMENT_GROUPS) as [MovementGroup, { label: string }][]).map(([key, g]) => (
           <Link
             key={key}

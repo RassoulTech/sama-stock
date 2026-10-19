@@ -97,10 +97,15 @@ export function computePlanState(
   else if (msLeft > 0) status = plan === "trial" ? "trialing" : "active";
   else status = "expired";
 
-  const { id: _id, label, price: _price, tagline: _tagline, ...limits } = def;
+  const limits: PlanLimits = {
+    maxProducts: def.maxProducts,
+    maxEmployees: def.maxEmployees,
+    maxLocations: def.maxLocations,
+    advancedReports: def.advancedReports,
+  };
   return {
     plan,
-    label,
+    label: def.label,
     status,
     readOnly: status === "expired" || status === "suspended",
     daysLeft: Math.max(0, Math.ceil(msLeft / 86_400_000)),

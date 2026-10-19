@@ -44,7 +44,7 @@ export default async function VentesPage({
           )
         }
       />
-      <div className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="scroll-row -mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1">
         {(Object.entries(PERIODS) as [Period, { label: string }][]).map(([key, p]) => (
           <Link
             key={key}

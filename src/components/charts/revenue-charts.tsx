@@ -27,7 +27,7 @@ function compact(value: number) {
   return String(value);
 }
 
-const tooltipValue = (value: unknown, name: unknown, item: { color?: string }, _i: number, payload: unknown) => (
+const tooltipValue = (value: unknown, name: unknown, item: { color?: string }) => (
   <div className="flex w-full items-center justify-between gap-4">
     <span className="flex items-center gap-1.5 text-muted-foreground">
       <span className="size-2.5 rounded-[3px]" style={{ background: item.color }} />
@@ -51,7 +51,7 @@ export function WeekRevenueBars({ data }: { data: DayPoint[] }) {
           tickMargin={8}
           tickFormatter={(d: string) => dayLabel.format(new Date(d))}
         />
-        <YAxis width={40} tickLine={false} axisLine={false} tickFormatter={compact} />
+        <YAxis width={52} tickLine={false} axisLine={false} tickFormatter={compact} />
         <ChartTooltip
           cursor={{ fill: "var(--muted)", opacity: 0.6 }}
           content={
@@ -92,7 +92,7 @@ export function RevenueProfitChart({ data }: { data: DayPoint[] }) {
           minTickGap={24}
           tickFormatter={(d: string) => shortDay.format(new Date(d))}
         />
-        <YAxis width={44} tickLine={false} axisLine={false} tickFormatter={compact} />
+        <YAxis width={56} tickLine={false} axisLine={false} tickFormatter={compact} />
         <ChartTooltip
           content={
             <ChartTooltipContent

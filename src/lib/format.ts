@@ -98,10 +98,12 @@ export function formatPhone(phone: string): string {
   return m ? `+221 ${m[1]} ${m[2]} ${m[3]} ${m[4]}` : phone;
 }
 
+const SMALL_WORDS = new Set(["à", "a", "de", "du", "des", "la", "le", "les", "et", "en", "d'", "l'", "&"]);
+
 export function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
+  const words = name.split(/\s+/).filter(Boolean);
+  const meaningful = words.filter((w, i) => i === 0 || (!SMALL_WORDS.has(w.toLowerCase()) && /\p{L}/u.test(w)));
+  return meaningful
     .slice(0, 2)
     .map((w) => w[0]!.toUpperCase())
     .join("");

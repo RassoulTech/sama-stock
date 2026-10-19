@@ -14,7 +14,7 @@ export function FilterChips<T extends string>({
   className?: string;
 }) {
   return (
-    <div className={cn("-mx-1 flex gap-2 overflow-x-auto px-1 pb-1", className)} role="tablist">
+    <div className={cn("scroll-row -mx-1 flex gap-2 overflow-x-auto px-1 pb-1", className)} role="tablist">
       {options.map((o) => (
         <button
           key={o.value}

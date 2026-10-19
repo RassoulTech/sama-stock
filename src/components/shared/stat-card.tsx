@@ -34,7 +34,16 @@ export function StatCard({
           <Icon className="size-5" />
         </span>
       </div>
-      <p className="num mt-2 text-2xl font-extrabold tracking-tight sm:text-[1.65rem]">{value}</p>
+      <p className="num mt-2 text-xl leading-tight font-extrabold tracking-tight sm:text-2xl xl:text-[1.65rem]">
+        {typeof value === "string" && value.endsWith(" FCFA") ? (
+          <>
+            {value.slice(0, -5)}
+            <span className="ml-1 text-xs font-bold text-muted-foreground sm:text-sm">FCFA</span>
+          </>
+        ) : (
+          value
+        )}
+      </p>
       {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
     </>
   );

@@ -30,7 +30,7 @@ export function LocationSwitcher({
         })
       }
     >
-      <SelectTrigger size="sm" className="max-w-[11rem] gap-2 bg-card" aria-label="Boutique active">
+      <SelectTrigger size="sm" className="max-w-[13rem] gap-2 bg-card sm:max-w-[15rem]" aria-label="Boutique active">
         <MapPin className="size-4 text-primary" />
         <SelectValue />
       </SelectTrigger>

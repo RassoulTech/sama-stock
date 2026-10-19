@@ -46,7 +46,7 @@ export default async function CommandesPage({
           )
         }
       />
-      <div className="-mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1">
+      <div className="scroll-row -mx-1 mb-5 flex gap-2 overflow-x-auto px-1 pb-1">
         {(Object.entries(ORDER_FILTERS) as [OrderFilter, { label: string }][]).map(([key, f]) => (
           <Link
             key={key}
