@@ -14,6 +14,13 @@ import {
   parseUnit,
   shouldConvertEuro,
   type Cell,
+  applySavedMapping,
+  headerSignature,
+  parseQuantityWithUnit,
+  pickBestSheet,
+  productKey,
+  tidyLabel,
+  unitFromName,
 } from "./products";
 
 describe("parseNumber / parseMoney / parseQuantity", () => {
@@ -227,5 +234,242 @@ describe("parseMoney en euros sans conversion", () => {
   it("lit « 20,00 € » comme 20", () => {
     expect(parseMoney("20,00 €")).toBe(20);
     expect(parseNumber("1 250,50 EUR")).toBe(1250.5);
+  });
+});
+
+describe("titres de colonnes : fautes de frappe, synonymes, colonnes à écarter", () => {
+  it("tolère une faute de frappe sur les mots longs", () => {
+    expect(headerScore("Quantiter en stok", "stock")).toBeGreaterThanOrEqual(60);
+    expect(headerScore("Catégori", "category")).toBeGreaterThanOrEqual(60);
+    expect(headerScore("Désignations", "name")).toBeGreaterThanOrEqual(60);
+    expect(headerScore("Prix de vante", "salePrice")).toBeGreaterThanOrEqual(60);
+  });
+
+  it("comprend les abréviations et le wolof", () => {
+    expect(headerScore("PA HT", "costPrice")).toBeGreaterThanOrEqual(60);
+    expect(headerScore("Njëgu jënd", "costPrice")).toBeGreaterThanOrEqual(60);
+    expect(headerScore("Njëgu jaay", "salePrice")).toBeGreaterThanOrEqual(60);
+    expect(headerScore("Qté dispo", "stock")).toBeGreaterThanOrEqual(60);
+  });
+
+  it("ne prend pas un seuil ni des ventes passées pour le stock", () => {
+    expect(headerScore("Stock mini", "stock")).toBeLessThan(60);
+    expect(ignoredKind("Quantité vendue")).toBe("ventes");
+    expect(ignoredKind("Ventes")).toBe("ventes");
+    expect(ignoredKind("Prix de vente")).toBeNull();
+    expect(autoMap(["Produit", "Stock", "Stock mini"], [["Riz", 4, 2]]).map((g) => g.field)).toEqual(["name", "stock", "alertThreshold"]);
+  });
+
+  it("reconnaît les colonnes du modèle Sama Stock", () => {
+    const head = [
+      "Nom du produit",
+      "Référence ou code-barres",
+      "Catégorie",
+      "Unité",
+      "Prix d'achat (FCFA)",
+      "Prix de vente (FCFA)",
+      "Quantité en stock",
+      "Seuil d'alerte (stock bas)",
+    ];
+    expect(autoMap(head, []).map((g) => g.field)).toEqual(["name", "reference", "category", "unit", "costPrice", "salePrice", "stock", "alertThreshold"]);
+  });
+
+  it("relit l'onglet « Stock actuel » d'un export Sama Stock", () => {
+    const head = [
+      "Produit",
+      "Référence",
+      "Catégorie",
+      "Unité",
+      "En stock",
+      "Réservé pour commandes",
+      "Disponible",
+      "Seuil d'alerte",
+      "État",
+      "Prix d'achat",
+      "Prix de vente",
+      "Valeur du stock",
+    ];
+    expect(autoMap(head, []).map((g) => g.field)).toEqual([
+      "name",
+      "reference",
+      "category",
+      "unit",
+      "stock",
+      null,
+      null,
+      "alertThreshold",
+      null,
+      "costPrice",
+      "salePrice",
+      null,
+    ]);
+  });
+});
+
+describe("valeurs : francs, quantités avec unité, unité dans le nom", () => {
+  it("lit « 1500F » et « 1 500 frs »", () => {
+    expect(parseMoney("1500F")).toBe(1500);
+    expect(parseMoney("1 500 frs")).toBe(1500);
+    expect(parseMoney("15.000 F")).toBe(15000);
+  });
+
+  it("sépare la quantité et l'unité", () => {
+    expect(parseQuantityWithUnit("2 cartons")).toMatchObject({ quantity: 2, unit: "carton" });
+    expect(parseQuantityWithUnit("12 pcs")).toMatchObject({ quantity: 12, unit: "piece" });
+    expect(parseQuantityWithUnit("1,5 kg")).toMatchObject({ quantity: 1.5, unit: "kg" });
+    expect(parseQuantityWithUnit(7)).toMatchObject({ quantity: 7, unit: null });
+    expect(parseQuantityWithUnit("-3")).toMatchObject({ quantity: null, negative: true });
+  });
+
+  it("trouve l'unité dans le nom quand elle y est clairement écrite", () => {
+    expect(unitFromName("Tissu wax au mètre")).toBe("m");
+    expect(unitFromName("Viande de bœuf au kilo")).toBe("kg");
+    expect(unitFromName("Riz sac de 25 kg")).toBe("sac");
+    expect(unitFromName("Paire de sandales")).toBe("paire");
+    expect(unitFromName("Huile 5 L")).toBeNull();
+    expect(unitFromName("Sac à main cuir")).toBeNull();
+    expect(unitFromName("Thé au lait")).toBeNull();
+  });
+
+  it("range les libellés écrits en majuscules", () => {
+    expect(tidyLabel("PRODUITS LAITIERS")).toBe("Produits laitiers");
+    expect(tidyLabel("Riz :")).toBe("Riz");
+    expect(tidyLabel("iPhone")).toBe("iPhone");
+  });
+
+  it("compare les noms sans tenir compte des accents ni des espaces avant l'unité", () => {
+    expect(productKey("Riz parfumé 25 kg")).toBe(productKey("riz parfume 25kg"));
+  });
+});
+
+describe("buildRows : titres de groupe, prix calculés, exemples", () => {
+  const sheet: Cell[][] = [
+    ["BOISSONS"],
+    ["Coca 33 cl", "24", "500"],
+    ["Fanta 33 cl", "12 pcs", "500"],
+    [],
+    ["Riz et céréales :"],
+    ["Riz brisé", "3 sacs", "15000F"],
+    [],
+    ["Savons"],
+    ["Savon de Marseille", 10, 350],
+  ];
+  const map: ("name" | "stock" | "salePrice" | null)[] = ["name", "stock", "salePrice"];
+
+  it("utilise les titres de groupe comme catégories", () => {
+    const rows = buildRows(sheet, map, 2);
+    expect(rows.map((r) => [r.name, r.category])).toEqual([
+      ["Coca 33 cl", "Boissons"],
+      ["Fanta 33 cl", "Boissons"],
+      ["Riz brisé", "Riz et céréales"],
+      ["Savon de Marseille", "Savons"],
+    ]);
+    expect(rows.every((r) => r.error === null && r.derived.category)).toBe(true);
+    expect(rows[2]).toMatchObject({ unit: "sac", stock: 3, salePrice: 15000, derived: { unit: "quantite" } });
+  });
+
+  it("peut ignorer les titres de groupe", () => {
+    const rows = buildRows(sheet, map, 2, { sections: false });
+    expect(rows.find((r) => r.name === "Coca 33 cl")?.category).toBe("");
+  });
+
+  it("ne prend pas un produit sans chiffres pour un titre dans une simple liste de noms", () => {
+    const rows = buildRows([["Riz"], ["Sucre"], ["Huile"]], ["name"], 2);
+    expect(rows.map((r) => r.name)).toEqual(["Riz", "Sucre", "Huile"]);
+  });
+
+  it("calcule les prix de vente manquants, arrondis aux 25 FCFA supérieurs", () => {
+    const rows = buildRows(
+      [
+        ["Riz", 10000, ""],
+        ["Huile", 13119, ""],
+        ["Sucre", 800, 1000],
+      ],
+      ["name", "costPrice", "salePrice"],
+      2,
+      { marginPercent: 30 },
+    );
+    expect(rows.map((r) => r.salePrice)).toEqual([13000, 17075, 1000]);
+    expect(rows[0]!.derived.salePrice).toBe(true);
+    expect(rows[2]!.derived.salePrice).toBeUndefined();
+    expect(rows[0]!.warnings).toEqual([]);
+  });
+
+  it("n'importe jamais les lignes d'exemple du modèle", () => {
+    const rows = buildRows(
+      [
+        ["Robe wax longue (exemple)", 5],
+        ["Ma robe", 3],
+      ],
+      ["name", "stock"],
+      6,
+    );
+    expect(rows.map((r) => r.name)).toEqual(["Ma robe"]);
+  });
+
+  it("ne crée pas de catégorie « Sans catégorie »", () => {
+    const rows = buildRows([["Riz", "Sans catégorie"], ["Mil", "N/A"]], ["name", "category"], 2);
+    expect(rows.map((r) => r.category)).toEqual(["", ""]);
+  });
+
+  it("repère les doublons même écrits différemment", () => {
+    const rows = buildRows(
+      [
+        ["Riz 25 kg", 1],
+        ["riz 25kg", 2],
+      ],
+      ["name", "stock"],
+      2,
+    );
+    expect(rows[1]!.error).toMatch(/En double/);
+  });
+});
+
+describe("choix de la feuille et mémoire des colonnes", () => {
+  it("préfère la feuille de produits au mode d'emploi", () => {
+    const guide: Cell[][] = [
+      ["Comment remplir ce fichier"],
+      ["Colonne", "À quoi elle sert", "Exemple"],
+      ["Nom du produit", "Obligatoire", "Robe wax"],
+      ["Prix d'achat (FCFA)", "Ce que vous payez", "9000"],
+      ["Prix de vente (FCFA)", "Ce que paie le client", "15000"],
+      ["Quantité en stock", "Combien vous en avez", "20"],
+    ];
+    const products: Cell[][] = [["Mes produits"], [], ["Nom du produit", "Prix de vente (FCFA)", "Quantité en stock"], ["Robe", 15000, 2]];
+    expect(
+      pickBestSheet([
+        { name: "Mode d'emploi", rows: guide },
+        { name: "Mes produits", rows: products },
+      ]),
+    ).toBe(1);
+  });
+
+  it("dans un export Sama Stock, choisit l'onglet du stock plutôt que le détail des ventes", () => {
+    const lines: Cell[][] = [
+      ["Date et heure", "N° de vente", "Produit", "Catégorie", "Quantité", "Unité", "Prix unitaire", "Total"],
+      ...Array.from({ length: 60 }, (_, i): Cell[] => ["01/10/2026", `V-${i}`, `Produit ${i % 5}`, "Cat", 1, "pièce", 1000, 1000]),
+    ];
+    const stock: Cell[][] = [
+      ["Stock actuel"],
+      [],
+      ["Produit", "Référence", "Catégorie", "Unité", "En stock", "Disponible", "Seuil d'alerte", "Prix d'achat", "Prix de vente"],
+      ...Array.from({ length: 5 }, (_, i): Cell[] => [`Produit ${i}`, "", "Cat", "pièce", 4, 4, 1, 500, 1000]),
+    ];
+    expect(
+      pickBestSheet([
+        { name: "Toutes les ventes", rows: lines },
+        { name: "Stock actuel", rows: stock },
+      ]),
+    ).toBe(1);
+  });
+
+  it("reprend les colonnes choisies au dernier import pour un fichier de même forme", () => {
+    const headers = ["Article", "Truc", "PV"];
+    const guesses = autoMap(headers, [["Riz", "x", 500]]);
+    expect(headerSignature(headers)).toBe("article|truc|pv");
+    const applied = applySavedMapping(guesses, ["name", "category", "salePrice"]);
+    expect(applied.map((g) => g.field)).toEqual(["name", "category", "salePrice"]);
+    expect(applied[1]!.source).toBe("memoire");
+    expect(applySavedMapping(guesses, ["name"])).toBe(guesses);
   });
 });

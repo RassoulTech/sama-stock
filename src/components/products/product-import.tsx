@@ -1,10 +1,11 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Loader2, RotateCcw, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Loader2, RotateCcw, Sparkles, Upload, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -12,16 +13,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { formatFCFA, formatQty } from "@/lib/format";
 import {
+  applySavedMapping,
   autoMap,
   buildRows,
   detectEuro,
   detectHeaderRow,
   EUR_TO_FCFA,
+  headerSignature,
   IGNORED_LABELS,
   IMPORT_BATCH,
   IMPORT_FIELD_KEYS,
   IMPORT_FIELDS,
   normalizeText,
+  pickBestSheet,
+  productKey,
   shouldConvertEuro,
   type Cell,
   type ColumnGuess,
@@ -78,6 +83,31 @@ const columnName = (i: number) => {
 
 const show = (v: Cell) => (v === null || v === undefined ? "" : v instanceof Date ? v.toLocaleDateString("fr-FR") : String(v));
 
+/** Correspondances choisies lors des imports précédents, par forme de fichier (dans ce navigateur). */
+const MEMORY_KEY = "sama-stock:import-colonnes";
+
+function savedMappings(): Record<string, (ImportField | null)[]> {
+  try {
+    return JSON.parse(localStorage.getItem(MEMORY_KEY) ?? "{}") as Record<string, (ImportField | null)[]>;
+  } catch {
+    return {};
+  }
+}
+
+function rememberMapping(signature: string, mapping: (ImportField | null)[]) {
+  if (!signature) return;
+  try {
+    const all = savedMappings();
+    delete all[signature];
+    const entries = [...Object.entries(all), [signature, mapping] as const].slice(-20);
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    // Navigation privée ou stockage plein : la mémoire est un simple confort
+  }
+}
+
+const DEFAULT_MARGIN = 30;
+
 export function ProductImport({
   existing,
   productCount,
@@ -98,6 +128,9 @@ export function ProductImport({
   const [mapping, setMapping] = useState<(ImportField | null)[]>([]);
   const [mode, setMode] = useState<"ignorer" | "mettre-a-jour">("ignorer");
   const [convertEuro, setConvertEuro] = useState(false);
+  const [computeSale, setComputeSale] = useState(false);
+  const [margin, setMargin] = useState(String(DEFAULT_MARGIN));
+  const [useSections, setUseSections] = useState(true);
   const [reading, setReading] = useState(false);
   const [readError, setReadError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -109,11 +142,16 @@ export function ProductImport({
   function analyse(s: Sheet, forcedHeader?: number) {
     const header = forcedHeader ?? detectHeaderRow(s.rows);
     const data = s.rows.slice(header + 1);
-    const g = autoMap(header >= 0 ? s.rows[header]! : [], data);
+    const headers = header >= 0 ? s.rows[header]! : [];
+    // Un fichier de même forme qu'au dernier import reprend les colonnes choisies alors
+    const g = applySavedMapping(autoMap(headers, data), savedMappings()[headerSignature(headers)]);
+    const fields = g.map((x) => x.field);
     setHeaderRow(header);
     setGuesses(g);
-    setMapping(g.map((x) => x.field));
-    setConvertEuro(shouldConvertEuro(data, g.map((x) => x.field)));
+    setMapping(fields);
+    setConvertEuro(shouldConvertEuro(data, fields));
+    setComputeSale(fields.includes("costPrice") && !fields.includes("salePrice"));
+    setUseSections(true);
   }
 
   async function onFile(file: File | undefined) {
@@ -125,8 +163,8 @@ export function ProductImport({
       if (file.size > 15 * 1024 * 1024) throw new Error("Fichier trop lourd (15 Mo au plus).");
       const all = (await readFile(file)).filter((s) => s.rows.some((r) => r.some((c) => show(c).trim() !== "")));
       if (all.length === 0) throw new Error("Ce fichier ne contient aucune donnée.");
-      // La feuille la plus remplie est choisie par défaut
-      const best = all.reduce((b, s, i) => (s.rows.length > all[b]!.rows.length ? i : b), 0);
+      // La feuille qui ressemble le plus à une liste de produits est choisie par défaut
+      const best = pickBestSheet(all);
       setFileName(file.name);
       setSheets(all);
       setSheetIndex(best);
@@ -145,24 +183,33 @@ export function ProductImport({
   const euro = useMemo(() => (sheet ? detectEuro(sheet.display.slice(headerRow + 1), mapping) : false), [sheet, headerRow, mapping]);
   // Sans colonne d'unité, une colonne de taille peut donner le contenant (« Sac de 11 kg » → sac)
   const sizeColumn = mapping.includes("unit") ? -1 : guesses.findIndex((g, i) => g.ignored === "taille" && mapping[i] === null);
+  const marginValue = Number(margin.replace(",", "."));
+  const marginOk = Number.isFinite(marginValue) && marginValue >= 0 && marginValue <= 1000;
   const rows = useMemo(
     () =>
       mapping.includes("name")
         ? buildRows(dataRows, mapping, firstLine, {
             sizeColumn: sizeColumn >= 0 ? sizeColumn : undefined,
             priceFactor: euro && convertEuro ? EUR_TO_FCFA : 1,
+            marginPercent: computeSale && marginOk ? marginValue : undefined,
+            sections: useSections,
           })
         : [],
-    [dataRows, mapping, firstLine, sizeColumn, euro, convertEuro],
+    [dataRows, mapping, firstLine, sizeColumn, euro, convertEuro, computeSale, marginOk, marginValue, useSections],
   );
   const valid = rows.filter((r) => !r.error);
   const rejected = rows.filter((r) => r.error);
   const warned = valid.filter((r) => r.warnings.length > 0);
+  // Ce que Sama Stock a complété tout seul
+  const sectionNames = [...new Set(rows.filter((r) => r.derived.category).map((r) => r.category))];
+  const unitsFound = valid.filter((r) => r.derived.unit === "nom" || r.derived.unit === "quantite").length;
+  const pricesComputed = valid.filter((r) => r.derived.salePrice).length;
+  const missingSale = valid.filter((r) => r.salePrice === 0 && r.costPrice > 0).length;
 
   const existingNames = useMemo(() => new Set(existing.names), [existing.names]);
   const existingRefs = useMemo(() => new Set(existing.references), [existing.references]);
   const isExisting = (r: (typeof rows)[number]) =>
-    (r.reference !== "" && existingRefs.has(normalizeText(r.reference))) || existingNames.has(normalizeText(r.name));
+    (r.reference !== "" && existingRefs.has(normalizeText(r.reference))) || existingNames.has(productKey(r.name));
   const already = valid.filter(isExisting).length;
   const fresh = valid.length - already;
   const room = maxProducts === null ? Number.POSITIVE_INFINITY : Math.max(0, maxProducts - productCount);
@@ -179,6 +226,7 @@ export function ProductImport({
   }
 
   async function runImport() {
+    if (sheet && headerRow >= 0) rememberMapping(headerSignature(sheet.rows[headerRow]!), mapping);
     setProgress(0);
     const total: ImportBatchResult & { error?: string } = {
       created: 0,
@@ -416,10 +464,10 @@ export function ProductImport({
                             <span
                               className={cn(
                                 "rounded-full px-2 py-0.5 text-xs font-medium",
-                                guess.source === "titre" ? "bg-accent text-accent-foreground" : "bg-saffron/15 text-warning dark:text-saffron",
+                                guess.source === "contenu" ? "bg-saffron/15 text-warning dark:text-saffron" : "bg-accent text-accent-foreground",
                               )}
                             >
-                              {guess.source === "titre" ? "Reconnue" : "Devinée"}
+                              {guess.source === "titre" ? "Reconnue" : guess.source === "memoire" ? "Votre choix précédent" : "Devinée"}
                               {guess.note && ` · ${guess.note}`}
                             </span>
                           )}
@@ -451,10 +499,51 @@ export function ProductImport({
               </Label>
             </div>
           )}
-          {hasName && !mapping.includes("salePrice") && (
+          {hasName && (missingSale > 0 || pricesComputed > 0) && (
+            <div className="mt-3 space-y-2 rounded-xl border bg-muted/40 px-4 py-3 text-sm">
+              <div className="flex flex-wrap items-center gap-3">
+                <Switch id="compute-sale" checked={computeSale} onCheckedChange={setComputeSale} />
+                <Label htmlFor="compute-sale" className="block flex-1 leading-snug font-normal">
+                  <strong>Calculer les prix de vente manquants</strong> à partir du prix d&apos;achat
+                  {computeSale ? ` (${pricesComputed} produit${pricesComputed > 1 ? "s" : ""})` : ` (${missingSale} produit${missingSale > 1 ? "s" : ""} sans prix de vente)`}
+                </Label>
+              </div>
+              {computeSale && (
+                <div className="space-y-1 pl-12">
+                  <div className="flex items-center gap-2">
+                    Prix de vente = prix d&apos;achat +
+                    <Input
+                      value={margin}
+                      onChange={(e) => setMargin(e.target.value)}
+                      inputMode="decimal"
+                      aria-label="Marge en pourcentage"
+                      className={cn("h-8 w-16 shrink-0 text-right", !marginOk && "border-destructive")}
+                    />
+                    %
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Arrondi aux 25 FCFA supérieurs. Exemple : un produit acheté 10 000 FCFA sera vendu{" "}
+                    {marginOk ? formatFCFA(Math.ceil((10_000 * (1 + marginValue / 100)) / 25) * 25) : "—"}.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {hasName && !mapping.includes("salePrice") && !mapping.includes("costPrice") && (
             <p className="mt-3 flex items-center gap-2 text-sm text-warning dark:text-saffron">
-              <AlertTriangle className="size-4" /> Aucune colonne de prix de vente : les produits seront créés à 0 FCFA.
+              <AlertTriangle className="size-4" /> Aucune colonne de prix : les produits seront créés à 0 FCFA.
             </p>
+          )}
+          {hasName && (sectionNames.length > 0 || !useSections) && (
+            <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border bg-muted/40 px-4 py-3 text-sm">
+              <Switch id="use-sections" checked={useSections} onCheckedChange={setUseSections} />
+              <Label htmlFor="use-sections" className="block flex-1 leading-snug font-normal">
+                <strong>Utiliser les titres de groupe comme catégories</strong>
+                {useSections
+                  ? ` : ${sectionNames.slice(0, 6).join(", ")}${sectionNames.length > 6 ? "…" : ""}`
+                  : " (lignes comme « BOISSONS » au-dessus d'un groupe de produits)"}
+              </Label>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -471,6 +560,21 @@ export function ProductImport({
             </p>
           </CardHeader>
           <CardContent className="space-y-5">
+            {(unitsFound > 0 || pricesComputed > 0 || sectionNames.length > 0) && (
+              <ul className="flex flex-wrap gap-2 text-xs">
+                {[
+                  unitsFound > 0 && `Unité trouvée dans le nom ou la quantité : ${unitsFound} produit${unitsFound > 1 ? "s" : ""}`,
+                  pricesComputed > 0 && `Prix de vente calculé : ${pricesComputed} produit${pricesComputed > 1 ? "s" : ""}`,
+                  sectionNames.length > 0 && `Catégories tirées des titres de groupe : ${sectionNames.length}`,
+                ]
+                  .filter(Boolean)
+                  .map((t) => (
+                    <li key={t as string} className="flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 font-medium text-accent-foreground">
+                      <Sparkles className="size-3.5 text-primary" /> {t}
+                    </li>
+                  ))}
+              </ul>
+            )}
             <div className="overflow-x-auto rounded-xl border">
               <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-muted text-left text-xs text-muted-foreground">
@@ -494,7 +598,10 @@ export function ProductImport({
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">{r.category || "—"}</td>
                       <td className="num px-3 py-2 text-right whitespace-nowrap">{formatFCFA(r.costPrice)}</td>
-                      <td className="num px-3 py-2 text-right font-semibold whitespace-nowrap">{formatFCFA(r.salePrice)}</td>
+                      <td className="num px-3 py-2 text-right font-semibold whitespace-nowrap">
+                        {formatFCFA(r.salePrice)}
+                        {r.derived.salePrice && <span className="block text-[0.6875rem] font-normal text-muted-foreground">calculé</span>}
+                      </td>
                       <td className="num px-3 py-2 text-right whitespace-nowrap">{formatQty(r.stock, r.unit)}</td>
                     </tr>
                   ))}

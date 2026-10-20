@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/db";
 import { products } from "@/db/schema";
-import { normalizeText } from "@/lib/import/products";
+import { normalizeText, productKey } from "@/lib/import/products";
 import { requireContext } from "@/server/context";
 
 export const metadata: Metadata = { title: "Importer des produits" };
@@ -58,7 +58,7 @@ export default async function ImporterPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         <ProductImport
           existing={{
-            names: rows.map((r) => normalizeText(r.name)),
+            names: rows.map((r) => productKey(r.name)),
             references: rows.filter((r) => r.reference).map((r) => normalizeText(r.reference)),
           }}
           productCount={rows.length}
@@ -72,10 +72,12 @@ export default async function ImporterPage() {
           <ul className="space-y-2">
             {[
               "Votre fichier peut venir de n'importe où : seul le nom du produit est obligatoire.",
-              "Les colonnes sont reconnues par leur titre, ou devinées d'après leur contenu.",
-              "Les tailles (« 3,5 litres »), montants calculés et anciens comptages sont écartés.",
-              "« 15 000 FCFA », « 15.000 » ou « 15k » sont lus correctement.",
-              "Les catégories qui n'existent pas encore sont créées.",
+              "Les colonnes sont reconnues par leur titre, même avec une faute de frappe, ou devinées d'après leur contenu.",
+              "Les tailles (« 3,5 litres »), montants calculés, anciens comptages et ventes passées sont écartés.",
+              "« 15 000 FCFA », « 1500F », « 15.000 » ou « 2 cartons » sont lus correctement.",
+              "Les titres de groupe (« BOISSONS ») deviennent des catégories ; celles qui n'existent pas sont créées.",
+              "Pas de prix de vente ? Sama Stock peut le calculer à partir du prix d'achat.",
+              "Vos corrections sont retenues pour le prochain fichier de même forme.",
               "Rien n'est enregistré avant que vous cliquiez sur « Importer ».",
             ].map((t) => (
               <li key={t} className="flex gap-2">

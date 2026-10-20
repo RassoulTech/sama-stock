@@ -9,7 +9,7 @@ import { COMPLETED_SALE } from "./customers";
 const seller = alias(user, "seller");
 
 /** Nombre maximum de lignes de vente exportées. */
-export const EXPORT_LINE_LIMIT = 50_000;
+export const EXPORT_LINE_LIMIT = 20_000;
 
 /** Détail ligne par ligne des ventes validées et commandes livrées de la période. */
 export async function saleLines(ctx: BusinessContext, from: Date, to: Date) {

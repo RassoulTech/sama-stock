@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Génération des fichiers Excel mis en forme (rapports, modèle d'import)
+  serverExternalPackages: ["exceljs"],
   turbopack: {
     rules: {
       "*.css": {

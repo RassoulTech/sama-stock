@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { categories, products, stockLevels, stockMovements } from "@/db/schema";
 import { isUnitId, unitAllowsDecimals } from "@/lib/format";
-import { IMPORT_BATCH, normalizeText } from "@/lib/import/products";
+import { IMPORT_BATCH, normalizeText, productKey } from "@/lib/import/products";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
 
@@ -52,7 +52,7 @@ export async function importProductsBatch(input: ImportBatchInput) {
         .select({ id: products.id, name: products.name, reference: products.reference })
         .from(products)
         .where(and(eq(products.businessId, businessId), isNull(products.archivedAt)));
-      const byName = new Map(current.map((p) => [normalizeText(p.name), p.id]));
+      const byName = new Map(current.map((p) => [productKey(p.name), p.id]));
       const byRef = new Map(current.filter((p) => p.reference).map((p) => [normalizeText(p.reference), p.id]));
 
       // Catégories : on réutilise celles qui existent (sans tenir compte des majuscules/accents)
@@ -80,7 +80,7 @@ export async function importProductsBatch(input: ImportBatchInput) {
       const newStock: { productId: string; quantity: number; unitCost: number }[] = [];
 
       for (const r of rows) {
-        const id = (r.reference && byRef.get(normalizeText(r.reference))) || byName.get(normalizeText(r.name));
+        const id = (r.reference && byRef.get(normalizeText(r.reference))) || byName.get(productKey(r.name));
         if (id) {
           if (existing === "ignorer") {
             out.skipped.push({ line: r.line, name: r.name, reason: "Existe déjà" });
@@ -118,7 +118,7 @@ export async function importProductsBatch(input: ImportBatchInput) {
         });
         const qty = decimals ? r.stock : Math.round(r.stock);
         if (qty > 0) newStock.push({ productId, quantity: qty, unitCost: r.costPrice });
-        byName.set(normalizeText(r.name), productId);
+        byName.set(productKey(r.name), productId);
         if (r.reference) byRef.set(normalizeText(r.reference), productId);
         room--;
         out.created++;
