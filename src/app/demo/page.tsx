@@ -71,6 +71,7 @@ export default async function DemoPage() {
               { label: `${plan.maxLocations} boutique${plan.maxLocations > 1 ? "s ou dépôts" : ""}`, ok: true },
               { label: "Caisse, commandes, crédits, inventaire", ok: true },
               { label: "Rapports et ventes par catégorie", ok: plan.advancedReports },
+              { label: "Import et export Excel", ok: plan.excel },
             ];
             return (
               <section

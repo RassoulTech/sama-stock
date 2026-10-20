@@ -24,6 +24,9 @@ export const PERIOD_PRESETS = {
 
 export type PeriodPreset = keyof typeof PERIOD_PRESETS;
 
+/** Périodes proposées dans les rapports (et pour leur export). */
+export const REPORT_PRESETS: PeriodPreset[] = ["7j", "30j", "mois", "mois-dernier", "90j"];
+
 /** Valeur de `periode` quand l'utilisateur choisit ses propres dates (`du` et `au`). */
 export const CUSTOM_PERIOD = "dates";
 

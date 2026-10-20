@@ -1,4 +1,4 @@
-import { BarChart3, Lock, PackageMinus, Percent, ShieldAlert, ShoppingBag, Tags, TrendingUp, Wallet } from "lucide-react";
+import { BarChart3, Download, Lock, PackageMinus, Percent, ShieldAlert, ShoppingBag, Tags, TrendingUp, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BarList } from "@/components/charts/bar-list";
@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { resolvePeriod, type PeriodPreset, type SearchParams } from "@/lib/filters";
+import { REPORT_PRESETS as PRESETS, resolvePeriod, type SearchParams } from "@/lib/filters";
 import { formatDate, formatFCFA, formatQty } from "@/lib/format";
 import { REASON_LABELS } from "@/lib/domain/stock";
 import { CHANNELS, PAYMENT_METHODS, type Channel, type PaymentMethod } from "@/lib/domain/sales";
@@ -24,8 +24,6 @@ import {
 } from "@/server/queries/analytics";
 
 export const metadata: Metadata = { title: "Rapports" };
-
-const PRESETS: PeriodPreset[] = ["7j", "30j", "mois", "mois-dernier", "90j"];
 
 export default async function RapportsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const ctx = await requireContext("reports.view");
@@ -82,7 +80,19 @@ export default async function RapportsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Rapports" description="Chiffres hors frais de livraison, ventes validées et commandes livrées." />
+      <PageHeader
+        title="Rapports"
+        description="Chiffres hors frais de livraison, ventes validées et commandes livrées."
+        actions={
+          ctx.plan.limits.excel && (
+            <Button asChild variant="outline">
+              <a href={`/api/rapports/export?${periodQuery}`} download>
+                <Download /> Exporter en Excel
+              </a>
+            </Button>
+          )
+        }
+      />
 
       <FilterBar
         period={{ value: period.key, presets: PRESETS, fallback: "30j", du: period.du, au: period.au, customLabel: period.label }}

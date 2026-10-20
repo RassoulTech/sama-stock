@@ -34,6 +34,7 @@ function features(p: PlanDefinition) {
     "Caisse, commandes en ligne, crédits clients",
     "Inventaire, pertes, fournisseurs",
     ...(p.advancedReports ? ["Rapports avancés (bénéfices, meilleurs produits…)"] : []),
+    ...(p.excel ? ["Import des produits et export des rapports Excel"] : []),
   ];
 }
 

@@ -620,6 +620,7 @@ export default async function HomePage() {
                         `${p.maxLocations} boutique${p.maxLocations > 1 ? "s ou dépôts" : ""}`,
                         "Caisse, commandes, crédits, inventaire",
                         p.advancedReports ? "Rapports avancés" : "Rapports avancés non inclus",
+                        p.excel ? "Import et export Excel" : "Import et export Excel non inclus",
                       ].map((f) => (
                         <li key={f} className={cn("flex gap-2.5", f.endsWith("non inclus") && "text-muted-foreground")}>
                           {f.endsWith("non inclus") ? (

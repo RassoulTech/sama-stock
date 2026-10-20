@@ -3,11 +3,11 @@ import {
   BarChart3,
   Bike,
   Check,
+  FileSpreadsheet,
   HandCoins,
   Lock,
   PackageX,
   ShoppingCart,
-  Tags,
   UserCog,
   X,
   type LucideIcon,
@@ -33,8 +33,8 @@ const STEPS: Step[] = [
   { href: "/commandes", icon: Bike, title: "Suivre une commande", text: "Une commande Instagram ou WhatsApp, de la préparation à la livraison." },
   { href: "/produits?etat=bas", icon: PackageX, title: "Voir les stocks bas", text: "Les produits à racheter avant la rupture." },
   { href: "/clients", icon: HandCoins, title: "Relancer un crédit", text: "Qui doit combien, et un rappel poli en un clic sur WhatsApp." },
-  { href: "/categories", icon: Tags, title: "Les catégories", text: "Vos familles de produits, leur stock et leurs ventes." },
-  { href: "/rapports", icon: BarChart3, title: "Ventes par catégorie", text: "Rapports : bénéfice, meilleurs produits, canaux, pertes.", plans: ["pro", "business"] },
+  { href: "/produits/importer", icon: FileSpreadsheet, title: "Importer depuis Excel", text: "Votre liste de produits d'un coup, même sans modèle.", plans: ["pro", "business"] },
+  { href: "/rapports", icon: BarChart3, title: "Rapports et export Excel", text: "Bénéfice, ventes par catégorie, pertes… et le tout dans Excel.", plans: ["pro", "business"] },
   { href: "/equipe", icon: UserCog, title: "L'équipe et ses rôles", text: "Gérant, vendeur, magasinier : chacun ne voit que ce qu'il faut.", plans: ["pro", "business"] },
   { href: "/stock/transfert", icon: ArrowLeftRight, title: "Plusieurs boutiques", text: "Transférez du stock entre la boutique et le dépôt.", plans: ["business"] },
 ];
@@ -50,6 +50,7 @@ export function DemoGuide({ plan, businessName, pitch }: { plan: PlanId; busines
     { label: `${def.maxLocations} boutique${def.maxLocations > 1 ? "s ou dépôts" : ""}`, ok: true },
     { label: "Caisse, commandes, crédits, inventaire, catégories", ok: true },
     { label: "Rapports avancés et ventes par catégorie", ok: def.advancedReports },
+    { label: "Import et export Excel", ok: def.excel },
   ];
 
   return (

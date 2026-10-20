@@ -6,9 +6,9 @@ const days = (n: number) => new Date(now.getTime() + n * 86_400_000);
 
 describe("PLANS", () => {
   it("matches the validated pricing grid", () => {
-    expect(PLANS.trial).toMatchObject({ price: 0, maxProducts: 20, maxEmployees: 0, maxLocations: 1, advancedReports: false });
-    expect(PLANS.pro).toMatchObject({ price: 6500, maxProducts: 50, maxEmployees: 3, maxLocations: 1, advancedReports: true });
-    expect(PLANS.business).toMatchObject({ price: 11500, maxProducts: null, maxEmployees: null, maxLocations: 3, advancedReports: true });
+    expect(PLANS.trial).toMatchObject({ price: 0, maxProducts: 20, maxEmployees: 0, maxLocations: 1, advancedReports: false, excel: false });
+    expect(PLANS.pro).toMatchObject({ price: 6500, maxProducts: 50, maxEmployees: 3, maxLocations: 1, advancedReports: true, excel: true });
+    expect(PLANS.business).toMatchObject({ price: 11500, maxProducts: null, maxEmployees: null, maxLocations: 3, advancedReports: true, excel: true });
   });
 });
 

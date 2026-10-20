@@ -1,4 +1,4 @@
-import { Package, Plus } from "lucide-react";
+import { FileSpreadsheet, Package, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductList } from "@/components/products/product-list";
@@ -31,11 +31,18 @@ export default async function ProduitsPage({
         description={`${products.length} produit${products.length > 1 ? "s" : ""} · stock de ${ctx.location.name}`}
         actions={
           canManage && (
-            <Button asChild>
-              <Link href="/produits/nouveau">
-                <Plus /> Nouveau produit
-              </Link>
-            </Button>
+            <>
+              <Button asChild variant="outline">
+                <Link href="/produits/importer">
+                  <FileSpreadsheet /> Importer (Excel)
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/produits/nouveau">
+                  <Plus /> Nouveau produit
+                </Link>
+              </Button>
+            </>
           )
         }
       />
@@ -52,14 +59,21 @@ export default async function ProduitsPage({
           <EmptyState
             icon={Package}
             title="Ajoutez votre premier produit"
-            description="Nom, prix, quantité en stock : c'est tout ce qu'il faut pour commencer."
+            description="Nom, prix, quantité en stock : c'est tout ce qu'il faut pour commencer. Vous avez déjà une liste dans Excel ? Importez-la d'un coup."
             action={
               canManage && (
-                <Button asChild>
-                  <Link href="/produits/nouveau">
-                    <Plus /> Nouveau produit
-                  </Link>
-                </Button>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button asChild>
+                    <Link href="/produits/nouveau">
+                      <Plus /> Nouveau produit
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/produits/importer">
+                      <FileSpreadsheet /> Importer (Excel)
+                    </Link>
+                  </Button>
+                </div>
               )
             }
           />

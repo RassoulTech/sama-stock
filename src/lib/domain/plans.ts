@@ -6,6 +6,8 @@ export interface PlanLimits {
   maxEmployees: number | null;
   maxLocations: number;
   advancedReports: boolean;
+  /** Import des produits et export des rapports au format Excel. */
+  excel: boolean;
 }
 
 export interface PlanDefinition extends PlanLimits {
@@ -28,6 +30,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     maxEmployees: 0,
     maxLocations: 1,
     advancedReports: false,
+    excel: false,
   },
   pro: {
     id: "pro",
@@ -38,6 +41,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     maxEmployees: 3,
     maxLocations: 1,
     advancedReports: true,
+    excel: true,
   },
   business: {
     id: "business",
@@ -48,6 +52,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     maxEmployees: null,
     maxLocations: 3,
     advancedReports: true,
+    excel: true,
   },
 };
 
@@ -102,6 +107,7 @@ export function computePlanState(
     maxEmployees: def.maxEmployees,
     maxLocations: def.maxLocations,
     advancedReports: def.advancedReports,
+    excel: def.excel,
   };
   return {
     plan,
