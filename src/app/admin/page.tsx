@@ -1,26 +1,35 @@
-import { CalendarClock, Coins, CreditCard, MonitorSmartphone, ReceiptText, Store, TrendingUp, UserRound } from "lucide-react";
+import { Activity, CalendarClock, Coins, Download, Percent, ShoppingBag, Store, TrendingUp, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AuditList } from "@/components/admin/audit-list";
 import { BarChart } from "@/components/admin/bar-chart";
+import { Funnel, HealthPill } from "@/components/admin/contact-buttons";
+import { AdminStat, compareTrend } from "@/components/admin/admin-stat";
+import { TodoList } from "@/components/admin/todo-list";
 import { PageHeader } from "@/components/shared/page-header";
-import { AdminStat } from "@/components/admin/admin-stat";
 import { StatusPill } from "@/components/shared/stock-badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PLAN_STATUS_LABELS, PLAN_STATUS_TONES } from "@/lib/domain/plans";
+import { PLAN_STATUS_TONES } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatNumber } from "@/lib/format";
-import { adminStats, endingSoon, listAllBusinesses, platformOverview } from "@/server/queries/admin";
+import { activationFunnel, adminStats, listAllBusinesses, listAudit, platformOverview, todoLists } from "@/server/queries/admin";
 
 export const metadata: Metadata = { title: { absolute: "Tableau de bord · Administration" } };
 
 const MONTH = new Intl.DateTimeFormat("fr-FR", { month: "short", year: "2-digit", timeZone: "UTC" });
 const DAY = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" });
+const TODAY = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Dakar" });
 
 export default async function AdminDashboardPage() {
-  const [rows, overview] = await Promise.all([listAllBusinesses(), platformOverview()]);
+  const [rows, overview, audit] = await Promise.all([listAllBusinesses(), platformOverview(), listAudit({ limit: 6 })]);
   const stats = adminStats(rows);
   const c = overview.counts;
-  const soon = endingSoon(rows, 7);
+  const todo = todoLists(rows);
+  const funnel = activationFunnel(rows);
+  const paidEver = funnel.at(-1)!.count;
+  const conversion = stats.total > 0 ? Math.round((paidEver / stats.total) * 100) : 0;
   const latest = rows.slice(0, 5);
+  const todoCount = Object.values(todo).reduce((s, l) => s + l.length, 0);
 
   const signups = overview.signups.map((d, i) => ({
     key: d.day,
@@ -36,73 +45,124 @@ export default async function AdminDashboardPage() {
     const label = MONTH.format(new Date(`${m.month}-01T00:00:00Z`));
     return { key: m.month, label, value: m.total, tick: label };
   });
+  const today = TODAY.format(new Date());
 
   return (
     <>
-      <PageHeader title="Tableau de bord" description="Vue d'ensemble de la plateforme Sama Stock." />
+      <PageHeader
+        title="Tableau de bord"
+        description={`${today.charAt(0).toUpperCase()}${today.slice(1)} · vue d'ensemble de la plateforme`}
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <a href="/api/admin/export/commerces" download>
+              <Download /> Exporter les commerces
+            </a>
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <AdminStat index={0} label="Commerces" value={stats.total} hint={`${stats.trialing} en essai gratuit`} icon={Store} href="/admin/commerces" />
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <AdminStat
-          index={1}
-          label="Abonnés payants"
-          value={stats.active}
-          hint={`${stats.expired} expiré${stats.expired > 1 ? "s" : ""} · ${stats.suspended} suspendu${stats.suspended > 1 ? "s" : ""}`}
-          icon={CreditCard}
+          index={0}
+          label="Revenu mensuel récurrent"
+          value={stats.mrr}
+          unit="FCFA"
+          hint={`${stats.active} abonné${stats.active > 1 ? "s" : ""} payant${stats.active > 1 ? "s" : ""}`}
+          icon={TrendingUp}
           href="/admin/abonnements"
         />
         <AdminStat
-          index={2}
+          index={1}
           label="Encaissé ce mois"
           value={c.revenue_month}
           unit="FCFA"
-          hint={`Mois dernier : ${formatFCFA(c.revenue_prev)}`}
+          trend={compareTrend(c.revenue_month, c.revenue_prev, "vs mois dernier", { format: (n) => formatNumber(n) })}
           icon={Coins}
           href="/admin/paiements"
         />
         <AdminStat
-          index={3}
-          label="Revenu mensuel récurrent"
-          value={stats.mrr}
-          unit="FCFA"
-          hint="Abonnements payants en cours"
-          icon={TrendingUp}
+          index={2}
+          label="Commerces inscrits"
+          value={stats.total}
+          hint={`${c.signups_month} ce mois · ${stats.trialing} en essai`}
+          trend={compareTrend(c.signups_month, c.signups_prev, "vs mois dernier")}
+          icon={Store}
+          href="/admin/commerces"
         />
+        <AdminStat index={3} label="Taux de conversion" value={conversion} unit="%" hint="Inscrits devenus payants" icon={Percent} tone="blue" />
         <AdminStat
           index={4}
-          label="Utilisateurs"
-          value={c.users}
-          hint={`${c.google_users} avec Google · ${c.active_users7} actif${c.active_users7 > 1 ? "s" : ""} (7 j)`}
-          icon={UserRound}
+          label="En activité (7 j)"
+          value={stats.alive7}
+          hint={`sur ${stats.total} · une vente ou du stock`}
+          icon={Activity}
           tone="blue"
-          href="/admin/utilisateurs"
+          href="/admin/commerces?activite=active"
         />
         <AdminStat
           index={5}
-          label="Connexions actives"
-          value={c.active_sessions}
-          hint="Sessions ouvertes en ce moment"
-          icon={MonitorSmartphone}
-          tone="blue"
-          href="/admin/connexions"
+          label="Vendu par les commerçants"
+          value={c.gmv30}
+          unit="FCFA"
+          hint={`${formatNumber(c.sales30)} ventes en 30 jours`}
+          icon={ShoppingBag}
+          tone="slate"
         />
         <AdminStat
           index={6}
-          label="Ventes (30 jours)"
-          value={c.sales30}
-          hint={`${formatNumber(c.products)} produits suivis sur la plateforme`}
-          icon={ReceiptText}
+          label="Utilisateurs"
+          value={c.users}
+          hint={`${c.active_users7} actif${c.active_users7 > 1 ? "s" : ""} (7 j) · ${c.orphan_users} sans commerce`}
+          icon={UserRound}
           tone="slate"
+          href="/admin/utilisateurs"
         />
         <AdminStat
           index={7}
           label="Paiements en attente"
           value={c.pending_checkouts}
-          hint="Paiements en ligne non confirmés (48 h)"
+          hint="Wave / Orange Money non confirmés (48 h)"
           icon={CalendarClock}
           tone={c.pending_checkouts > 0 ? "saffron" : "slate"}
           href="/admin/paiements"
         />
+      </div>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-semibold">
+              À faire aujourd&apos;hui
+              {todoCount > 0 && <span className="num rounded-full bg-saffron px-2 text-xs font-bold text-saffron-foreground">{todoCount}</span>}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Les commerçants à relancer ou à accompagner, avec WhatsApp en un geste.</p>
+          </CardHeader>
+          <CardContent>
+            <TodoList todo={todo} />
+          </CardContent>
+        </Card>
+        <div className="space-y-5">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-semibold">Parcours des commerçants</CardTitle>
+              <p className="text-sm text-muted-foreground">De l&apos;inscription au premier paiement.</p>
+            </CardHeader>
+            <CardContent>
+              <Funnel steps={funnel} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
+              <CardTitle className="font-semibold">Dernières actions de l&apos;équipe</CardTitle>
+              <Link href="/admin/journal" className="text-xs font-medium text-primary hover:underline">
+                Tout le journal
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <AuditList entries={audit} compact />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
@@ -124,54 +184,34 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-semibold">À surveiller : fin d&apos;essai ou d&apos;abonnement sous 7 jours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {soon.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune échéance dans les 7 prochains jours.</p>
-            ) : (
-              <ul className="divide-y text-sm">
-                {soon.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
-                    <Link href={`/admin/commerces/${r.id}`} className="min-w-0 truncate font-medium hover:underline">
-                      {r.name}
-                    </Link>
-                    <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                      <StatusPill tone={PLAN_STATUS_TONES[r.state.status]}>{r.state.label}</StatusPill>
-                      fin le {formatDate(r.state.endsAt!)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-semibold">Derniers commerces inscrits</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y text-sm">
-              {latest.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 py-2.5">
+      <Card className="mt-5">
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <CardTitle className="font-semibold">Derniers commerces inscrits</CardTitle>
+          <Link href="/admin/commerces" className="text-xs font-medium text-primary hover:underline">
+            Tous les commerces
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <ul className="divide-y text-sm">
+            {latest.map((r) => (
+              <li key={r.id}>
+                <Link href={`/admin/commerces/${r.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-primary">
                   <span className="min-w-0">
-                    <Link href={`/admin/commerces/${r.id}`} className="block truncate font-medium hover:underline">
-                      {r.name}
-                    </Link>
+                    <span className="block truncate font-medium">{r.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {r.ownerName ?? "—"} · inscrit le {formatDate(r.createdAt)}
+                      {[r.ownerName, r.city].filter(Boolean).join(" · ") || "—"} · inscrit le {formatDate(r.createdAt)}
                     </span>
                   </span>
-                  <StatusPill tone={PLAN_STATUS_TONES[r.state.status]}>{PLAN_STATUS_LABELS[r.state.status]}</StatusPill>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+                  <span className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
+                    <HealthPill health={r.health} />
+                    <StatusPill tone={PLAN_STATUS_TONES[r.state.status]}>{r.state.label}</StatusPill>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, ShieldCheck } from "lucide-react";
+import { LogOut, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { GoogleIcon } from "@/components/brand/google-icon";
@@ -27,8 +27,8 @@ export interface AdminUserRow {
 
 type Filter = "all" | "google" | "email" | "orphan" | "admin";
 
-export function UsersTable({ rows }: { rows: AdminUserRow[] }) {
-  const [q, setQ] = useState("");
+export function UsersTable({ rows, initialQuery = "" }: { rows: AdminUserRow[]; initialQuery?: string }) {
+  const [q, setQ] = useState(initialQuery);
   const [filter, setFilter] = useState<Filter>("all");
   const test: Record<Filter, (r: AdminUserRow) => boolean> = {
     all: () => true,
@@ -60,7 +60,7 @@ export function UsersTable({ rows }: { rows: AdminUserRow[] }) {
       ) : (
         <ul className="surface divide-y">
           {filtered.map((u) => (
-            <li key={u.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+            <li key={u.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-3 p-4 sm:flex sm:items-center">
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-primary">
                 {initials(u.name || u.email)}
               </span>
@@ -94,14 +94,21 @@ export function UsersTable({ rows }: { rows: AdminUserRow[] }) {
                   )}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground sm:text-right">
-                <span>
+              <div className="col-start-2 flex shrink-0 items-center gap-2 text-xs text-muted-foreground sm:gap-4 sm:text-right">
+                <span className="flex-1 sm:flex-none">
                   Inscrit le {formatDate(u.createdAt)}
                   <span className="block">
                     {u.lastSeen ? `Vu le ${formatDateTime(u.lastSeen)}` : "Aucune session en cours"}
                     {u.activeSessions > 0 && ` · ${u.activeSessions} session${u.activeSessions > 1 ? "s" : ""}`}
                   </span>
                 </span>
+                <a
+                  href={`mailto:${u.email}`}
+                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border bg-card text-foreground transition-colors hover:bg-muted"
+                  aria-label={`Écrire à ${u.email}`}
+                >
+                  <Mail className="size-4" />
+                </a>
                 {u.activeSessions > 0 && !u.isCurrent && (
                   <ConfirmAction
                     trigger={

@@ -21,6 +21,8 @@ export default async function ProduitsPage({
   const params = await searchParams;
   const [products, categories] = await Promise.all([listProducts(ctx), listCategories(ctx.business.id)]);
   const canManage = ctx.can("products.manage") && !ctx.plan.readOnly;
+  // L'import Excel n'existe pas dans l'essai gratuit (formules Pro et Business seulement)
+  const canImport = canManage && ctx.plan.limits.excel;
   const initialState = params.etat === "bas" ? "low" : params.etat === "rupture" ? "out" : "all";
   const initialCategory = pickParam(params, "categorie", [...categories.map((c) => c.id), NO_CATEGORY]) ?? "all";
 
@@ -32,11 +34,13 @@ export default async function ProduitsPage({
         actions={
           canManage && (
             <>
-              <Button asChild variant="outline">
-                <Link href="/produits/importer">
-                  <FileSpreadsheet /> Importer (Excel)
-                </Link>
-              </Button>
+              {canImport && (
+                <Button asChild variant="outline">
+                  <Link href="/produits/importer">
+                    <FileSpreadsheet /> Importer (Excel)
+                  </Link>
+                </Button>
+              )}
               <Button asChild>
                 <Link href="/produits/nouveau">
                   <Plus /> Nouveau produit
@@ -59,7 +63,11 @@ export default async function ProduitsPage({
           <EmptyState
             icon={Package}
             title="Ajoutez votre premier produit"
-            description="Nom, prix, quantité en stock : c'est tout ce qu'il faut pour commencer. Vous avez déjà une liste dans Excel ? Importez-la d'un coup."
+            description={
+              canImport
+                ? "Nom, prix, quantité en stock : c'est tout ce qu'il faut pour commencer. Vous avez déjà une liste dans Excel ? Importez-la d'un coup."
+                : "Nom, prix, quantité en stock : c'est tout ce qu'il faut pour commencer."
+            }
             action={
               canManage && (
                 <div className="flex flex-wrap justify-center gap-2">
@@ -68,11 +76,13 @@ export default async function ProduitsPage({
                       <Plus /> Nouveau produit
                     </Link>
                   </Button>
-                  <Button asChild variant="outline">
-                    <Link href="/produits/importer">
-                      <FileSpreadsheet /> Importer (Excel)
-                    </Link>
-                  </Button>
+                  {canImport && (
+                    <Button asChild variant="outline">
+                      <Link href="/produits/importer">
+                        <FileSpreadsheet /> Importer (Excel)
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               )
             }

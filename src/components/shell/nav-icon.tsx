@@ -18,6 +18,7 @@ import {
   Wallet,
   Warehouse,
   Bike,
+  History,
   type LucideIcon,
 } from "lucide-react";
 import type { NavIcon } from "./nav";
@@ -42,6 +43,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   payments: Wallet,
   sessions: MonitorSmartphone,
   system: Activity,
+  history: History,
 };
 
 export function NavIconView({ icon, className }: { icon: NavIcon; className?: string }) {

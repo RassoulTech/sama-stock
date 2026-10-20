@@ -17,12 +17,15 @@ export function Sidebar({
   header,
   homeHref = "/tableau-de-bord",
   labels,
+  badges,
 }: {
   items: NavItem[];
   footer?: React.ReactNode;
   header?: React.ReactNode;
   homeHref?: string;
   labels?: Partial<Record<NavGroup, string | null>>;
+  /** Compteur à droite d'une rubrique (par adresse) ; « alert » signale quelque chose à traiter. */
+  badges?: Partial<Record<string, { value: number; tone: "alert" | "muted" }>>;
 }) {
   const pathname = usePathname();
   const groupLabels = { ...NAV_GROUP_LABELS, ...labels };
@@ -72,6 +75,18 @@ export function Sidebar({
                     <kbd className="ml-auto rounded border border-sidebar-primary/50 bg-sidebar-primary/15 px-1.5 py-px font-sans text-[10px] font-semibold tracking-wide text-sidebar-foreground">
                       CAISSE
                     </kbd>
+                  )}
+                  {badges?.[item.href] && (
+                    <span
+                      className={cn(
+                        "num ml-auto min-w-5 rounded-full px-1.5 text-center text-[11px] leading-5 font-semibold",
+                        badges[item.href]!.tone === "alert"
+                          ? "bg-saffron text-saffron-foreground"
+                          : "bg-sidebar-foreground/10 text-sidebar-foreground/75",
+                      )}
+                    >
+                      {badges[item.href]!.value}
+                    </span>
                   )}
                 </Link>
               );

@@ -35,7 +35,7 @@ export default async function AdminSessionsPage() {
         title="Connexions"
         description="Les sessions ouvertes en ce moment. Déconnectez un appareil perdu ou une activité suspecte."
       />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         <AdminStat index={0} label="Sessions ouvertes" value={rows.length} icon={MonitorSmartphone} tone="blue" />
         <AdminStat index={1} label="Personnes connectées" value={people} icon={UserRound} tone="blue" />
         <AdminStat index={2} label="Sur téléphone" value={mobile} icon={Smartphone} tone="slate" />

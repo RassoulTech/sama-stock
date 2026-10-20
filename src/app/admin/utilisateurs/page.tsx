@@ -1,15 +1,16 @@
-import { Activity, LogIn, UserRound, UserX } from "lucide-react";
+import { Activity, Download, LogIn, UserRound, UserX } from "lucide-react";
 import type { Metadata } from "next";
 import { UsersTable } from "@/components/admin/users-table";
 import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import { AdminStat } from "@/components/admin/admin-stat";
 import { isSuperAdminEmail, requireSuperAdmin } from "@/server/context";
 import { listAllUsers } from "@/server/queries/admin";
 
 export const metadata: Metadata = { title: "Utilisateurs" };
 
-export default async function AdminUsersPage() {
-  const [ctx, users] = await Promise.all([requireSuperAdmin(), listAllUsers()]);
+export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [ctx, users, params] = await Promise.all([requireSuperAdmin(), listAllUsers(), searchParams]);
   const rows = users.map((u) => ({
     id: u.id,
     name: u.name,
@@ -28,14 +29,24 @@ export default async function AdminUsersPage() {
 
   return (
     <>
-      <PageHeader title="Utilisateurs" description="Tous les comptes : mode de connexion, commerces, rôle et dernière activité." />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <PageHeader
+        title="Utilisateurs"
+        description="Tous les comptes : mode de connexion, commerces, rôle et dernière activité."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <a href="/api/admin/export/utilisateurs" download>
+              <Download /> Exporter (Excel)
+            </a>
+          </Button>
+        }
+      />
+      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         <AdminStat index={0} label="Comptes" value={rows.length} icon={UserRound} tone="blue" />
         <AdminStat index={1} label="Avec Google" value={google} icon={LogIn} tone="blue" />
         <AdminStat index={2} label="Sans commerce" value={orphans} hint="Inscription non terminée" icon={UserX} tone="saffron" />
         <AdminStat index={3} label="Connectés" value={online} hint="Au moins une session ouverte" icon={Activity} />
       </div>
-      <UsersTable rows={rows} />
+      <UsersTable rows={rows} initialQuery={typeof params.q === "string" ? params.q : ""} />
     </>
   );
 }

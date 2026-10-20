@@ -1,27 +1,42 @@
-import { AlertTriangle, Ban, Clock, Store, Users } from "lucide-react";
+import { Download } from "lucide-react";
 import type { Metadata } from "next";
 import { BusinessTable } from "@/components/admin/business-table";
 import { PageHeader } from "@/components/shared/page-header";
-import { AdminStat } from "@/components/admin/admin-stat";
+import { Button } from "@/components/ui/button";
+import { HEALTH_LABELS, type BusinessHealth } from "@/lib/domain/admin";
+import { PLAN_STATUS_LABELS, type PlanStatus } from "@/lib/domain/plans";
 import { adminStats, listAllBusinesses } from "@/server/queries/admin";
 
 export const metadata: Metadata = { title: "Commerces" };
 
-export default async function AdminBusinessesPage() {
-  const rows = await listAllBusinesses();
+type Params = Promise<Record<string, string | string[] | undefined>>;
+const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
+
+export default async function AdminBusinessesPage({ searchParams }: { searchParams: Params }) {
+  const [rows, params] = await Promise.all([listAllBusinesses(), searchParams]);
   const stats = adminStats(rows);
+  const statut = one(params.statut);
+  const activite = one(params.activite);
 
   return (
     <>
-      <PageHeader title="Commerces" description="Tous les commerces inscrits, leur formule et leur activité." />
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <AdminStat index={0} label="Commerces" value={stats.total} icon={Store} />
-        <AdminStat index={1} label="En essai" value={stats.trialing} icon={Clock} tone="blue" />
-        <AdminStat index={2} label="Payants" value={stats.active} icon={Users} />
-        <AdminStat index={3} label="Expirés" value={stats.expired} icon={AlertTriangle} tone="saffron" />
-        <AdminStat index={4} label="Suspendus" value={stats.suspended} icon={Ban} tone="red" />
-      </div>
+      <PageHeader
+        title="Commerces"
+        description={`${stats.total} commerce${stats.total > 1 ? "s" : ""} · ${stats.active} payant${stats.active > 1 ? "s" : ""} · ${stats.trialing} en essai · ${stats.alive7} en activité cette semaine`}
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <a href="/api/admin/export/commerces" download>
+              <Download /> Exporter (Excel)
+            </a>
+          </Button>
+        }
+      />
       <BusinessTable
+        initial={{
+          q: one(params.q),
+          status: statut && statut in PLAN_STATUS_LABELS ? (statut as PlanStatus) : undefined,
+          health: activite && activite in HEALTH_LABELS ? (activite as BusinessHealth) : undefined,
+        }}
         rows={rows.map((r) => ({
           id: r.id,
           name: r.name,
@@ -29,12 +44,17 @@ export default async function AdminBusinessesPage() {
           ownerEmail: r.ownerEmail,
           phone: r.phone,
           city: r.city,
+          plan: r.state.plan,
           planLabel: r.state.label,
           status: r.state.status,
+          health: r.health,
           endsAt: r.state.endsAt?.toISOString() ?? null,
+          daysLeft: r.state.daysLeft,
           productCount: r.productCount,
           memberCount: r.memberCount,
           sales30: r.sales30,
+          revenue30: r.revenue30,
+          lastActivity: r.lastActivity?.toISOString() ?? null,
           createdAt: r.createdAt.toISOString(),
         }))}
       />

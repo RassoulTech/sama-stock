@@ -370,3 +370,37 @@ export const subscriptionCheckouts = pgTable(
     index("subscription_checkouts_business_idx").on(t.businessId),
   ],
 );
+
+/** Journal des actions des administrateurs de la plateforme (qui a fait quoi, et quand). */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: id(),
+    actorId: text("actor_id").references(() => user.id, { onDelete: "set null" }),
+    actorEmail: text("actor_email").notNull(),
+    /** Type d'action : plan, extend, expire, cash, suspend, resume, revoke_session, revoke_user, note */
+    action: text("action").notNull(),
+    businessId: text("business_id").references(() => businesses.id, { onDelete: "set null" }),
+    targetUserId: text("target_user_id"),
+    /** Phrase lisible : « Formule Pro activée pour 30 jours ». */
+    summary: text("summary").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("admin_audit_log_created_idx").on(t.createdAt), index("admin_audit_log_business_idx").on(t.businessId)],
+);
+
+/** Notes internes des administrateurs sur un commerce (jamais visibles par le commerçant). */
+export const businessNotes = pgTable(
+  "business_notes",
+  {
+    id: id(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    authorName: text("author_name").notNull(),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("business_notes_business_idx").on(t.businessId)],
+);
