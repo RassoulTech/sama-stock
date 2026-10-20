@@ -10,7 +10,7 @@ import { normalizePhone } from "@/lib/format";
 import { canAdd, TRIAL_DAYS } from "@/lib/domain/plans";
 import { ACTIVITIES, defaultModules, type Activity } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
-import { BUSINESS_COOKIE, getContext, LOCATION_COOKIE, requireActionContext } from "../context";
+import { assertNotDemo, BUSINESS_COOKIE, getContext, LOCATION_COOKIE, requireActionContext } from "../context";
 
 const cookieOptions = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
 
@@ -38,6 +38,7 @@ export async function createBusiness(input: z.input<typeof businessSchema>) {
   return runAction(async () => {
     const ctx = await getContext();
     if (!ctx) throw new ActionError("Votre session a expiré. Reconnectez-vous.");
+    assertNotDemo(ctx, "La création d'un commerce");
     const data = parse(businessSchema, input);
 
     const businessId = await db.transaction(async (tx) => {
@@ -109,6 +110,7 @@ const settingsSchema = z.object({
 export async function updateBusiness(input: z.input<typeof settingsSchema>) {
   return runAction(async () => {
     const ctx = await requireActionContext("settings.manage");
+    assertNotDemo(ctx, "La modification des réglages");
     const data = parse(settingsSchema, input);
     await db
       .update(businesses)
@@ -128,6 +130,7 @@ export async function updateBusiness(input: z.input<typeof settingsSchema>) {
 export async function updateModules(input: { modulePos: boolean; moduleOrders: boolean }) {
   return runAction(async () => {
     const ctx = await requireActionContext("settings.manage");
+    assertNotDemo(ctx, "La modification des réglages");
     const data = parse(z.object({ modulePos: z.boolean(), moduleOrders: z.boolean() }), input);
     await db.update(businesses).set(data).where(eq(businesses.id, ctx.business.id));
     revalidatePath("/", "layout");
@@ -143,6 +146,7 @@ const locationSchema = z.object({
 export async function createLocation(input: z.input<typeof locationSchema>) {
   return runAction(async () => {
     const ctx = await requireActionContext("settings.manage");
+    assertNotDemo(ctx, "La modification des réglages");
     const data = parse(locationSchema, input);
     if (!canAdd(ctx.plan.limits.maxLocations, ctx.locations.length)) {
       throw new ActionError(
@@ -160,6 +164,7 @@ export async function createLocation(input: z.input<typeof locationSchema>) {
 export async function renameLocation(input: { id: string } & z.input<typeof locationSchema>) {
   return runAction(async () => {
     const ctx = await requireActionContext("settings.manage");
+    assertNotDemo(ctx, "La modification des réglages");
     const data = parse(locationSchema.extend({ id: z.string() }), input);
     await db
       .update(locations)

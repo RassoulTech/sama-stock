@@ -26,6 +26,8 @@ export async function listAllBusinesses() {
     })
     .from(businesses)
     .leftJoin(user, eq(businesses.ownerId, user.id))
+    // Les boutiques de la démo publique ne sont pas des clients
+    .where(eq(businesses.isDemo, false))
     .orderBy(desc(businesses.createdAt));
 
   return rows.map((r) => ({ ...r, state: computePlanState(r) }));
@@ -62,6 +64,11 @@ export const SUBSCRIPTION_METHOD_LABELS: Record<string, string> = {
   simulation: "Simulation (test)",
 };
 
+/** Comptes de la démo publique (exclus des statistiques et des listes). */
+export const DEMO_EMAIL_DOMAIN = "@sama-stock.invalid";
+const REAL_USER = sql`email not like ${"%" + DEMO_EMAIL_DOMAIN}`;
+const REAL_BUSINESS = sql`business_id not in (select id from businesses where is_demo)`;
+
 /** Seuls les vrais encaissements comptent dans les revenus (ni simulation, ni ajustement). */
 const REAL_PAYMENT = sql`method in ('saspay', 'especes')`;
 
@@ -79,12 +86,14 @@ export async function platformOverview() {
       pending_checkouts: number;
       google_users: number;
     }>(sql`select
-      (select count(*)::int from "user") as users,
-      (select count(*)::int from businesses) as businesses,
-      (select count(*)::int from products where archived_at is null) as products,
-      (select count(*)::int from sales where created_at > now() - interval '30 days') as sales30,
-      (select count(*)::int from session where expires_at > now()) as active_sessions,
-      (select count(distinct user_id)::int from session where updated_at > now() - interval '7 days') as active_users7,
+      (select count(*)::int from "user" where ${REAL_USER}) as users,
+      (select count(*)::int from businesses where not is_demo) as businesses,
+      (select count(*)::int from products where archived_at is null and ${REAL_BUSINESS}) as products,
+      (select count(*)::int from sales where created_at > now() - interval '30 days' and ${REAL_BUSINESS}) as sales30,
+      (select count(*)::int from session where expires_at > now()
+        and user_id in (select id from "user" where ${REAL_USER})) as active_sessions,
+      (select count(distinct user_id)::int from session where updated_at > now() - interval '7 days'
+        and user_id in (select id from "user" where ${REAL_USER})) as active_users7,
       (select coalesce(sum(amount), 0)::int from subscription_events
         where ${REAL_PAYMENT} and created_at >= date_trunc('month', now())) as revenue_month,
       (select coalesce(sum(amount), 0)::int from subscription_events
@@ -96,7 +105,7 @@ export async function platformOverview() {
     db.execute<{ day: string; n: number }>(sql`
       select to_char(d, 'YYYY-MM-DD') as day, count(b.id)::int as n
       from generate_series(date_trunc('day', now()) - interval '29 days', date_trunc('day', now()), interval '1 day') d
-      left join businesses b on date_trunc('day', b.created_at) = d
+      left join businesses b on date_trunc('day', b.created_at) = d and not b.is_demo
       group by d order by d`),
     db.execute<{ month: string; total: number }>(sql`
       select to_char(m, 'YYYY-MM') as month, coalesce(sum(e.amount), 0)::int as total
@@ -126,6 +135,7 @@ export async function listAllUsers() {
       (select json_agg(json_build_object('businessId', b.id, 'business', b.name, 'role', m.role) order by m.created_at)
         from members m join businesses b on b.id = m.business_id where m.user_id = u.id) as memberships
     from "user" u
+    where u.email not like ${"%" + DEMO_EMAIL_DOMAIN}
     order by u.created_at desc`);
   return res.rows;
 }

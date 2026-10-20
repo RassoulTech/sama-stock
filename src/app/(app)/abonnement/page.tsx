@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { subscriptionEvents } from "@/db/schema";
 import { formatDate, formatDateTime, formatFCFA } from "@/lib/format";
-import { formatLimit, PAID_PLANS, PLAN_STATUS_LABELS, PLANS, type PlanDefinition } from "@/lib/domain/plans";
+import { limitLabel, PAID_PLANS, PLAN_STATUS_LABELS, PLANS, type PlanDefinition } from "@/lib/domain/plans";
 import { cn } from "@/lib/utils";
 import { simulatePayment } from "@/server/actions/billing";
 import { requireContext } from "@/server/context";
@@ -28,8 +28,8 @@ export const metadata: Metadata = { title: "Abonnement" };
 
 function features(p: PlanDefinition) {
   return [
-    `${formatLimit(p.maxProducts)} produits`,
-    p.maxEmployees === 0 ? "Propriétaire seul" : `${formatLimit(p.maxEmployees)} employés`,
+    limitLabel(p.maxProducts, "produits"),
+    p.maxEmployees === 0 ? "Propriétaire seul" : limitLabel(p.maxEmployees, "employés"),
     `${p.maxLocations} boutique${p.maxLocations > 1 ? "s ou dépôts" : ""}`,
     "Caisse, commandes en ligne, crédits clients",
     "Inventaire, pertes, fournisseurs",

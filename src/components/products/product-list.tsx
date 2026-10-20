@@ -1,34 +1,50 @@
 "use client";
 
-import { ChevronRight, PackageSearch } from "lucide-react";
+import { ChevronRight, PackageSearch, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips } from "@/components/shared/filter-chips";
 import { matchesSearch, SearchInput } from "@/components/shared/search-input";
 import { StockBadge } from "@/components/shared/stock-badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { NO_CATEGORY } from "@/lib/filters";
 import { formatFCFA, formatQty } from "@/lib/format";
 import type { ProductRow } from "@/server/queries/products";
 import { ProductThumb } from "./product-thumb";
 
 type StateFilter = "all" | "low" | "out";
+type Sort = "name" | "stock" | "price-asc" | "price-desc";
+
+
+const SORTS: Record<Sort, string> = {
+  name: "Trier : nom (A → Z)",
+  stock: "Trier : stock le plus bas",
+  "price-desc": "Trier : prix (plus cher)",
+  "price-asc": "Trier : prix (moins cher)",
+};
 
 export function ProductList({
   products,
   categories,
   showCost,
   initialState = "all",
+  initialCategory = "all",
 }: {
   products: ProductRow[];
   categories: { id: string; name: string }[];
   showCost: boolean;
   initialState?: StateFilter;
+  initialCategory?: string;
 }) {
   const [q, setQ] = useState("");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState(initialCategory);
   const [state, setState] = useState<StateFilter>(initialState);
+  const [sort, setSort] = useState<Sort>("name");
+  const hasUncategorized = products.some((p) => !p.categoryId);
+  const active = q !== "" || category !== "all" || state !== "all" || sort !== "name";
 
   const counts = useMemo(
     () => ({
@@ -39,12 +55,19 @@ export function ProductList({
     [products],
   );
 
-  const filtered = products.filter(
-    (p) =>
-      matchesSearch(q, p.name, p.reference, p.categoryName) &&
-      (category === "all" || p.categoryId === category) &&
-      (state === "all" || p.status === state),
-  );
+  const filtered = products
+    .filter(
+      (p) =>
+        matchesSearch(q, p.name, p.reference, p.categoryName) &&
+        (category === "all" || (category === NO_CATEGORY ? !p.categoryId : p.categoryId === category)) &&
+        (state === "all" || p.status === state),
+    )
+    .sort((a, b) => {
+      if (sort === "stock") return a.available - b.available || a.name.localeCompare(b.name, "fr");
+      if (sort === "price-asc") return a.salePrice - b.salePrice;
+      if (sort === "price-desc") return b.salePrice - a.salePrice;
+      return a.name.localeCompare(b.name, "fr");
+    });
 
   return (
     <div className="space-y-4">
@@ -62,19 +85,54 @@ export function ProductList({
                   {c.name}
                 </SelectItem>
               ))}
+              {hasUncategorized && <SelectItem value={NO_CATEGORY}>Sans catégorie</SelectItem>}
             </SelectContent>
           </Select>
         )}
+        <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
+          <SelectTrigger className="w-full sm:w-60" aria-label="Trier">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.entries(SORTS) as [Sort, string][]).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <FilterChips
-        value={state}
-        onChange={setState}
-        options={[
-          { value: "all", label: "Tous", count: counts.all },
-          { value: "low", label: "Stock bas", count: counts.low },
-          { value: "out", label: "Rupture", count: counts.out },
-        ]}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterChips
+          value={state}
+          onChange={setState}
+          options={[
+            { value: "all", label: "Tous", count: counts.all },
+            { value: "low", label: "Stock bas", count: counts.low },
+            { value: "out", label: "Rupture", count: counts.out },
+          ]}
+        />
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {filtered.length} produit{filtered.length > 1 ? "s" : ""}
+          </span>
+          {active && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setQ("");
+                setCategory("all");
+                setState("all");
+                setSort("name");
+              }}
+            >
+              <RotateCcw /> Réinitialiser
+            </Button>
+          )}
+        </div>
+      </div>
 
       {filtered.length === 0 ? (
         <EmptyState

@@ -122,3 +122,10 @@ export function canAdd(limit: number | null, current: number): boolean {
 export function formatLimit(limit: number | null): string {
   return limit === null ? "Illimité" : String(limit);
 }
+
+/** « 50 produits », « Produits illimités » (ou « produits illimités » au milieu d'une phrase). */
+export function limitLabel(limit: number | null, noun: string, opts: { lowercase?: boolean } = {}): string {
+  if (limit !== null) return `${limit} ${noun}`;
+  const text = `${noun} illimités`;
+  return opts.lowercase ? text : text.charAt(0).toUpperCase() + text.slice(1);
+}

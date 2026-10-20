@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactLine, LegalPage } from "@/components/legal/legal-page";
 import { pageMetadata } from "@/lib/seo";
-import { formatLimit, PAID_PLANS, PERIOD_DAYS, PLANS, TRIAL_DAYS } from "@/lib/domain/plans";
+import { formatLimit, limitLabel, PAID_PLANS, PERIOD_DAYS, PLANS, TRIAL_DAYS } from "@/lib/domain/plans";
 import { formatFCFA } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 
@@ -52,7 +52,7 @@ export default function ConditionsPage() {
             <strong>
               {p.label} : {formatFCFA(p.price)} pour {PERIOD_DAYS} jours
             </strong>{" "}
-            — {formatLimit(p.maxProducts)} produits, {p.maxEmployees === 0 ? "propriétaire seul" : `${formatLimit(p.maxEmployees)} employés`},{" "}
+            — {limitLabel(p.maxProducts, "produits", { lowercase: true })}, {p.maxEmployees === 0 ? "propriétaire seul" : limitLabel(p.maxEmployees, "employés", { lowercase: true })},{" "}
             {p.maxLocations} boutique{p.maxLocations > 1 ? "s ou dépôts" : ""}.
           </li>
         ))}

@@ -6,6 +6,7 @@ export type NavIcon =
   | "sales"
   | "orders"
   | "products"
+  | "categories"
   | "stock"
   | "customers"
   | "suppliers"
@@ -20,12 +21,26 @@ export type NavIcon =
   | "sessions"
   | "system";
 
+/** Sections du menu, dans l'ordre d'affichage. « main » sert à l'espace d'administration. */
+export const NAV_GROUPS = ["main", "daily", "catalog", "contacts", "insights", "manage", "admin"] as const;
+export type NavGroup = (typeof NAV_GROUPS)[number];
+
+export const NAV_GROUP_LABELS: Record<NavGroup, string | null> = {
+  main: null,
+  daily: "Au quotidien",
+  catalog: "Catalogue",
+  contacts: "Contacts",
+  insights: "Pilotage",
+  manage: "Gestion",
+  admin: "Sama Stock",
+};
+
 export interface NavItem {
   href: string;
   label: string;
   short?: string;
   icon: NavIcon;
-  group: "main" | "manage" | "admin";
+  group: NavGroup;
 }
 
 interface NavRule extends NavItem {
@@ -35,15 +50,16 @@ interface NavRule extends NavItem {
 }
 
 const RULES: NavRule[] = [
-  { href: "/tableau-de-bord", label: "Tableau de bord", short: "Accueil", icon: "dashboard", group: "main" },
-  { href: "/vendre", label: "Vendre", icon: "pos", group: "main", permission: "sales.create", module: "pos" },
-  { href: "/ventes", label: "Ventes", icon: "sales", group: "main", permission: "sales.create", module: "pos" },
-  { href: "/commandes", label: "Commandes", icon: "orders", group: "main", permission: "orders.manage", module: "orders" },
-  { href: "/produits", label: "Produits", icon: "products", group: "main", permission: "products.view" },
-  { href: "/stock", label: "Stock", icon: "stock", group: "main", anyOf: ["stock.in", "stock.adjust"] },
-  { href: "/clients", label: "Clients", icon: "customers", group: "main", permission: "customers.manage" },
-  { href: "/fournisseurs", label: "Fournisseurs", icon: "suppliers", group: "main", permission: "suppliers.view" },
-  { href: "/rapports", label: "Rapports", icon: "reports", group: "main", permission: "reports.view" },
+  { href: "/tableau-de-bord", label: "Tableau de bord", short: "Accueil", icon: "dashboard", group: "daily" },
+  { href: "/vendre", label: "Vendre", icon: "pos", group: "daily", permission: "sales.create", module: "pos" },
+  { href: "/ventes", label: "Ventes", icon: "sales", group: "daily", permission: "sales.create", module: "pos" },
+  { href: "/commandes", label: "Commandes", icon: "orders", group: "daily", permission: "orders.manage", module: "orders" },
+  { href: "/produits", label: "Produits", icon: "products", group: "catalog", permission: "products.view" },
+  { href: "/categories", label: "Catégories", icon: "categories", group: "catalog", permission: "products.view" },
+  { href: "/stock", label: "Stock", icon: "stock", group: "catalog", anyOf: ["stock.in", "stock.adjust"] },
+  { href: "/clients", label: "Clients et crédits", short: "Clients", icon: "customers", group: "contacts", permission: "customers.manage" },
+  { href: "/fournisseurs", label: "Fournisseurs", icon: "suppliers", group: "contacts", permission: "suppliers.view" },
+  { href: "/rapports", label: "Rapports", icon: "reports", group: "insights", permission: "reports.view" },
   { href: "/equipe", label: "Équipe", icon: "team", group: "manage", permission: "team.manage" },
   { href: "/abonnement", label: "Abonnement", icon: "billing", group: "manage", permission: "billing.manage" },
   { href: "/parametres", label: "Paramètres", icon: "settings", group: "manage", permission: "settings.manage" },

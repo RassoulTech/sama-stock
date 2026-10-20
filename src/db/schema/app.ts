@@ -36,6 +36,9 @@ export const businesses = pgTable("businesses", {
   saleCounter: integer("sale_counter").notNull().default(0),
   orderCounter: integer("order_counter").notNull().default(0),
   ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
+  /** Boutique fictive de la démonstration publique (remise à zéro chaque jour). */
+  isDemo: boolean("is_demo").notNull().default(false),
+  demoResetAt: timestamp("demo_reset_at", { withTimezone: true }),
   createdAt: createdAt(),
 });
 

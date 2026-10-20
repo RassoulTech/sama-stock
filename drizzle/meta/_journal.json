@@ -22,6 +22,13 @@
       "when": 1792440023862,
       "tag": "0002_checkout_requested_amount",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792499532356,
+      "tag": "0003_demo",
+      "breakpoints": true
     }
   ]
 }

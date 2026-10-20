@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, gte, inArray, isNull, lt, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { products, saleItems, sales, stockMovements } from "@/db/schema";
+import { categories, products, saleItems, sales, stockMovements } from "@/db/schema";
 import type { BusinessContext } from "../context";
 import { COMPLETED_SALE } from "./customers";
 
@@ -61,7 +61,14 @@ export async function dailySeries(ctx: BusinessContext, from: Date, days: number
   return rows.rows.map((r) => ({ day: r.day, revenue: Number(r.revenue), profit: Number(r.profit) }));
 }
 
-export async function topProducts(ctx: BusinessContext, from: Date, limit = 8) {
+/** Conditions de période sur la date de validation (fin exclue). */
+function between(from: Date, to?: Date | null): SQL[] {
+  const c: SQL[] = [gte(sales.completedAt, from)];
+  if (to) c.push(lt(sales.completedAt, to));
+  return c;
+}
+
+export async function topProducts(ctx: BusinessContext, from: Date, limit = 8, to?: Date | null) {
   const rows = await db
     .select({
       productId: saleItems.productId,
@@ -73,7 +80,7 @@ export async function topProducts(ctx: BusinessContext, from: Date, limit = 8) {
     })
     .from(saleItems)
     .innerJoin(sales, eq(saleItems.saleId, sales.id))
-    .where(and(...scope(ctx), gte(sales.completedAt, from)))
+    .where(and(...scope(ctx), ...between(from, to)))
     .groupBy(saleItems.productId)
     .orderBy(desc(sql`sum(${saleItems.lineTotal})`))
     .limit(50);
@@ -84,7 +91,7 @@ export async function topProducts(ctx: BusinessContext, from: Date, limit = 8) {
   };
 }
 
-export async function breakdown(ctx: BusinessContext, from: Date, by: "channel" | "paymentMethod") {
+export async function breakdown(ctx: BusinessContext, from: Date, by: "channel" | "paymentMethod", to?: Date | null) {
   const column = by === "channel" ? sales.channel : sales.paymentMethod;
   const rows = await db
     .select({
@@ -93,10 +100,48 @@ export async function breakdown(ctx: BusinessContext, from: Date, by: "channel" 
       count: sql<number>`count(*)::int`,
     })
     .from(sales)
-    .where(and(...scope(ctx), gte(sales.completedAt, from)))
+    .where(and(...scope(ctx), ...between(from, to)))
     .groupBy(column)
     .orderBy(desc(sql`sum(${sales.subtotal} - ${sales.discount})`));
   return rows.map((r) => ({ key: r.key ?? "inconnu", revenue: Number(r.revenue), count: Number(r.count) }));
+}
+
+/**
+ * Ventes par catégorie de produit : chiffre d'affaires des lignes (hors remises et livraison),
+ * bénéfice brut, quantités et nombre de ventes. Les produits sans catégorie sont regroupés (id null).
+ */
+export async function categoryBreakdown(ctx: BusinessContext, from: Date, to?: Date | null) {
+  const rows = await db
+    .select({
+      categoryId: products.categoryId,
+      name: sql<string | null>`max(${categories.name})`,
+      revenue: sql<number>`sum(${saleItems.lineTotal})::int`,
+      profit: sql<number>`sum(${saleItems.lineTotal} - round(${saleItems.unitCost} * ${saleItems.quantity}))::int`,
+      quantity: sql<number>`sum(${saleItems.quantity})::float8`,
+      saleCount: sql<number>`count(distinct ${sales.id})::int`,
+      productCount: sql<number>`count(distinct ${saleItems.productId})::int`,
+    })
+    .from(saleItems)
+    .innerJoin(sales, eq(saleItems.saleId, sales.id))
+    .leftJoin(products, eq(saleItems.productId, products.id))
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .where(and(...scope(ctx), ...between(from, to)))
+    .groupBy(products.categoryId)
+    .orderBy(desc(sql`sum(${saleItems.lineTotal})`));
+  const total = rows.reduce((s, r) => s + Number(r.revenue), 0);
+  return rows.map((r) => {
+    const revenue = Number(r.revenue);
+    return {
+      categoryId: r.categoryId,
+      name: r.name ?? "Sans catégorie",
+      revenue,
+      profit: Number(r.profit),
+      quantity: Number(r.quantity),
+      saleCount: Number(r.saleCount),
+      productCount: Number(r.productCount),
+      share: total > 0 ? Math.round((revenue / total) * 1000) / 10 : 0,
+    };
+  });
 }
 
 /** Produits en stock qui ne se sont pas vendus depuis `days` jours. */
@@ -123,7 +168,7 @@ export async function dormantProducts(ctx: BusinessContext, days = 30) {
 }
 
 /** Pertes (casse, vol, perte, péremption, inventaire négatif) valorisées au coût. */
-export async function losses(ctx: BusinessContext, from: Date) {
+export async function losses(ctx: BusinessContext, from: Date, to?: Date | null) {
   const rows = await db
     .select({
       reason: stockMovements.reason,
@@ -138,6 +183,7 @@ export async function losses(ctx: BusinessContext, from: Date) {
         inArray(stockMovements.type, ["adjust", "inventory"]),
         sql`${stockMovements.quantity} < 0`,
         gte(stockMovements.createdAt, from),
+        ...(to ? [lt(stockMovements.createdAt, to)] : []),
       ),
     )
     .groupBy(stockMovements.reason)

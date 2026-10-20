@@ -34,6 +34,9 @@ import { listProducts } from "@/server/queries/products";
 import { periodStart } from "@/server/queries/sales";
 import { employeeCount } from "@/server/queries/team";
 
+import { DemoGuide } from "@/components/demo/demo-guide";
+import { DEMO_SPECS } from "@/server/demo/specs";
+
 export const metadata: Metadata = { title: "Tableau de bord" };
 
 const todayLabel = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Dakar" });
@@ -73,7 +76,7 @@ export default async function DashboardPage() {
     },
     { done: (teamCount ?? 0) > 0, label: "Inviter un employé (formules Pro et Business)", href: "/equipe" },
   ];
-  const showChecklist = checklist && checklist.some((c) => !c.done) && products.length < 5;
+  const showChecklist = !ctx.business.isDemo && checklist && checklist.some((c) => !c.done) && products.length < 5;
 
   return (
     <>
@@ -113,6 +116,10 @@ export default async function DashboardPage() {
           )
         }
       />
+
+      {ctx.business.isDemo && (
+        <DemoGuide plan={ctx.plan.plan} businessName={ctx.business.name} pitch={DEMO_SPECS[ctx.plan.plan].pitch} />
+      )}
 
       {showChecklist && checklist && (
         <Card className="mb-6 overflow-hidden bg-gradient-to-br from-accent to-card">

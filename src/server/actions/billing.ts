@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { subscriptionCheckouts } from "@/db/schema";
 import { PLANS } from "@/lib/domain/plans";
 import { ActionError, parse, runAction } from "../action";
-import { requireActionContext } from "../context";
+import { assertNotDemo, requireActionContext } from "../context";
 import { createCheckoutAtPrice, isPaymentSimulation, isSaspayEnabled } from "../saspay";
 import { confirmCheckout, grantPeriod } from "../services/subscription";
 
@@ -19,6 +19,7 @@ export async function simulatePayment(plan: string) {
     if (!isPaymentSimulation) throw new ActionError("Le paiement simulé est désactivé.");
     // write: false — un compte expiré doit justement pouvoir payer
     const ctx = await requireActionContext("billing.manage", { write: false });
+    assertNotDemo(ctx, "Le paiement de l'abonnement");
     const target = parse(planSchema, plan);
     const end = await db.transaction((tx) =>
       grantPeriod(tx, {
@@ -39,6 +40,7 @@ export async function startCheckout(plan: string) {
   return runAction(async () => {
     if (!isSaspayEnabled) throw new ActionError("Le paiement en ligne n'est pas encore activé.");
     const ctx = await requireActionContext("billing.manage", { write: false });
+    assertNotDemo(ctx, "Le paiement de l'abonnement");
     const target = parse(planSchema, plan);
     const amount = PLANS[target].price;
     const checkoutId = crypto.randomUUID();
@@ -73,6 +75,7 @@ export async function startCheckout(plan: string) {
 export async function refreshCheckout(checkoutId: string) {
   return runAction(async () => {
     const ctx = await requireActionContext("billing.manage", { write: false });
+    assertNotDemo(ctx, "Le paiement de l'abonnement");
     const [row] = await db
       .select({ id: subscriptionCheckouts.id })
       .from(subscriptionCheckouts)

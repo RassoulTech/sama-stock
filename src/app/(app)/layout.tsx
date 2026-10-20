@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/brand/logo";
+import { DemoBanner } from "@/components/demo/demo-banner";
 import { AppProvider, type ClientAppInfo } from "@/components/shell/app-provider";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { LocationSwitcher } from "@/components/shell/location-switcher";
@@ -109,7 +110,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           </header>
           <div className="print:hidden">
-            <PlanBanner plan={ctx.plan} canManageBilling={ctx.can("billing.manage")} />
+            {ctx.business.isDemo ? (
+              <DemoBanner plan={ctx.plan.plan} />
+            ) : (
+              <PlanBanner plan={ctx.plan} canManageBilling={ctx.can("billing.manage")} />
+            )}
           </div>
           <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:px-6 lg:px-8 lg:pt-7 lg:pb-12 print:p-0">
             {children}

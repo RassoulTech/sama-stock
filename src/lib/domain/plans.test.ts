@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAdd, computePlanState, PLANS } from "./plans";
+import { canAdd, computePlanState, limitLabel, PLANS } from "./plans";
 
 const now = new Date("2026-10-19T12:00:00Z");
 const days = (n: number) => new Date(now.getTime() + n * 86_400_000);
@@ -53,5 +53,13 @@ describe("canAdd", () => {
   });
   it("null means unlimited", () => {
     expect(canAdd(null, 10_000)).toBe(true);
+  });
+});
+
+describe("limitLabel", () => {
+  it("écrit les limites et l'illimité correctement", () => {
+    expect(limitLabel(50, "produits")).toBe("50 produits");
+    expect(limitLabel(null, "produits")).toBe("Produits illimités");
+    expect(limitLabel(null, "employés", { lowercase: true })).toBe("employés illimités");
   });
 });

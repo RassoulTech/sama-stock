@@ -9,6 +9,7 @@ export const PROTECTED_PREFIXES = [
   "/ventes",
   "/commandes",
   "/produits",
+  "/categories",
   "/stock",
   "/clients",
   "/fournisseurs",

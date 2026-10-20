@@ -1,8 +1,9 @@
 import "server-only";
-import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lt, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { locations, products, purchaseItems, purchases, stockMovements, suppliers, user } from "@/db/schema";
 import type { BusinessContext } from "../context";
+import { likePattern } from "./sales";
 
 export const MOVEMENT_GROUPS = {
   all: { label: "Tous", types: null },
@@ -16,12 +17,16 @@ export type MovementGroup = keyof typeof MOVEMENT_GROUPS;
 
 export async function listMovements(
   ctx: BusinessContext,
-  opts: { group?: MovementGroup; limit?: number } = {},
+  opts: { group?: MovementGroup; limit?: number; from?: Date | null; to?: Date | null; q?: string; categoryId?: string | null } = {},
 ) {
   const group = MOVEMENT_GROUPS[opts.group ?? "all"];
   const conditions: SQL[] = [eq(stockMovements.businessId, ctx.business.id)];
   if (group.types) conditions.push(inArray(stockMovements.type, [...group.types]));
   if (ctx.locations.length > 1) conditions.push(eq(stockMovements.locationId, ctx.location.id));
+  if (opts.from) conditions.push(gte(stockMovements.createdAt, opts.from));
+  if (opts.to) conditions.push(lt(stockMovements.createdAt, opts.to));
+  if (opts.q) conditions.push(ilike(products.name, likePattern(opts.q)));
+  if (opts.categoryId) conditions.push(eq(products.categoryId, opts.categoryId));
 
   return db
     .select({

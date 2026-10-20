@@ -9,7 +9,7 @@ import { invitations, members, user } from "@/db/schema";
 import { INVITABLE_ROLES, ROLE_LABELS } from "@/lib/domain/permissions";
 import { canAdd } from "@/lib/domain/plans";
 import { ActionError, parse, runAction } from "../action";
-import { BUSINESS_COOKIE, getContext, LOCATION_COOKIE, requireActionContext } from "../context";
+import { assertNotDemo, BUSINESS_COOKIE, getContext, LOCATION_COOKIE, requireActionContext } from "../context";
 import { employeeCount } from "../queries/team";
 
 const INVITATION_DAYS = 7;
@@ -30,6 +30,7 @@ const inviteSchema = z.object({
 export async function inviteMember(input: z.input<typeof inviteSchema>) {
   return runAction(async () => {
     const ctx = await requireActionContext("team.manage");
+    assertNotDemo(ctx, "La gestion de l'équipe");
     const data = parse(inviteSchema, input);
 
     const [existingMember] = await db
@@ -85,6 +86,7 @@ export async function inviteMember(input: z.input<typeof inviteSchema>) {
 export async function cancelInvitation(id: string) {
   return runAction(async () => {
     const ctx = await requireActionContext("team.manage");
+    assertNotDemo(ctx, "La gestion de l'équipe");
     await db
       .update(invitations)
       .set({ status: "cancelled" })
@@ -96,7 +98,7 @@ export async function cancelInvitation(id: string) {
 
 export async function invitationLink(token: string) {
   return runAction(async () => {
-    await requireActionContext("team.manage", { write: false });
+    assertNotDemo(await requireActionContext("team.manage", { write: false }), "L'invitation");
     return `${await appOrigin()}/invitation/${token}`;
   });
 }
@@ -104,6 +106,7 @@ export async function invitationLink(token: string) {
 export async function changeMemberRole(memberId: string, role: string) {
   return runAction(async () => {
     const ctx = await requireActionContext("team.manage");
+    assertNotDemo(ctx, "La gestion de l'équipe");
     const newRole = parse(z.enum(INVITABLE_ROLES, { message: "Rôle invalide." }), role);
     const updated = await db
       .update(members)
@@ -119,6 +122,7 @@ export async function changeMemberRole(memberId: string, role: string) {
 export async function removeMember(memberId: string) {
   return runAction(async () => {
     const ctx = await requireActionContext("team.manage", { write: false });
+    assertNotDemo(ctx, "La gestion de l'équipe");
     const removed = await db
       .delete(members)
       .where(and(eq(members.id, memberId), eq(members.businessId, ctx.business.id), ne(members.role, "owner")))
@@ -133,6 +137,7 @@ export async function acceptInvitation(token: string) {
   return runAction(async () => {
     const ctx = await getContext();
     if (!ctx) throw new ActionError("Connectez-vous d'abord.");
+    assertNotDemo(ctx, "Rejoindre une équipe");
 
     const businessId = await db.transaction(async (tx) => {
       const [inv] = await tx.select().from(invitations).where(eq(invitations.token, token)).for("update");

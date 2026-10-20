@@ -1,8 +1,9 @@
 import "server-only";
-import { and, desc, eq, gte, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gte, ilike, lt, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
-import { customers, locations, saleItems, sales, user } from "@/db/schema";
+import { customers, locations, members, products, saleItems, sales, user } from "@/db/schema";
+import type { SaleMethod } from "@/lib/domain/sales";
 import type { BusinessContext } from "../context";
 
 export const PERIODS = {
@@ -24,15 +25,58 @@ export function periodStart(period: Period, now = new Date()): Date {
 
 const seller = alias(user, "seller");
 
-export async function listSales(ctx: BusinessContext, opts: { period: Period }) {
-  const conditions: SQL[] = [
-    eq(sales.businessId, ctx.business.id),
-    eq(sales.kind, "sale"),
-    gte(sales.createdAt, periodStart(opts.period)),
-  ];
+/** États de paiement proposés dans le filtre des ventes. */
+export const SALE_STATES = {
+  payees: "Payées",
+  credit: "Reste à payer",
+  annulees: "Annulées",
+} as const;
+
+export type SaleState = keyof typeof SALE_STATES;
+
+export interface SaleFilters {
+  from: Date | null;
+  /** Fin exclue. */
+  to: Date | null;
+  method?: SaleMethod | null;
+  state?: SaleState | null;
+  categoryId?: string | null;
+  sellerId?: string | null;
+  q?: string;
+}
+
+/** Nombre maximum de ventes affichées en une fois. */
+export const SALES_LIMIT = 500;
+
+/** Motif « contient » pour ILIKE (les caractères % et _ tapés sont pris à la lettre). */
+export function likePattern(q: string) {
+  return `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
+export async function listSales(ctx: BusinessContext, f: SaleFilters) {
+  const conditions: SQL[] = [eq(sales.businessId, ctx.business.id), eq(sales.kind, "sale")];
+  if (f.from) conditions.push(gte(sales.createdAt, f.from));
+  if (f.to) conditions.push(lt(sales.createdAt, f.to));
   // Un vendeur ne voit que ses propres ventes
   if (!ctx.can("dashboard.full")) conditions.push(eq(sales.userId, ctx.user.id));
+  else if (f.sellerId) conditions.push(eq(sales.userId, f.sellerId));
   if (ctx.locations.length > 1) conditions.push(eq(sales.locationId, ctx.location.id));
+  if (f.method) conditions.push(eq(sales.paymentMethod, f.method));
+  if (f.state === "payees") conditions.push(eq(sales.status, "completed"), sql`${sales.amountPaid} >= ${sales.total}`);
+  if (f.state === "credit") conditions.push(eq(sales.status, "completed"), sql`${sales.amountPaid} < ${sales.total}`);
+  if (f.state === "annulees") conditions.push(eq(sales.status, "cancelled"));
+  if (f.categoryId) {
+    conditions.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(saleItems)
+          .innerJoin(products, eq(saleItems.productId, products.id))
+          .where(and(eq(saleItems.saleId, sales.id), eq(products.categoryId, f.categoryId))),
+      ),
+    );
+  }
+  if (f.q) conditions.push(or(ilike(sales.number, likePattern(f.q)), ilike(customers.name, likePattern(f.q)))!);
 
   return db
     .select({
@@ -52,7 +96,17 @@ export async function listSales(ctx: BusinessContext, opts: { period: Period }) 
     .leftJoin(seller, eq(sales.userId, seller.id))
     .where(and(...conditions))
     .orderBy(desc(sales.createdAt))
-    .limit(300);
+    .limit(SALES_LIMIT + 1);
+}
+
+/** Membres de l'équipe, pour filtrer les ventes par vendeur. */
+export async function listSellers(ctx: BusinessContext) {
+  return db
+    .select({ id: user.id, name: user.name })
+    .from(members)
+    .innerJoin(user, eq(members.userId, user.id))
+    .where(eq(members.businessId, ctx.business.id))
+    .orderBy(asc(user.name));
 }
 
 /** Vente ou commande complète (pour le reçu et la fiche commande). */

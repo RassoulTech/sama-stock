@@ -5,6 +5,7 @@ import {
   Check,
   Clock,
   CreditCard,
+  FlaskConical,
   Lock,
   Minus,
   Mail,
@@ -22,6 +23,7 @@ import { LossCalculator } from "@/components/landing/loss-calculator";
 import { ProductVideo } from "@/components/landing/product-video";
 import { PaymentLogo } from "@/components/shared/payment-logo";
 import { MobileMenu } from "@/components/landing/mobile-menu";
+import { DemoButton } from "@/components/demo/demo-button";
 import { ScrollReveal } from "@/components/landing/scroll-reveal";
 import { Segments, SegmentsMarquee } from "@/components/landing/segments";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -36,7 +38,7 @@ import {
   TeamVisual,
   WhatsAppReceipt,
 } from "@/components/landing/visuals";
-import { formatLimit, PAID_PLANS, PLANS } from "@/lib/domain/plans";
+import { limitLabel, PAID_PLANS, PLANS } from "@/lib/domain/plans";
 import { LEGAL, LEGAL_PAGES } from "@/lib/legal";
 import { pageMetadata, SITE_NAME, SITE_URL } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -55,6 +57,7 @@ const SECTIONS = [
   ["#pour-qui", "Pour qui ?"],
   ["#calcul", "Vos pertes"],
   ["#tarifs", "Tarifs"],
+  ["/demo", "Démo"],
   ["#faq", "Questions"],
 ] as const;
 
@@ -329,9 +332,14 @@ export default async function HomePage() {
                 ))}
               </div>
               {!session && (
-                <a href="#presentation" className="enter mt-6 inline-flex [--enter-delay:540ms] items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
-                  <PlayCircle className="size-5 text-primary" /> Voir Sama Stock en action (vidéo de 35 secondes)
-                </a>
+                <div className="enter mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 [--enter-delay:540ms]">
+                  <a href="#presentation" className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+                    <PlayCircle className="size-5 text-primary" /> Voir Sama Stock en action (35 s)
+                  </a>
+                  <Link href="/demo" className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary">
+                    <FlaskConical className="size-5 text-primary" /> Essayer la démo, sans inscription
+                  </Link>
+                </div>
               )}
             </div>
 
@@ -607,8 +615,8 @@ export default async function HomePage() {
                     </p>
                     <ul className="mt-7 space-y-3 text-sm">
                       {[
-                        `${formatLimit(p.maxProducts)} produits`,
-                        p.maxEmployees === 0 ? "Propriétaire seul" : `${formatLimit(p.maxEmployees)} employés`,
+                        limitLabel(p.maxProducts, "produits"),
+                        p.maxEmployees === 0 ? "Propriétaire seul" : limitLabel(p.maxEmployees, "employés"),
                         `${p.maxLocations} boutique${p.maxLocations > 1 ? "s ou dépôts" : ""}`,
                         "Caisse, commandes, crédits, inventaire",
                         p.advancedReports ? "Rapports avancés" : "Rapports avancés non inclus",
@@ -634,6 +642,9 @@ export default async function HomePage() {
                     >
                       {p.id === "trial" ? "Commencer l'essai gratuit" : `Essayer ${p.label} gratuitement`}
                     </Link>
+                    <DemoButton plan={p.id} variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-foreground">
+                      Voir la démo {p.label}
+                    </DemoButton>
                   </div>
                 );
               })}

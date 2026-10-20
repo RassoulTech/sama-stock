@@ -93,6 +93,12 @@ export function SignInForm({ redirectTo, googleEnabled }: { redirectTo: string; 
         >
           Essai gratuit 14 jours
         </Link>
+        <span className="mt-1 block">
+          Juste pour voir ?{" "}
+          <Link href="/demo" className="font-semibold text-primary hover:underline">
+            Essayer la démo
+          </Link>
+        </span>
       </p>
     </div>
   );

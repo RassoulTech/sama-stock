@@ -139,6 +139,13 @@ export async function requireActionContext(
   return bctx;
 }
 
+/** Bloque les actions sensibles dans les boutiques de démonstration (paiement, équipe, réglages). */
+export function assertNotDemo(ctx: { business: Business | null } | null, what = "Cette action") {
+  if (ctx?.business?.isDemo) {
+    throw new ActionError(`${what} est désactivée dans la démo. Créez votre compte gratuit pour l'utiliser.`);
+  }
+}
+
 export async function requireSuperAdmin(): Promise<AppContext> {
   const ctx = await getContext();
   if (!ctx) redirect("/connexion?redirect=/admin");

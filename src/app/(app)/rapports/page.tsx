@@ -1,30 +1,33 @@
-import { BarChart3, Lock, PackageMinus, Percent, ShieldAlert, ShoppingBag, TrendingUp, Wallet } from "lucide-react";
+import { BarChart3, Lock, PackageMinus, Percent, ShieldAlert, ShoppingBag, Tags, TrendingUp, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BarList } from "@/components/charts/bar-list";
 import { RevenueProfitChart } from "@/components/charts/revenue-charts";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { resolvePeriod, type PeriodPreset, type SearchParams } from "@/lib/filters";
 import { formatDate, formatFCFA, formatQty } from "@/lib/format";
 import { REASON_LABELS } from "@/lib/domain/stock";
 import { CHANNELS, PAYMENT_METHODS, type Channel, type PaymentMethod } from "@/lib/domain/sales";
-import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/context";
-import { breakdown, dailySeries, dormantProducts, losses, salesSummary, topProducts } from "@/server/queries/analytics";
-import { periodStart } from "@/server/queries/sales";
+import {
+  breakdown,
+  categoryBreakdown,
+  dailySeries,
+  dormantProducts,
+  losses,
+  salesSummary,
+  topProducts,
+} from "@/server/queries/analytics";
 
 export const metadata: Metadata = { title: "Rapports" };
 
-const REPORT_PERIODS = { "7j": { label: "7 jours", days: 7 }, "30j": { label: "30 jours", days: 30 }, "90j": { label: "90 jours", days: 90 } } as const;
-type ReportPeriod = keyof typeof REPORT_PERIODS;
+const PRESETS: PeriodPreset[] = ["7j", "30j", "mois", "mois-dernier", "90j"];
 
-export default async function RapportsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function RapportsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const ctx = await requireContext("reports.view");
 
   if (!ctx.plan.limits.advancedReports) {
@@ -38,8 +41,8 @@ export default async function RapportsPage({
             </span>
             <h2 className="text-xl font-semibold">Les rapports avancés sont inclus dans Pro et Business</h2>
             <p className="max-w-md text-sm text-muted-foreground">
-              Évolution de vos ventes et de votre bénéfice, meilleurs produits, produits qui dorment, ventes par canal et par
-              mode de paiement, pertes… tout pour piloter votre commerce.
+              Évolution de vos ventes et de votre bénéfice, ventes par catégorie de produits, meilleurs produits, produits
+              qui dorment, ventes par canal et par mode de paiement, pertes… tout pour piloter votre commerce.
             </p>
             {ctx.can("billing.manage") && (
               <Button asChild size="lg">
@@ -53,43 +56,37 @@ export default async function RapportsPage({
   }
 
   const params = await searchParams;
-  const period = (typeof params.periode === "string" && params.periode in REPORT_PERIODS ? params.periode : "30j") as ReportPeriod;
-  const days = REPORT_PERIODS[period].days;
-  const from = periodStart(period);
+  const period = resolvePeriod(params, { fallback: "30j", allowed: PRESETS });
+  // Toutes les périodes proposées ici ont un début et une fin
+  const from = period.from!;
+  const to = period.to!;
+  const days = period.days ?? 30;
 
-  const [summary, series, top, channels, methods, dormant, lossRows] = await Promise.all([
-    salesSummary(ctx, from),
+  const [summary, series, top, categories, channels, methods, dormant, lossRows] = await Promise.all([
+    salesSummary(ctx, from, { to }),
     dailySeries(ctx, from, days),
-    topProducts(ctx, from),
-    breakdown(ctx, from, "channel"),
-    breakdown(ctx, from, "paymentMethod"),
+    topProducts(ctx, from, 8, to),
+    categoryBreakdown(ctx, from, to),
+    breakdown(ctx, from, "channel", to),
+    breakdown(ctx, from, "paymentMethod", to),
     dormantProducts(ctx, 30),
-    losses(ctx, from),
+    losses(ctx, from, to),
   ]);
   const margin = summary.revenue > 0 ? Math.round((summary.profit / summary.revenue) * 100) : 0;
   const lossTotal = lossRows.reduce((s, l) => s + l.value, 0);
 
+  // Lien vers les ventes de la catégorie, sur la même période
+  const periodQuery = period.key === "dates" ? `periode=dates&du=${period.du}&au=${period.au}` : `periode=${period.key}`;
+  const categorySalesHref = (categoryId: string | null) =>
+    categoryId && ctx.business.modulePos ? `/ventes?${periodQuery}&categorie=${categoryId}` : undefined;
+
   return (
     <>
-      <PageHeader
-        title="Rapports"
-        description="Chiffres hors frais de livraison, ventes validées et commandes livrées."
-        actions={
-          <div className="flex gap-2">
-            {(Object.entries(REPORT_PERIODS) as [ReportPeriod, { label: string }][]).map(([key, p]) => (
-              <Link
-                key={key}
-                href={`/rapports?periode=${key}`}
-                className={cn(
-                  "inline-flex h-8 items-center rounded-full border bg-card px-3 text-[0.8125rem] font-medium text-muted-foreground hover:text-foreground",
-                  period === key && "border-primary/30 bg-accent text-accent-foreground hover:text-accent-foreground",
-                )}
-              >
-                {p.label}
-              </Link>
-            ))}
-          </div>
-        }
+      <PageHeader title="Rapports" description="Chiffres hors frais de livraison, ventes validées et commandes livrées." />
+
+      <FilterBar
+        period={{ value: period.key, presets: PRESETS, fallback: "30j", du: period.du, au: period.au, customLabel: period.label }}
+        resultLabel={period.label}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -108,13 +105,69 @@ export default async function RapportsPage({
       <Card className="mb-5">
         <CardHeader>
           <CardTitle className="font-semibold">Évolution des ventes et du bénéfice</CardTitle>
-          <p className="text-sm text-muted-foreground">Par jour, en FCFA · {REPORT_PERIODS[period].label}</p>
+          <p className="text-sm text-muted-foreground">Par jour, en FCFA · {period.label}</p>
         </CardHeader>
         <CardContent>
           {summary.count === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">Aucune vente sur cette période.</p>
           ) : (
             <RevenueProfitChart data={series} />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mb-5">
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2 font-semibold">
+              <Tags className="size-4 text-primary" /> Ventes par catégorie
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Chiffre d&apos;affaires, part du total et bénéfice de chaque catégorie</p>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/categories">Gérer les catégories</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {categories.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune vente sur cette période.</p>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <BarList
+                items={categories.map((c) => ({
+                  label: c.name,
+                  value: c.revenue,
+                  hint: `${c.share.toLocaleString("fr-FR")} %`,
+                  href: categorySalesHref(c.categoryId),
+                }))}
+              />
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                      <th className="py-2 pr-3 font-medium">Catégorie</th>
+                      <th className="py-2 pr-3 text-right font-medium">Ventes</th>
+                      <th className="py-2 pr-3 text-right font-medium">Bénéfice</th>
+                      <th className="py-2 text-right font-medium">Marge</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categories.map((c) => (
+                      <tr key={c.categoryId ?? "aucune"} className="border-b last:border-0">
+                        <td className="max-w-40 truncate py-2 pr-3 font-medium">{c.name}</td>
+                        <td className="num py-2 pr-3 text-right">{c.saleCount}</td>
+                        <td className={`num py-2 pr-3 text-right font-semibold ${c.profit < 0 ? "text-destructive" : ""}`}>
+                          {formatFCFA(c.profit)}
+                        </td>
+                        <td className="num py-2 text-right text-muted-foreground">
+                          {c.revenue > 0 ? `${Math.round((c.profit / c.revenue) * 100)} %` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -129,7 +182,12 @@ export default async function RapportsPage({
           </CardHeader>
           <CardContent>
             <BarList
-              items={top.byRevenue.map((p) => ({ label: p.name, value: p.revenue, hint: formatQty(p.quantity, p.unit) }))}
+              items={top.byRevenue.map((p) => ({
+                label: p.name,
+                value: p.revenue,
+                hint: formatQty(p.quantity, p.unit),
+                href: p.productId ? `/produits/${p.productId}` : undefined,
+              }))}
             />
           </CardContent>
         </Card>
@@ -141,7 +199,11 @@ export default async function RapportsPage({
             <p className="text-sm text-muted-foreground">Par bénéfice</p>
           </CardHeader>
           <CardContent>
-            <BarList items={top.byProfit.filter((p) => p.profit > 0).map((p) => ({ label: p.name, value: p.profit }))} />
+            <BarList
+              items={top.byProfit
+                .filter((p) => p.profit > 0)
+                .map((p) => ({ label: p.name, value: p.profit, href: p.productId ? `/produits/${p.productId}` : undefined }))}
+            />
           </CardContent>
         </Card>
         <Card>

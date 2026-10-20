@@ -1,9 +1,11 @@
 import "server-only";
-import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, saleItems, sales } from "@/db/schema";
 import { OPEN_STATUSES } from "@/lib/domain/orders";
+import type { Channel } from "@/lib/domain/sales";
 import type { BusinessContext } from "../context";
+import { likePattern } from "./sales";
 
 export const ORDER_FILTERS = {
   open: { label: "En cours", statuses: [...OPEN_STATUSES] },
@@ -17,14 +19,26 @@ export const ORDER_FILTERS = {
 
 export type OrderFilter = keyof typeof ORDER_FILTERS;
 
-function baseConditions(ctx: BusinessContext): SQL[] {
+/** Filtres communs à la liste et aux compteurs (tout sauf le statut). */
+export interface OrderSearch {
+  from?: Date | null;
+  to?: Date | null;
+  channel?: Channel | null;
+  q?: string;
+}
+
+function baseConditions(ctx: BusinessContext, f: OrderSearch = {}): SQL[] {
   const c: SQL[] = [eq(sales.businessId, ctx.business.id), eq(sales.kind, "order")];
   if (ctx.locations.length > 1) c.push(eq(sales.locationId, ctx.location.id));
+  if (f.from) c.push(gte(sales.createdAt, f.from));
+  if (f.to) c.push(lt(sales.createdAt, f.to));
+  if (f.channel) c.push(eq(sales.channel, f.channel));
+  if (f.q) c.push(or(ilike(sales.number, likePattern(f.q)), ilike(customers.name, likePattern(f.q)), ilike(customers.phone, likePattern(f.q)))!);
   return c;
 }
 
-export async function listOrders(ctx: BusinessContext, filter: OrderFilter) {
-  const conditions = baseConditions(ctx);
+export async function listOrders(ctx: BusinessContext, filter: OrderFilter, search: OrderSearch = {}) {
+  const conditions = baseConditions(ctx, search);
   const statuses = ORDER_FILTERS[filter].statuses;
   if (statuses) conditions.push(inArray(sales.status, [...statuses]));
 
@@ -48,11 +62,12 @@ export async function listOrders(ctx: BusinessContext, filter: OrderFilter) {
     .limit(300);
 }
 
-export async function orderCounts(ctx: BusinessContext): Promise<Record<string, number>> {
+export async function orderCounts(ctx: BusinessContext, search: OrderSearch = {}): Promise<Record<string, number>> {
   const rows = await db
     .select({ status: sales.status, n: sql<number>`count(*)::int` })
     .from(sales)
-    .where(and(...baseConditions(ctx)))
+    .leftJoin(customers, eq(sales.customerId, customers.id))
+    .where(and(...baseConditions(ctx, search)))
     .groupBy(sales.status);
   return Object.fromEntries(rows.map((r) => [r.status, r.n]));
 }

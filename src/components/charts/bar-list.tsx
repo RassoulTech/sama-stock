@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatFCFA } from "@/lib/format";
 
 /** Barres horizontales en HTML (une seule teinte : la grandeur, pas l'identité). Libellés et valeurs en texte. */
@@ -6,7 +7,7 @@ export function BarList({
   valueLabel = (v: number) => formatFCFA(v),
   emptyText = "Pas encore de données sur cette période.",
 }: {
-  items: { label: string; value: number; hint?: string }[];
+  items: { label: string; value: number; hint?: string; href?: string }[];
   valueLabel?: (value: number) => string;
   emptyText?: string;
 }) {
@@ -17,7 +18,13 @@ export function BarList({
       {items.map((i) => (
         <li key={i.label} className="space-y-1.5">
           <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="truncate font-medium">{i.label}</span>
+            {i.href ? (
+              <Link href={i.href} className="truncate font-medium hover:text-primary hover:underline">
+                {i.label}
+              </Link>
+            ) : (
+              <span className="truncate font-medium">{i.label}</span>
+            )}
             <span className="num shrink-0 font-semibold">
               {valueLabel(i.value)}
               {i.hint && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{i.hint}</span>}

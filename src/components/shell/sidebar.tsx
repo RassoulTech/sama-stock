@@ -4,18 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
-import type { NavItem } from "./nav";
+import { NAV_GROUP_LABELS, NAV_GROUPS, type NavGroup, type NavItem } from "./nav";
 import { NavIconView } from "./nav-icon";
 
 export function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
-
-const GROUP_LABELS: Record<NavItem["group"], string | null> = {
-  main: null,
-  manage: "Gestion",
-  admin: "Sama Stock",
-};
 
 export function Sidebar({
   items,
@@ -28,11 +22,11 @@ export function Sidebar({
   footer?: React.ReactNode;
   header?: React.ReactNode;
   homeHref?: string;
-  labels?: Partial<Record<NavItem["group"], string | null>>;
+  labels?: Partial<Record<NavGroup, string | null>>;
 }) {
   const pathname = usePathname();
-  const groupLabels = { ...GROUP_LABELS, ...labels };
-  const groups = (["main", "manage", "admin"] as const)
+  const groupLabels = { ...NAV_GROUP_LABELS, ...labels };
+  const groups = NAV_GROUPS
     .map((g) => ({ group: g, items: items.filter((i) => i.group === g) }))
     .filter((g) => g.items.length > 0);
   // L'élément le plus précis gagne (« /admin/commerces » ne doit pas aussi activer « /admin »)

@@ -31,7 +31,9 @@ Autre solution : sur l'ordinateur, dans Chrome, appuyez sur **F12** puis sur l'i
 
 ## 2. Votre compte
 
-Il n'y a **plus de comptes de démonstration** : la plateforme est partie de zéro le 19 octobre 2026, pour n'accueillir que de vraies données.
+La plateforme est partie de zéro le 19 octobre 2026, pour n'accueillir que de vraies données.
+
+**Démo publique** (page `/demo`, liens « Démo » sur l'accueil et sur la page de connexion) : le visiteur choisit la formule **Essai**, **Pro** ou **Business** et entre, sans mot de passe, dans une boutique fictive remplie (Quincaillerie Ndiaye & Fils, Ndèye Beauté, Awa Mode & Beauté). Les données sont **recréées chaque jour** ; paiements, invitations et réglages y sont bloqués. Ces boutiques n'apparaissent ni dans les chiffres ni dans les listes de l'administration.
 
 - **Votre accès administrateur** : connectez-vous avec **Google** (adresse `dionemhd1@gmail.com`). C'est la seule adresse autorisée à ouvrir l'espace **Administration**.
 - **Pour tester un commerce**, créez-le simplement avec votre compte (page **Essai gratuit**), ou créez un second compte avec une autre adresse.
