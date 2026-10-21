@@ -39,6 +39,13 @@ export const businesses = pgTable("businesses", {
   /** Boutique fictive de la démonstration publique (remise à zéro chaque jour). */
   isDemo: boolean("is_demo").notNull().default(false),
   demoResetAt: timestamp("demo_reset_at", { withTimezone: true }),
+  /** Licence achetée (boutique | pro | business) : l'application n'expire jamais. */
+  licensePack: text("license_pack"),
+  licenseActivatedAt: timestamp("license_activated_at", { withTimezone: true }),
+  /** Fin de la maintenance (assistance, nouveautés, sauvegardes) d'une licence. */
+  maintenanceEndsAt: timestamp("maintenance_ends_at", { withTimezone: true }),
+  /** Couleur de l'application personnalisée (licences), parmi les couleurs proposées. */
+  brandColor: text("brand_color"),
   createdAt: createdAt(),
 });
 
@@ -403,4 +410,52 @@ export const businessNotes = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("business_notes_business_idx").on(t.businessId)],
+);
+
+/** Vente d'une licence à un commerce (prix négocié, payable en plusieurs fois). */
+export const licenseSales = pgTable(
+  "license_sales",
+  {
+    id: id(),
+    /** Numéro de document : SS-2026-0001. */
+    number: text("number").notNull(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    pack: text("pack").notNull(),
+    /** Prix catalogue au moment de la vente. */
+    listPrice: integer("list_price").notNull(),
+    /** Prix convenu avec le client. */
+    agreedPrice: integer("agreed_price").notNull(),
+    /** Maintenance annuelle convenue (après la première année). */
+    maintenancePrice: integer("maintenance_price").notNull(),
+    status: text("status").notNull().default("active"), // active | annulee
+    note: text("note"),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  },
+  (t) => [uniqueIndex("license_sales_number_idx").on(t.number), index("license_sales_business_idx").on(t.businessId)],
+);
+
+/** Argent reçu pour une licence (acompte, solde) ou pour sa maintenance annuelle. */
+export const licensePayments = pgTable(
+  "license_payments",
+  {
+    id: id(),
+    saleId: text("sale_id")
+      .notNull()
+      .references(() => licenseSales.id, { onDelete: "cascade" }),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // licence | maintenance
+    amount: integer("amount").notNull(),
+    method: text("method").notNull(), // wave | orange_money | especes | virement | autre
+    note: text("note"),
+    recordedBy: text("recorded_by").references(() => user.id, { onDelete: "set null" }),
+    paidAt: timestamp("paid_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("license_payments_sale_idx").on(t.saleId), index("license_payments_business_idx").on(t.businessId)],
 );

@@ -36,6 +36,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
           q: one(params.q),
           status: statut && statut in PLAN_STATUS_LABELS ? (statut as PlanStatus) : undefined,
           health: activite && activite in HEALTH_LABELS ? (activite as BusinessHealth) : undefined,
+          plan: one(params.formule) === "licence" ? "licence" : undefined,
         }}
         rows={rows.map((r) => ({
           id: r.id,
@@ -45,6 +46,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
           phone: r.phone,
           city: r.city,
           plan: r.state.plan,
+          license: Boolean(r.state.license),
           planLabel: r.state.label,
           status: r.state.status,
           health: r.health,

@@ -33,7 +33,8 @@ import {
   type ImportField,
 } from "@/lib/import/products";
 import { cn } from "@/lib/utils";
-import { importProductsBatch, type ImportBatchResult } from "@/server/actions/import";
+import type { ActionResult } from "@/server/action";
+import { importProductsBatch, type ImportBatchInput, type ImportBatchResult } from "@/server/actions/import";
 
 const NONE = "__none__";
 const ACCEPT = ".xlsx,.xls,.xlsm,.csv,.ods,.txt";
@@ -113,11 +114,14 @@ export function ProductImport({
   productCount,
   maxProducts,
   planLabel,
+  importBatch = importProductsBatch,
 }: {
   existing: { names: string[]; references: string[] };
   productCount: number;
   maxProducts: number | null;
   planLabel: string;
+  /** Enregistrement d'un lot (par défaut : le commerce de l'utilisateur ; l'administration importe pour un client). */
+  importBatch?: (input: ImportBatchInput) => Promise<ActionResult<ImportBatchResult>>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -245,7 +249,7 @@ export function ProductImport({
         stock: r.stock,
         alertThreshold: r.alertThreshold,
       }));
-      const res = await importProductsBatch({ rows: batch, existing: mode });
+      const res = await importBatch({ rows: batch, existing: mode });
       if (!res.ok) {
         total.error = res.error;
         break;

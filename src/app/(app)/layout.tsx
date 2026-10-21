@@ -5,10 +5,12 @@ import { DemoBanner } from "@/components/demo/demo-banner";
 import { AppProvider, type ClientAppInfo } from "@/components/shell/app-provider";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { LocationSwitcher } from "@/components/shell/location-switcher";
+import { ClientBrand, PoweredBy } from "@/components/shell/client-brand";
 import { buildNav } from "@/components/shell/nav";
 import { PlanBanner } from "@/components/shell/plan-banner";
 import { Sidebar } from "@/components/shell/sidebar";
 import { UserMenu } from "@/components/shell/user-menu";
+import { brandCss } from "@/lib/domain/brand";
 import { initials } from "@/lib/format";
 import { ROLE_LABELS, type Permission } from "@/lib/domain/permissions";
 import { NO_INDEX } from "@/lib/seo";
@@ -60,31 +62,45 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   };
 
   const locationList = ctx.locations.map((l) => ({ id: l.id, name: l.name }));
+  // Application d'un client sous licence : sa couleur, son logo et son nom à la place de Sama Stock
+  const licensed = Boolean(ctx.plan.license);
+  const css = licensed ? brandCss(ctx.business.brandColor) : null;
+  const menu = licensed ? nav.map((i) => (i.href === "/abonnement" ? { ...i, label: "Mon application" } : i)) : nav;
 
   return (
     <AppProvider value={info}>
+      {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
       <div className="min-h-dvh lg:grid lg:grid-cols-[244px_minmax(0,1fr)]">
         <Sidebar
-          items={nav}
+          items={menu}
+          brand={licensed ? <ClientBrand name={ctx.business.name} logo={ctx.business.logo} /> : undefined}
           footer={
-            <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
-              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-accent text-xs font-semibold text-sidebar-foreground ring-1 ring-sidebar-border">
-                {initials(ctx.business.name)}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[0.8125rem] font-medium">{ctx.business.name}</span>
-                <span className="block text-xs text-sidebar-foreground/65">
-                  {ctx.plan.label} · {ROLE_LABELS[ctx.role]}
+            <>
+              <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5">
+                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-sidebar-accent text-xs font-semibold text-sidebar-foreground ring-1 ring-sidebar-border">
+                  {initials(ctx.business.name)}
                 </span>
-              </span>
-            </div>
+                <span className="min-w-0">
+                  <span className="block truncate text-[0.8125rem] font-medium">{ctx.business.name}</span>
+                  <span className="block text-xs text-sidebar-foreground/65">
+                    {ctx.plan.label} · {ROLE_LABELS[ctx.role]}
+                  </span>
+                </span>
+              </div>
+              {licensed && <PoweredBy />}
+            </>
           }
         />
         <div className="flex min-w-0 flex-col bg-white dark:bg-background">
           <header className="sticky top-0 z-30 border-b bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/70 dark:bg-background/85 dark:supports-[backdrop-filter]:bg-background/70 print:hidden">
             <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
               <Link href="/tableau-de-bord" className="flex min-w-0 items-center gap-2.5 lg:hidden" aria-label="Accueil">
-                <LogoMark className="size-7" />
+                {licensed && ctx.business.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- logo en data URL
+                  <img src={ctx.business.logo} alt="" className="size-7 shrink-0 rounded-[9px] object-cover ring-1 ring-border" />
+                ) : (
+                  <LogoMark className="size-7" />
+                )}
                 <span className={ctx.locations.length > 1 ? "sr-only" : "truncate text-[0.9375rem] font-semibold"}>
                   {ctx.business.name}
                 </span>
@@ -120,7 +136,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {children}
           </main>
         </div>
-        <BottomNav items={nav} />
+        <BottomNav items={menu} />
       </div>
     </AppProvider>
   );

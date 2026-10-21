@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactLine, LegalPage } from "@/components/legal/legal-page";
 import { pageMetadata } from "@/lib/seo";
-import { formatLimit, limitLabel, PAID_PLANS, PERIOD_DAYS, PLANS, TRIAL_DAYS } from "@/lib/domain/plans";
+import { formatLimit, LICENSE_ORDER, LICENSE_PACKS, limitLabel, MAINTENANCE_INCLUDED_MONTHS, PAID_PLANS, PERIOD_DAYS, PLANS, TRIAL_DAYS } from "@/lib/domain/plans";
 import { formatFCFA } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 
@@ -16,7 +16,7 @@ export default function ConditionsPage() {
   return (
     <LegalPage
       title="Conditions d'utilisation et de vente"
-      intro="Ces conditions encadrent l'utilisation de Sama Stock et la souscription aux formules payantes. En créant un compte, vous les acceptez."
+      intro="Ces conditions encadrent l'utilisation de Sama Stock, la souscription aux formules payantes et l'achat d'une licence. En créant un compte, vous les acceptez."
     >
       <h2>1. Le service</h2>
       <p>
@@ -83,7 +83,39 @@ export default function ConditionsPage() {
         d&apos;erreur technique, écrivez-nous : le montant concerné vous est remboursé.
       </p>
 
-      <h2>7. Vos engagements</h2>
+      <h2>7. Achat d&apos;une licence (application à vie)</h2>
+      <p>Vous pouvez aussi acheter Sama Stock une fois pour toutes, installé et personnalisé pour votre commerce :</p>
+      <ul>
+        {LICENSE_ORDER.map((id) => {
+          const p = LICENSE_PACKS[id];
+          return (
+            <li key={id}>
+              <strong>
+                Licence {p.label} : {formatFCFA(p.price)}
+              </strong>{" "}
+              — {p.limits.maxEmployees === 0 ? "propriétaire seul" : limitLabel(p.limits.maxEmployees, "employés", { lowercase: true })},{" "}
+              {p.limits.maxLocations} boutique{p.limits.maxLocations > 1 ? "s ou dépôts" : ""} ; maintenance ensuite {formatFCFA(p.maintenancePrice)} par an.
+            </li>
+          );
+        })}
+      </ul>
+      <ul>
+        <li>
+          Le prix comprend l&apos;installation, la personnalisation (logo, couleur), l&apos;import de vos produits, la formation
+          et <strong>{MAINTENANCE_INCLUDED_MONTHS} mois de maintenance</strong>.
+        </li>
+        <li>
+          Le prix peut être convenu avec vous : il figure sur votre devis. Il peut se payer en plusieurs fois (par exemple un
+          acompte à la commande et le solde à l&apos;installation), par Wave, Orange Money, espèces ou virement.
+        </li>
+        <li>
+          <strong>L&apos;application ne s&apos;arrête jamais</strong>, même sans maintenance. Après la première année, la
+          maintenance (assistance, nouveautés, sauvegardes) est facultative et se renouvelle par année.
+        </li>
+        <li>Si le solde convenu n&apos;est pas payé, l&apos;accès peut être suspendu jusqu&apos;au paiement ; vos données sont conservées.</li>
+      </ul>
+
+      <h2>8. Vos engagements</h2>
       <ul>
         <li>Utiliser Sama Stock pour une activité commerciale licite.</li>
         <li>
@@ -93,34 +125,34 @@ export default function ConditionsPage() {
         <li>Ne pas tenter de contourner la sécurité du service ni d&apos;accéder aux données d&apos;un autre commerce.</li>
       </ul>
 
-      <h2>8. Nos engagements</h2>
+      <h2>9. Nos engagements</h2>
       <ul>
         <li>Mettre tout en œuvre pour que le service soit disponible 24 h/24, hors maintenance et incidents indépendants de notre volonté.</li>
         <li>Protéger vos données comme décrit dans la <Link href="/confidentialite">politique de confidentialité</Link>.</li>
         <li>Ne jamais vendre vos données ni celles de vos clients.</li>
       </ul>
 
-      <h2>9. Responsabilité</h2>
+      <h2>10. Responsabilité</h2>
       <p>
         Sama Stock est un outil d&apos;aide à la gestion : les chiffres affichés dépendent des informations que vous saisissez,
         et vos décisions commerciales restent les vôtres. L&apos;éditeur est tenu à une obligation de moyens. Sa
         responsabilité ne peut pas dépasser le montant payé pour le service au cours des 12 derniers mois.
       </p>
 
-      <h2>10. Suspension et résiliation</h2>
+      <h2>11. Suspension et résiliation</h2>
       <p>
         Vous pouvez arrêter à tout moment, simplement en ne renouvelant pas, et demander la suppression de votre compte par
         email. L&apos;éditeur peut suspendre un compte en cas de fraude ou de manquement grave à ces conditions, après vous en
         avoir informé sauf urgence.
       </p>
 
-      <h2>11. Modifications des conditions</h2>
+      <h2>12. Modifications des conditions</h2>
       <p>
         Toute modification importante vous est annoncée dans l&apos;application ou par email au moins 15 jours avant son
         entrée en vigueur.
       </p>
 
-      <h2>12. Droit applicable et litiges</h2>
+      <h2>13. Droit applicable et litiges</h2>
       <p>
         Ces conditions sont soumises au droit sénégalais. En cas de désaccord, nous cherchons d&apos;abord une solution
         amiable ; à défaut, les tribunaux compétents de Thiès sont saisis.

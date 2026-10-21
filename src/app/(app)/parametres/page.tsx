@@ -3,6 +3,10 @@ import { PageHeader } from "@/components/shared/page-header";
 import { BusinessForm, LocationsManager, ModulesForm } from "@/components/settings/settings-forms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireContext } from "@/server/context";
+import { and, eq } from "drizzle-orm";
+import { BrandColorForm, PasswordForm } from "@/components/settings/account-settings";
+import { db } from "@/db";
+import { account } from "@/db/schema";
 
 export const metadata: Metadata = { title: "Paramètres" };
 
@@ -10,6 +14,18 @@ export default async function ParametresPage() {
   const ctx = await requireContext("settings.manage");
   const disabled = ctx.plan.readOnly;
   const max = ctx.plan.limits.maxLocations;
+  // Mot de passe modifiable seulement pour un compte e-mail (pas pour une connexion Google seule)
+  const [credential] = await db
+    .select({ id: account.id })
+    .from(account)
+    .where(and(eq(account.userId, ctx.user.id), eq(account.providerId, "credential")));
+  const upgradeHint = ctx.plan.license
+    ? ctx.plan.license !== "business"
+      ? "Plusieurs boutiques ou dépôts sont inclus dans la licence Business : contactez Sama Stock."
+      : null
+    : ctx.plan.plan !== "business"
+      ? "Plusieurs boutiques ou dépôts (jusqu'à 3), avec transferts de stock, sont disponibles avec la formule Business."
+      : null;
 
   return (
     <>
@@ -42,14 +58,31 @@ export default async function ParametresPage() {
                 locations={ctx.locations.map((l) => ({ id: l.id, name: l.name, kind: l.kind }))}
                 max={max}
                 disabled={disabled}
-                upgradeHint={
-                  ctx.plan.plan !== "business"
-                    ? "Plusieurs boutiques ou dépôts (jusqu'à 3), avec transferts de stock, sont disponibles avec la formule Business."
-                    : null
-                }
+                upgradeHint={upgradeHint}
               />
             </CardContent>
           </Card>
+          {ctx.plan.license && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-semibold">Couleur de votre application</CardTitle>
+                <p className="text-sm text-muted-foreground">Elle s&apos;applique au menu, aux boutons et aux graphiques. Votre logo se change dans « Mon commerce ».</p>
+              </CardHeader>
+              <CardContent>
+                <BrandColorForm color={ctx.business.brandColor} disabled={disabled} />
+              </CardContent>
+            </Card>
+          )}
+          {credential && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-semibold">Mon mot de passe</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PasswordForm />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>

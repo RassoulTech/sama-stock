@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canAdd, computePlanState, limitLabel, PLANS } from "./plans";
+import { brandCss } from "./brand";
+import { addMonths, canAdd, computePlanState, LICENSE_PACKS, limitLabel, PLANS } from "./plans";
 
 const now = new Date("2026-10-19T12:00:00Z");
 const days = (n: number) => new Date(now.getTime() + n * 86_400_000);
@@ -61,5 +62,51 @@ describe("limitLabel", () => {
     expect(limitLabel(50, "produits")).toBe("50 produits");
     expect(limitLabel(null, "produits")).toBe("Produits illimités");
     expect(limitLabel(null, "employés", { lowercase: true })).toBe("employés illimités");
+  });
+});
+
+describe("licences", () => {
+  const base = { plan: "trial", trialEndsAt: null, periodEndsAt: null, suspendedAt: null };
+
+  it("respecte les prix des forfaits validés", () => {
+    expect(LICENSE_PACKS.boutique).toMatchObject({ price: 75_000, maintenancePrice: 25_000 });
+    expect(LICENSE_PACKS.pro).toMatchObject({ price: 135_000, maintenancePrice: 30_000 });
+    expect(LICENSE_PACKS.business).toMatchObject({ price: 250_000, maintenancePrice: 40_000 });
+  });
+
+  it("une licence est active avec les limites de son forfait", () => {
+    const s = computePlanState({ ...base, licensePack: "pro", maintenanceEndsAt: days(200) }, now);
+    expect(s).toMatchObject({ status: "active", readOnly: false, license: "pro", label: "Licence Pro" });
+    expect(s.limits).toMatchObject({ maxProducts: null, maxEmployees: 5, maxLocations: 1, excel: true, advancedReports: true });
+    expect(s.daysLeft).toBe(200);
+  });
+
+  it("ne s'arrête jamais, même maintenance terminée", () => {
+    const s = computePlanState({ ...base, licensePack: "boutique", maintenanceEndsAt: days(-90) }, now);
+    expect(s).toMatchObject({ status: "active", readOnly: false, daysLeft: 0 });
+  });
+
+  it("reste soumise à la suspension", () => {
+    const s = computePlanState({ ...base, suspendedAt: now, licensePack: "business", maintenanceEndsAt: days(10) }, now);
+    expect(s).toMatchObject({ status: "suspended", readOnly: true });
+  });
+
+  it("ignore un forfait inconnu (abonnement normal)", () => {
+    const s = computePlanState({ ...base, licensePack: "inconnu" }, now);
+    expect(s.license).toBeNull();
+    expect(s.status).toBe("expired");
+  });
+
+  it("ajoute des mois à une date", () => {
+    expect(addMonths(new Date("2026-10-21T10:00:00Z"), 12).getUTCFullYear()).toBe(2027);
+  });
+});
+
+describe("couleurs des applications", () => {
+  it("n'injecte que des couleurs de la palette", () => {
+    expect(brandCss("vert")).toBeNull();
+    expect(brandCss("rouge;}body{display:none")).toBeNull();
+    expect(brandCss(null)).toBeNull();
+    expect(brandCss("bleu")).toContain("--primary:#1d4ed8");
   });
 });

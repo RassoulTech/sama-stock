@@ -1,4 +1,19 @@
-import { Ban, Banknote, CalendarPlus, CheckCircle2, CreditCard, LogOut, NotebookPen, TimerOff, type LucideIcon } from "lucide-react";
+import {
+  BadgeCheck,
+  Ban,
+  Banknote,
+  CalendarPlus,
+  CheckCircle2,
+  CreditCard,
+  FileSpreadsheet,
+  KeyRound,
+  LogOut,
+  NotebookPen,
+  Palette,
+  TimerOff,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { ADMIN_ACTIONS, isAdminAction, type AdminAction } from "@/lib/domain/admin";
 import { formatDateTime } from "@/lib/format";
@@ -14,6 +29,13 @@ const ICONS: Record<AdminAction, { icon: LucideIcon; tone: string }> = {
   revoke_session: { icon: LogOut, tone: "bg-muted text-muted-foreground" },
   revoke_user: { icon: LogOut, tone: "bg-destructive/10 text-destructive" },
   note: { icon: NotebookPen, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
+  license: { icon: BadgeCheck, tone: "bg-accent text-primary" },
+  license_payment: { icon: Banknote, tone: "bg-success/10 text-success" },
+  maintenance: { icon: Wrench, tone: "bg-success/10 text-success" },
+  license_cancel: { icon: Ban, tone: "bg-destructive/10 text-destructive" },
+  reset_password: { icon: KeyRound, tone: "bg-saffron/15 text-warning dark:text-saffron" },
+  brand: { icon: Palette, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
+  import: { icon: FileSpreadsheet, tone: "bg-accent text-primary" },
 };
 
 export interface AuditEntry {

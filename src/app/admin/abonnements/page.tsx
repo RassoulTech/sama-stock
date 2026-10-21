@@ -32,7 +32,8 @@ function Row({ r, detail }: { r: AdminBusinessRow; detail: React.ReactNode }) {
 export default async function AdminSubscriptionsPage() {
   const rows = await listAllBusinesses();
   const stats = adminStats(rows);
-  const live = rows.filter((r) => r.state.status === "active" || r.state.status === "trialing");
+  // Abonnements en ligne seulement (les licences ont leur propre page)
+  const live = rows.filter((r) => !r.state.license && (r.state.status === "active" || r.state.status === "trialing"));
   const plans = (["trial", "pro", "business"] as PlanId[]).map((id) => {
     const count = live.filter((r) => r.state.plan === id).length;
     return { plan: PLANS[id], count, monthly: id === "trial" ? 0 : count * PLANS[id].price };

@@ -24,6 +24,8 @@ export interface AdminRow {
   phone: string | null;
   city: string | null;
   plan: PlanId;
+  /** Licence achetée (pas d'abonnement). */
+  license: boolean;
   planLabel: string;
   status: PlanStatus;
   health: BusinessHealth;
@@ -53,12 +55,12 @@ export function BusinessTable({
   initial,
 }: {
   rows: AdminRow[];
-  initial: { q?: string; status?: "all" | PlanStatus; plan?: "all" | PlanId; health?: "all" | BusinessHealth };
+  initial: { q?: string; status?: "all" | PlanStatus; plan?: "all" | PlanId | "licence"; health?: "all" | BusinessHealth };
 }) {
   const router = useRouter();
   const [q, setQ] = useState(initial.q ?? "");
   const [status, setStatus] = useState<"all" | PlanStatus>(initial.status ?? "all");
-  const [plan, setPlan] = useState<"all" | PlanId>(initial.plan ?? "all");
+  const [plan, setPlan] = useState<"all" | PlanId | "licence">(initial.plan ?? "all");
   const [health, setHealth] = useState<"all" | BusinessHealth>(initial.health ?? "all");
   const [sort, setSort] = useState<Sort>("recent");
   const active = q !== "" || status !== "all" || plan !== "all" || health !== "all" || sort !== "recent";
@@ -68,7 +70,7 @@ export function BusinessTable({
       (r) =>
         matchesSearch(q, r.name, r.ownerName, r.ownerEmail, r.phone, r.city) &&
         (status === "all" || r.status === status) &&
-        (plan === "all" || r.plan === plan) &&
+        (plan === "all" || (plan === "licence" ? r.license : !r.license && r.plan === plan)) &&
         (health === "all" || r.health === health),
     )
     .sort((a, b) => {
@@ -87,13 +89,14 @@ export function BusinessTable({
         <div className="grid grid-cols-2 gap-2 lg:flex">
           <Select value={plan} onValueChange={(v) => setPlan(v as typeof plan)}>
             <SelectTrigger className="w-full lg:w-40" aria-label="Formule">
-              <SelectValue>{plan === "all" ? "Formule" : { trial: "Essai", pro: "Pro", business: "Business" }[plan]}</SelectValue>
+              <SelectValue>{plan === "all" ? "Formule" : { trial: "Essai", pro: "Pro", business: "Business", licence: "Licence" }[plan]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Toutes les formules</SelectItem>
               <SelectItem value="trial">Essai</SelectItem>
               <SelectItem value="pro">Pro</SelectItem>
               <SelectItem value="business">Business</SelectItem>
+              <SelectItem value="licence">Licence (achetée)</SelectItem>
             </SelectContent>
           </Select>
           <Select value={health} onValueChange={(v) => setHealth(v as typeof health)}>

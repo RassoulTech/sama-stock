@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { businesses, businessNotes, subscriptionEvents, user } from "@/db/schema";
 import { businessHealth } from "@/lib/domain/admin";
 import { computePlanState, PLANS, type PlanStatus } from "@/lib/domain/plans";
+import { licenseSummary, listLicenseSales } from "./licences";
 
 /** Ventes comptées : ventes validées en caisse et commandes livrées. */
 const DONE = sql`((s.kind = 'sale' and s.status = 'completed') or (s.kind = 'order' and s.status = 'delivered'))`;
@@ -22,6 +23,9 @@ export const listAllBusinesses = cache(async () => {
       trialEndsAt: businesses.trialEndsAt,
       periodEndsAt: businesses.periodEndsAt,
       suspendedAt: businesses.suspendedAt,
+      licensePack: businesses.licensePack,
+      maintenanceEndsAt: businesses.maintenanceEndsAt,
+      licenseActivatedAt: businesses.licenseActivatedAt,
       createdAt: businesses.createdAt,
       ownerId: businesses.ownerId,
       ownerName: user.name,
@@ -36,7 +40,9 @@ export const listAllBusinesses = cache(async () => {
         (select max(s.created_at) from sales s where s.business_id = ${businesses.id}),
         (select max(m.created_at) from stock_movements m where m.business_id = ${businesses.id})
       )`,
-      paidTotal: sql<number>`(select coalesce(sum(e.amount), 0)::int from subscription_events e where e.business_id = ${businesses.id} and e.method in ('saspay', 'especes'))`,
+      // Tout l'argent reçu de ce commerce : abonnements et licence (avec maintenance)
+      paidTotal: sql<number>`((select coalesce(sum(e.amount), 0) from subscription_events e where e.business_id = ${businesses.id} and e.method in ('saspay', 'especes'))
+        + (select coalesce(sum(p.amount), 0) from license_payments p where p.business_id = ${businesses.id}))::int`,
     })
     .from(businesses)
     .leftJoin(user, eq(businesses.ownerId, user.id))
@@ -67,7 +73,10 @@ export async function adminNavBadges() {
   const todo = todoLists(rows);
   const due = todo.trialsEnding.length + todo.renewalsEnding.length + todo.recentlyExpired.length;
   const waiting = pending.rows[0]?.n ?? 0;
+  const lic = licenseSummary(await listLicenseSales());
+  const licenseTodo = lic.toCollect.length + lic.maintenanceSoon.length + lic.maintenanceOver.length;
   return {
+    ...(licenseTodo > 0 ? { "/admin/licences": { value: licenseTodo, tone: "alert" as const } } : lic.count > 0 ? { "/admin/licences": { value: lic.count, tone: "muted" as const } } : {}),
     "/admin/commerces": { value: rows.length, tone: "muted" as const },
     ...(due > 0 ? { "/admin/abonnements": { value: due, tone: "alert" as const } } : {}),
     ...(waiting > 0 ? { "/admin/paiements": { value: waiting, tone: "alert" as const } } : {}),
@@ -78,7 +87,8 @@ export type AdminBusinessRow = Awaited<ReturnType<typeof listAllBusinesses>>[num
 
 export function adminStats(rows: AdminBusinessRow[]) {
   const by = (s: PlanStatus) => rows.filter((r) => r.state.status === s).length;
-  const paying = rows.filter((r) => r.state.status === "active" && r.state.plan !== "trial");
+  // Abonnés payants (les licences sont achetées une fois : elles ne font pas partie du revenu mensuel)
+  const paying = rows.filter((r) => !r.state.license && r.state.status === "active" && r.state.plan !== "trial");
   return {
     total: rows.length,
     trialing: by("trialing"),
@@ -88,6 +98,7 @@ export function adminStats(rows: AdminBusinessRow[]) {
     mrr: paying.reduce((s, r) => s + PLANS[r.state.plan].price, 0),
     /** Commerces avec une vente ou un mouvement de stock ces 7 derniers jours. */
     alive7: rows.filter((r) => r.health === "active").length,
+    licensed: rows.filter((r) => r.state.license).length,
   };
 }
 
@@ -105,7 +116,7 @@ export function activationFunnel(rows: AdminBusinessRow[]) {
 export function endingSoon(rows: AdminBusinessRow[], days: number) {
   const limit = Date.now() + days * 86_400_000;
   return rows
-    .filter((r) => (r.state.status === "active" || r.state.status === "trialing") && r.state.endsAt && r.state.endsAt.getTime() <= limit)
+    .filter((r) => !r.state.license && (r.state.status === "active" || r.state.status === "trialing") && r.state.endsAt && r.state.endsAt.getTime() <= limit)
     .sort((a, b) => a.state.endsAt!.getTime() - b.state.endsAt!.getTime());
 }
 
@@ -164,11 +175,14 @@ export async function platformOverview() {
         and user_id in (select id from "user" where ${REAL_USER})) as active_sessions,
       (select count(distinct user_id)::int from session where updated_at > now() - interval '7 days'
         and user_id in (select id from "user" where ${REAL_USER})) as active_users7,
-      (select coalesce(sum(amount), 0)::int from subscription_events
-        where ${REAL_PAYMENT} and created_at >= date_trunc('month', now())) as revenue_month,
-      (select coalesce(sum(amount), 0)::int from subscription_events
+      ((select coalesce(sum(amount), 0) from subscription_events
+        where ${REAL_PAYMENT} and created_at >= date_trunc('month', now()))
+        + (select coalesce(sum(amount), 0) from license_payments where paid_at >= date_trunc('month', now())))::int as revenue_month,
+      ((select coalesce(sum(amount), 0) from subscription_events
         where ${REAL_PAYMENT} and created_at >= date_trunc('month', now()) - interval '1 month'
-        and created_at < date_trunc('month', now())) as revenue_prev,
+        and created_at < date_trunc('month', now()))
+        + (select coalesce(sum(amount), 0) from license_payments
+        where paid_at >= date_trunc('month', now()) - interval '1 month' and paid_at < date_trunc('month', now())))::int as revenue_prev,
       (select count(*)::int from businesses where not is_demo and created_at >= date_trunc('month', now())) as signups_month,
       (select count(*)::int from businesses where not is_demo and created_at >= date_trunc('month', now()) - interval '1 month'
         and created_at < date_trunc('month', now())) as signups_prev,
@@ -181,10 +195,12 @@ export async function platformOverview() {
       left join businesses b on date_trunc('day', b.created_at) = d and not b.is_demo
       group by d order by d`),
     db.execute<{ month: string; total: number }>(sql`
-      select to_char(m, 'YYYY-MM') as month, coalesce(sum(e.amount), 0)::int as total
+      select to_char(m, 'YYYY-MM') as month,
+        ((select coalesce(sum(e.amount), 0) from subscription_events e
+          where date_trunc('month', e.created_at) = m and e.method in ('saspay', 'especes'))
+        + (select coalesce(sum(p.amount), 0) from license_payments p where date_trunc('month', p.paid_at) = m))::int as total
       from generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
-      left join subscription_events e on date_trunc('month', e.created_at) = m and e.method in ('saspay', 'especes')
-      group by m order by m`),
+      order by m`),
   ]);
   const c = counts.rows[0]!;
   return { counts: { ...c, gmv30: Number(c.gmv30) }, signups: signups.rows, revenue: revenue.rows };
@@ -281,7 +297,7 @@ export async function getBusinessForAdmin(id: string) {
   const rows = await listAllBusinesses();
   const business = rows.find((r) => r.id === id);
   if (!business) return null;
-  const [history, members, notes, audit, locations, daily] = await Promise.all([
+  const [history, members, notes, audit, locations, daily, brand] = await Promise.all([
     db.select().from(subscriptionEvents).where(eq(subscriptionEvents.businessId, id)).orderBy(desc(subscriptionEvents.createdAt)).limit(30),
     db.execute<{ id: string; name: string; email: string; role: string; last_seen: Date | null }>(sql`
       select u.id, u.name, u.email, m.role,
@@ -296,8 +312,18 @@ export async function getBusinessForAdmin(id: string) {
       from generate_series(date_trunc('day', now()) - interval '29 days', date_trunc('day', now()), interval '1 day') d
       left join sales s on s.business_id = ${id} and ${DONE} and date_trunc('day', s.completed_at) = d
       group by d order by d`),
+    db.select({ logo: businesses.logo, color: businesses.brandColor }).from(businesses).where(eq(businesses.id, id)),
   ]);
-  return { business, history, members: members.rows, notes, audit, locations: locations.rows.map((l) => l.name), daily: daily.rows };
+  return {
+    business,
+    history,
+    members: members.rows,
+    notes,
+    audit,
+    locations: locations.rows.map((l) => l.name),
+    daily: daily.rows,
+    brand: brand[0] ?? { logo: null, color: null },
+  };
 }
 
 /** Journal des actions des administrateurs (le plus récent d'abord). */

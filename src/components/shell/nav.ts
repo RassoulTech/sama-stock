@@ -20,7 +20,8 @@ export type NavIcon =
   | "payments"
   | "sessions"
   | "system"
-  | "history";
+  | "history"
+  | "license";
 
 /** Sections du menu, dans l'ordre d'affichage. « main » sert à l'espace d'administration. */
 export const NAV_GROUPS = ["main", "daily", "catalog", "contacts", "insights", "manage", "admin"] as const;

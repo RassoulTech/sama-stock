@@ -18,6 +18,7 @@ export function Sidebar({
   homeHref = "/tableau-de-bord",
   labels,
   badges,
+  brand,
 }: {
   items: NavItem[];
   footer?: React.ReactNode;
@@ -26,6 +27,8 @@ export function Sidebar({
   labels?: Partial<Record<NavGroup, string | null>>;
   /** Compteur à droite d'une rubrique (par adresse) ; « alert » signale quelque chose à traiter. */
   badges?: Partial<Record<string, { value: number; tone: "alert" | "muted" }>>;
+  /** Marque affichée en haut du menu à la place de Sama Stock (application d'un client sous licence). */
+  brand?: React.ReactNode;
 }) {
   const pathname = usePathname();
   const groupLabels = { ...NAV_GROUP_LABELS, ...labels };
@@ -40,8 +43,8 @@ export function Sidebar({
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex print:hidden">
       <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
-        <Link href={homeHref} aria-label="Accueil Sama Stock">
-          <Logo inverted />
+        <Link href={homeHref} aria-label="Accueil" className="min-w-0">
+          {brand ?? <Logo inverted />}
         </Link>
         {header}
       </div>

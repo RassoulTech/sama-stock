@@ -20,5 +20,7 @@ export default async function ConnexionPage({
   const params = await searchParams;
   const redirectTo = safeRedirect(params.redirect, "/tableau-de-bord");
   if (await getSession()) redirect(redirectTo);
-  return <SignInForm redirectTo={redirectTo} googleEnabled={isGoogleEnabled} />;
+  // E-mail prérempli quand le client ouvre le lien d'accès reçu par WhatsApp
+  const email = typeof params.email === "string" && /^[^\s@]+@[^\s@]+$/.test(params.email) ? params.email.slice(0, 120) : "";
+  return <SignInForm redirectTo={redirectTo} googleEnabled={isGoogleEnabled} defaultEmail={email} />;
 }

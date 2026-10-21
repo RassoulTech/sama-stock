@@ -1,4 +1,6 @@
 import { desc, eq } from "drizzle-orm";
+import { LicenseView } from "@/components/billing/license-view";
+import { activeSaleFor, getLicenseSale } from "@/server/queries/licences";
 import { Banknote, Check, Clock, CreditCard, Info, ShieldCheck, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import { CheckoutButton, RefreshCheckoutButton } from "@/components/billing/checkout-buttons";
@@ -40,6 +42,12 @@ function features(p: PlanDefinition) {
 
 export default async function AbonnementPage() {
   const ctx = await requireContext("billing.manage");
+  // Licence achetée : pas d'abonnement, mais la page « Votre application »
+  if (ctx.plan.license) {
+    const sale = await activeSaleFor(ctx.business.id);
+    const detail = sale ? await getLicenseSale(sale.id) : null;
+    return <LicenseView detail={detail} businessName={ctx.business.name} support={process.env.SUPPORT_WHATSAPP ?? null} />;
+  }
   const history = await db
     .select()
     .from(subscriptionEvents)

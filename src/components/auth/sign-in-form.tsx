@@ -11,9 +11,18 @@ import { authClient, authErrorMessage } from "@/lib/auth-client";
 import { GoogleButton, OrSeparator } from "./google-button";
 import { PasswordInput } from "./password-input";
 
-export function SignInForm({ redirectTo, googleEnabled }: { redirectTo: string; googleEnabled: boolean }) {
+export function SignInForm({
+  redirectTo,
+  googleEnabled,
+  defaultEmail = "",
+}: {
+  redirectTo: string;
+  googleEnabled: boolean;
+  /** E-mail déjà rempli (lien d'accès envoyé au client par WhatsApp). */
+  defaultEmail?: string;
+}) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

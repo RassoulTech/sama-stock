@@ -5,6 +5,8 @@ import { buildProductTemplate } from "@/server/reports/product-template";
 /** Modèle Excel pour importer des produits (formules Pro et Business ; tout fichier est accepté à l'import). */
 export async function GET() {
   const ctx = await getContext();
+  // L'administrateur le télécharge aussi pendant l'installation chez un client
+  if (ctx?.isSuperAdmin) return workbookResponse(buildProductTemplate(ctx.business?.name ?? "Sama Stock"), "modele-produits-sama-stock.xlsx");
   if (!ctx?.business) return new Response("Connectez-vous pour télécharger le modèle.", { status: 401 });
   if (!(ctx as BusinessContext).plan.limits.excel) {
     return new Response("L'import Excel est inclus dans les formules Pro et Business.", { status: 403 });

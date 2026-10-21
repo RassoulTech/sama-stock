@@ -9,7 +9,25 @@ export const ADMIN_ACTIONS = {
   revoke_session: "Appareil déconnecté",
   revoke_user: "Utilisateur déconnecté partout",
   note: "Note interne",
+  license: "Licence vendue",
+  license_payment: "Paiement de licence",
+  maintenance: "Maintenance renouvelée",
+  license_cancel: "Licence annulée",
+  reset_password: "Nouveau mot de passe",
+  brand: "Personnalisation",
+  import: "Produits importés",
 } as const;
+
+/** Moyens de paiement d'une licence ou d'une maintenance. */
+export const LICENSE_PAYMENT_METHODS = {
+  wave: "Wave",
+  orange_money: "Orange Money",
+  especes: "Espèces",
+  virement: "Virement bancaire",
+  autre: "Autre",
+} as const;
+
+export type LicensePaymentMethod = keyof typeof LICENSE_PAYMENT_METHODS;
 
 export type AdminAction = keyof typeof ADMIN_ACTIONS;
 
@@ -32,7 +50,10 @@ export const HEALTH_LABELS: Record<BusinessHealth, string> = {
 
 /** Libellé court de la formule et de son état : « Essai en cours », « Pro · Actif », « Business · Expiré ». */
 export function planBadgeText(planLabel: string, status: "trialing" | "active" | "expired" | "suspended", statusLabel: string): string {
-  return status === "trialing" ? "Essai en cours" : `${planLabel} · ${statusLabel}`;
+  if (status === "trialing") return "Essai en cours";
+  // Licence achetée : elle ne s'arrête pas, seul le nom compte (sauf suspension)
+  if (planLabel.startsWith("Licence") && status === "active") return planLabel;
+  return `${planLabel} · ${statusLabel}`;
 }
 
 export const HEALTH_TONES: Record<BusinessHealth, "green" | "blue" | "saffron" | "red"> = {

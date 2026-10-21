@@ -19,6 +19,7 @@ export async function simulatePayment(plan: string) {
     if (!isPaymentSimulation) throw new ActionError("Le paiement simulé est désactivé.");
     // write: false — un compte expiré doit justement pouvoir payer
     const ctx = await requireActionContext("billing.manage", { write: false });
+    if (ctx.plan.license) throw new ActionError("Votre application est achetée : il n'y a pas d'abonnement à payer.");
     assertNotDemo(ctx, "Le paiement de l'abonnement");
     const target = parse(planSchema, plan);
     const end = await db.transaction((tx) =>
@@ -40,6 +41,7 @@ export async function startCheckout(plan: string) {
   return runAction(async () => {
     if (!isSaspayEnabled) throw new ActionError("Le paiement en ligne n'est pas encore activé.");
     const ctx = await requireActionContext("billing.manage", { write: false });
+    if (ctx.plan.license) throw new ActionError("Votre application est achetée : il n'y a pas d'abonnement à payer.");
     assertNotDemo(ctx, "Le paiement de l'abonnement");
     const target = parse(planSchema, plan);
     const amount = PLANS[target].price;

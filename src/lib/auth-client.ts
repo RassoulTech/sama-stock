@@ -16,6 +16,10 @@ export function authErrorMessage(error: { code?: string; message?: string; statu
       return "Le mot de passe est trop long.";
     case "INVALID_EMAIL":
       return "Adresse email invalide.";
+    case "INVALID_PASSWORD":
+      return "Le mot de passe actuel est incorrect.";
+    case "CREDENTIAL_ACCOUNT_NOT_FOUND":
+      return "Vous vous connectez avec Google : aucun mot de passe à changer.";
     default:
       if (error?.status === 429) return "Trop de tentatives. Patientez une minute puis réessayez.";
       return "Une erreur est survenue. Vérifiez votre connexion et réessayez.";

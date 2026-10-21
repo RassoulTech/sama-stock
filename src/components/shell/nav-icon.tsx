@@ -19,6 +19,7 @@ import {
   Warehouse,
   Bike,
   History,
+  BadgeCheck,
   type LucideIcon,
 } from "lucide-react";
 import type { NavIcon } from "./nav";
@@ -44,6 +45,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   sessions: MonitorSmartphone,
   system: Activity,
   history: History,
+  license: BadgeCheck,
 };
 
 export function NavIconView({ icon, className }: { icon: NavIcon; className?: string }) {

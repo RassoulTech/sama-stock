@@ -1,4 +1,4 @@
-import { Activity, CalendarClock, Coins, Download, Percent, ShoppingBag, Store, TrendingUp, UserRound } from "lucide-react";
+import { Activity, BadgeCheck, Coins, Download, Percent, ShoppingBag, Store, TrendingUp, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuditList } from "@/components/admin/audit-list";
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PLAN_STATUS_TONES } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatNumber } from "@/lib/format";
 import { activationFunnel, adminStats, listAllBusinesses, listAudit, platformOverview, todoLists } from "@/server/queries/admin";
+import { licenseSummary, listLicenseSales } from "@/server/queries/licences";
 
 export const metadata: Metadata = { title: { absolute: "Tableau de bord · Administration" } };
 
@@ -21,7 +22,8 @@ const DAY = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", t
 const TODAY = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Dakar" });
 
 export default async function AdminDashboardPage() {
-  const [rows, overview, audit] = await Promise.all([listAllBusinesses(), platformOverview(), listAudit({ limit: 6 })]);
+  const [rows, overview, audit, sales] = await Promise.all([listAllBusinesses(), platformOverview(), listAudit({ limit: 6 }), listLicenseSales()]);
+  const lic = licenseSummary(sales);
   const stats = adminStats(rows);
   const c = overview.counts;
   const todo = todoLists(rows);
@@ -29,7 +31,8 @@ export default async function AdminDashboardPage() {
   const paidEver = funnel.at(-1)!.count;
   const conversion = stats.total > 0 ? Math.round((paidEver / stats.total) * 100) : 0;
   const latest = rows.slice(0, 5);
-  const todoCount = Object.values(todo).reduce((s, l) => s + l.length, 0);
+  const todoCount =
+    Object.values(todo).reduce((s, l) => s + l.length, 0) + lic.toCollect.length + lic.maintenanceSoon.length + lic.maintenanceOver.length + lic.followUps.length;
 
   const signups = overview.signups.map((d, i) => ({
     key: d.day,
@@ -119,12 +122,12 @@ export default async function AdminDashboardPage() {
         />
         <AdminStat
           index={7}
-          label="Paiements en attente"
-          value={c.pending_checkouts}
-          hint="Wave / Orange Money non confirmés (48 h)"
-          icon={CalendarClock}
-          tone={c.pending_checkouts > 0 ? "saffron" : "slate"}
-          href="/admin/paiements"
+          label="Licences vendues"
+          value={lic.count}
+          hint={lic.due > 0 ? `${formatFCFA(lic.due)} à encaisser` : `${formatFCFA(lic.collected)} encaissés`}
+          icon={BadgeCheck}
+          tone={lic.due > 0 ? "saffron" : "green"}
+          href="/admin/licences"
         />
       </div>
 
@@ -138,7 +141,7 @@ export default async function AdminDashboardPage() {
             <p className="text-sm text-muted-foreground">Les commerçants à relancer ou à accompagner, avec WhatsApp en un geste.</p>
           </CardHeader>
           <CardContent>
-            <TodoList todo={todo} />
+            <TodoList todo={todo} licences={lic} />
           </CardContent>
         </Card>
         <div className="space-y-5">

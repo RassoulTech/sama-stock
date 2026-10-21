@@ -20,6 +20,7 @@ export const PROTECTED_PREFIXES = [
   "/admin",
   "/demarrage",
   "/suspendu",
+  "/documents",
 ] as const;
 
 /** Pages publiques mais sans intérêt pour les moteurs (actions, liens personnels). */

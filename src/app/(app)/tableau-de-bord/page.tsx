@@ -74,7 +74,12 @@ export default async function DashboardPage() {
       label: showPos ? "Faire une première vente" : "Enregistrer une première commande",
       href: showPos ? "/vendre" : "/commandes/nouvelle",
     },
-    { done: (teamCount ?? 0) > 0, label: "Inviter un employé (formules Pro et Business)", href: "/equipe" },
+    // Licence : l'étape n'apparaît que si son forfait permet des employés
+    ...(ctx.plan.license
+      ? ctx.plan.limits.maxEmployees !== 0
+        ? [{ done: (teamCount ?? 0) > 0, label: "Inviter un employé", href: "/equipe" }]
+        : []
+      : [{ done: (teamCount ?? 0) > 0, label: "Inviter un employé (formules Pro et Business)", href: "/equipe" }]),
   ];
   const showChecklist = !ctx.business.isDemo && checklist && checklist.some((c) => !c.done) && products.length < 5;
 
@@ -126,9 +131,11 @@ export default async function DashboardPage() {
           <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex-1">
               <p className="font-semibold">Pour bien démarrer</p>
-              <p className="text-sm text-muted-foreground">Trois étapes pour profiter pleinement de Sama Stock.</p>
+              <p className="text-sm text-muted-foreground">
+                {checklist.length === 2 ? "Deux" : "Trois"} étapes pour profiter pleinement de {ctx.plan.license ? "votre application" : "Sama Stock"}.
+              </p>
             </div>
-            <ol className="grid flex-[2] gap-2 sm:grid-cols-3">
+            <ol className={cn("grid flex-[2] gap-2", checklist.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
               {checklist.map((c) => (
                 <li key={c.label}>
                   <Link
