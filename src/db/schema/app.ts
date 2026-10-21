@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -285,12 +286,19 @@ export const sales = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
+    /** Identifiant créé par le téléphone : empêche d'enregistrer deux fois la même vente. */
+    clientRef: text("client_ref"),
+    /** Rempli quand la vente a été faite sans internet, puis envoyée plus tard. */
+    offlineSyncedAt: timestamp("offline_synced_at", { withTimezone: true }),
+    /** Points à vérifier relevés à l'envoi (stock négatif, prix différent…). */
+    syncFlags: text("sync_flags").array().notNull().default(sql`'{}'::text[]`),
   },
   (t) => [
     uniqueIndex("sales_business_number_uq").on(t.businessId, t.number),
     index("sales_business_created_idx").on(t.businessId, t.createdAt),
     index("sales_business_completed_idx").on(t.businessId, t.completedAt),
     index("sales_customer_idx").on(t.customerId),
+    uniqueIndex("sales_business_client_ref_uq").on(t.businessId, t.clientRef).where(sql`${t.clientRef} is not null`),
   ],
 );
 

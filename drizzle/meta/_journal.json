@@ -43,6 +43,13 @@
       "when": 1792593825788,
       "tag": "0005_licences",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792620543588,
+      "tag": "0006_hors_ligne",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import { SALE_METHODS } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
 import { nextNumber } from "../services/numbering";
+import { findSaleByClientRef } from "../services/offline-sales";
 import { assertCustomer, priceAndReserve } from "../services/sale-lines";
 import { applyStockMovement } from "../services/stock";
 
@@ -22,6 +23,8 @@ const saleSchema = z.object({
   paymentMethod: z.enum(SALE_METHODS),
   amountReceived: z.coerce.number().int().min(0).default(0),
   note: z.string().trim().max(300).optional().default(""),
+  /** Identifiant créé par le téléphone : la même vente renvoyée n'est jamais enregistrée deux fois. */
+  clientRef: z.uuid().optional(),
 });
 
 export async function createSale(input: z.input<typeof saleSchema>) {
@@ -31,6 +34,11 @@ export async function createSale(input: z.input<typeof saleSchema>) {
     const data = parse(saleSchema, input);
 
     const id = await db.transaction(async (tx) => {
+      // Même vente renvoyée (réponse perdue pendant une coupure) : on renvoie celle qui existe déjà
+      if (data.clientRef) {
+        const existing = await findSaleByClientRef(tx, ctx.business.id, data.clientRef);
+        if (existing) return existing.id;
+      }
       const lines = await priceAndReserve(tx, ctx, data.items);
       const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
       if (data.discount > subtotal) throw new ActionError("La remise dépasse le montant du panier.");
@@ -62,6 +70,7 @@ export async function createSale(input: z.input<typeof saleSchema>) {
           note: data.note || null,
           createdAt: now,
           completedAt: now,
+          clientRef: data.clientRef ?? null,
         })
         .returning({ id: sales.id });
 

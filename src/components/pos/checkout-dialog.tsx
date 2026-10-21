@@ -38,6 +38,8 @@ interface CheckoutProps {
   onConfirm: (result: CheckoutResult) => void;
   pending: boolean;
   error: string | null;
+  /** Sans internet, pas de création de client. */
+  allowCustomerCreate?: boolean;
 }
 
 export function CheckoutDialog({
@@ -59,7 +61,7 @@ export function CheckoutDialog({
   );
 }
 
-function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending, error }: CheckoutProps) {
+function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending, error, allowCustomerCreate = true }: CheckoutProps) {
   const [method, setMethod] = useState<SaleMethod>("cash");
   const [received, setReceived] = useState<number | "">(total);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -148,7 +150,9 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
             }}
             onCreated={onCustomerCreated}
             invalid={Boolean(localError)}
+            allowCreate={allowCustomerCreate}
           />
+          {!allowCustomerCreate && <p className="text-xs text-muted-foreground">Sans internet, choisissez un client déjà enregistré.</p>}
         </FormField>
 
         <FormError message={localError ?? error} />

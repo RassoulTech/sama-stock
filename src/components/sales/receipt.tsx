@@ -1,10 +1,32 @@
 import { LogoMark } from "@/components/brand/logo";
 import { formatDateTime, formatFCFA, formatPhone, formatQty } from "@/lib/format";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
-import type { Business } from "@/server/context";
-import type { SaleDetail } from "@/server/queries/sales";
 
-export function Receipt({ sale, business }: { sale: SaleDetail; business: Business }) {
+/** Ce qu'il faut pour afficher un reçu : une vente du serveur ou une vente encore dans le téléphone. */
+export interface ReceiptData {
+  number: string;
+  createdAt: Date;
+  status: string;
+  sellerName: string | null;
+  customer: { name: string } | null;
+  items: { id: string; name: string; unit: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  subtotal: number;
+  discount: number;
+  deliveryFee: number;
+  total: number;
+  amountPaid: number;
+  paymentMethod: string | null;
+}
+
+export interface ReceiptBusiness {
+  name: string;
+  logo: string | null;
+  address: string | null;
+  city: string | null;
+  phone: string | null;
+}
+
+export function Receipt({ sale, business }: { sale: ReceiptData; business: ReceiptBusiness }) {
   const rest = sale.total - sale.amountPaid;
   const method = sale.paymentMethod ? (PAYMENT_METHODS[sale.paymentMethod as PaymentMethod] ?? sale.paymentMethod) : null;
 

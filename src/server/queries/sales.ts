@@ -30,6 +30,7 @@ export const SALE_STATES = {
   payees: "Payées",
   credit: "Reste à payer",
   annulees: "Annulées",
+  averifier: "À vérifier",
 } as const;
 
 export type SaleState = keyof typeof SALE_STATES;
@@ -65,6 +66,7 @@ export async function listSales(ctx: BusinessContext, f: SaleFilters) {
   if (f.state === "payees") conditions.push(eq(sales.status, "completed"), sql`${sales.amountPaid} >= ${sales.total}`);
   if (f.state === "credit") conditions.push(eq(sales.status, "completed"), sql`${sales.amountPaid} < ${sales.total}`);
   if (f.state === "annulees") conditions.push(eq(sales.status, "cancelled"));
+  if (f.state === "averifier") conditions.push(sql`cardinality(${sales.syncFlags}) > 0`);
   if (f.categoryId) {
     conditions.push(
       exists(
@@ -90,6 +92,8 @@ export async function listSales(ctx: BusinessContext, f: SaleFilters) {
       customerName: customers.name,
       sellerName: seller.name,
       itemCount: sql<number>`(select count(*)::int from ${saleItems} where ${saleItems.saleId} = ${sales.id})`,
+      offline: sql<boolean>`${sales.offlineSyncedAt} is not null`,
+      flagged: sql<boolean>`cardinality(${sales.syncFlags}) > 0`,
     })
     .from(sales)
     .leftJoin(customers, eq(sales.customerId, customers.id))
@@ -97,6 +101,22 @@ export async function listSales(ctx: BusinessContext, f: SaleFilters) {
     .where(and(...conditions))
     .orderBy(desc(sales.createdAt))
     .limit(SALES_LIMIT + 1);
+}
+
+/** Ventes faites sans internet qui demandent une vérification (stock négatif, prix différent…). */
+export async function countFlaggedSales(ctx: BusinessContext, since: Date): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(sales)
+    .where(
+      and(
+        eq(sales.businessId, ctx.business.id),
+        eq(sales.kind, "sale"),
+        gte(sales.createdAt, since),
+        sql`cardinality(${sales.syncFlags}) > 0`,
+      ),
+    );
+  return row?.n ?? 0;
 }
 
 /** Membres de l'équipe, pour filtrer les ventes par vendeur. */

@@ -1,4 +1,4 @@
-import { ChevronRight, Plus, ReceiptText, ShoppingBag, Wallet } from "lucide-react";
+import { ChevronRight, CloudOff, Plus, ReceiptText, ShoppingBag, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
@@ -131,6 +131,16 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
                     <p className="flex flex-wrap items-center gap-2 font-semibold">
                       {s.number}
                       {s.status === "cancelled" && <SaleStatus kind="sale" status={s.status} />}
+                      {s.offline && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          <CloudOff className="size-3" /> Hors ligne
+                        </span>
+                      )}
+                      {s.flagged && (
+                        <span className="rounded-md bg-saffron/15 px-1.5 py-0.5 text-[11px] font-medium text-warning dark:text-saffron">
+                          À vérifier
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {formatDateTime(s.createdAt)} · {s.itemCount} article{s.itemCount > 1 ? "s" : ""}

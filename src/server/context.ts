@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -157,4 +157,34 @@ export async function requireSuperAdminAction(): Promise<AppContext> {
   const ctx = await getContext();
   if (!ctx?.isSuperAdmin) throw new ActionError("Réservé aux administrateurs.");
   return ctx;
+}
+
+/**
+ * Contexte d'un commerce précis, et non celui choisi par le cookie : sert aux ventes faites hors ligne, envoyées
+ * plus tard (l'utilisateur a pu changer de commerce entre-temps).
+ */
+export async function contextForBusiness(user: SessionUser, businessId: string, locationId: string): Promise<BusinessContext | null> {
+  const [row] = await db
+    .select({ member: members, business: businesses })
+    .from(members)
+    .innerJoin(businesses, eq(members.businessId, businesses.id))
+    .where(and(eq(members.userId, user.id), eq(members.businessId, businessId)));
+  if (!row || !isRole(row.member.role)) return null;
+
+  const locs = await db.select().from(locations).where(eq(locations.businessId, businessId)).orderBy(asc(locations.createdAt));
+  const location = locs.find((l) => l.id === locationId);
+  if (!location) return null;
+
+  const role = row.member.role;
+  return {
+    user,
+    isSuperAdmin: isSuperAdminEmail(user.email),
+    memberships: [],
+    business: row.business,
+    role,
+    locations: locs,
+    location,
+    plan: computePlanState(row.business),
+    can: (permission: Permission) => can(role, permission),
+  };
 }

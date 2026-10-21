@@ -1,4 +1,4 @@
-import { CheckCircle2, MessageCircle, Plus, TrendingUp, XCircle } from "lucide-react";
+import { CheckCircle2, CloudOff, MessageCircle, Plus, TrendingUp, TriangleAlert, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +7,8 @@ import { Receipt } from "@/components/sales/receipt";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { formatFCFA } from "@/lib/format";
+import { formatDateTime, formatFCFA } from "@/lib/format";
+import { isSyncFlag, SYNC_FLAGS } from "@/lib/domain/offline";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
 import { receiptMessage, waLink } from "@/lib/whatsapp";
 import { cancelSale } from "@/server/actions/sales";
@@ -61,6 +62,22 @@ export default async function VentePage({
         <Receipt sale={sale} business={ctx.business} />
 
         <div className="space-y-3 print:hidden">
+          {sale.offlineSyncedAt && (
+            <div className="rounded-xl border bg-card p-4 text-sm">
+              <p className="flex items-center gap-2 font-medium">
+                <CloudOff className="size-4 text-muted-foreground" /> Vendue sans internet
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Envoyée le {formatDateTime(sale.offlineSyncedAt)}</p>
+              {sale.syncFlags.filter(isSyncFlag).map((f) => (
+                <div key={f} className="mt-3 rounded-lg bg-saffron/10 p-3">
+                  <p className="flex items-center gap-1.5 font-medium text-warning dark:text-saffron">
+                    <TriangleAlert className="size-4" /> {SYNC_FLAGS[f].label}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{SYNC_FLAGS[f].text}</p>
+                </div>
+              ))}
+            </div>
+          )}
           {sale.status === "completed" && (
             <Button asChild size="lg" className="w-full bg-[#25D366] text-white hover:bg-[#1fb857]">
               <a href={waLink(sale.customer?.phone, message)} target="_blank" rel="noopener noreferrer">

@@ -14,8 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { authClient } from "@/lib/auth-client";
 import { initials } from "@/lib/format";
+import { signOutSafely } from "@/lib/offline/sign-out";
 import { switchBusiness } from "@/server/actions/business";
 
 export function UserMenu({
@@ -104,7 +104,7 @@ export function UserMenu({
         <DropdownMenuItem
           variant="destructive"
           onSelect={async () => {
-            await authClient.signOut();
+            if (!(await signOutSafely())) return;
             router.replace("/connexion");
             router.refresh();
           }}

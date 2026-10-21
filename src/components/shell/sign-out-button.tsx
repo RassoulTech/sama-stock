@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
+import { signOutSafely } from "@/lib/offline/sign-out";
 
 export function SignOutButton(props: Pick<React.ComponentProps<typeof Button>, "variant" | "size" | "className">) {
   const router = useRouter();
@@ -15,7 +15,10 @@ export function SignOutButton(props: Pick<React.ComponentProps<typeof Button>, "
       disabled={pending}
       onClick={async () => {
         setPending(true);
-        await authClient.signOut();
+        if (!(await signOutSafely())) {
+          setPending(false);
+          return;
+        }
         router.replace("/connexion");
         router.refresh();
       }}

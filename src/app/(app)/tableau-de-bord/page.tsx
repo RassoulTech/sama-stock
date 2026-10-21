@@ -31,7 +31,7 @@ import { dailySeries, recentSales, salesSummary, stockValue } from "@/server/que
 import { totalCustomerDebt } from "@/server/queries/customers";
 import { listOrders } from "@/server/queries/orders";
 import { listProducts } from "@/server/queries/products";
-import { periodStart } from "@/server/queries/sales";
+import { countFlaggedSales, periodStart } from "@/server/queries/sales";
 import { employeeCount } from "@/server/queries/team";
 
 import { DemoGuide } from "@/components/demo/demo-guide";
@@ -50,7 +50,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-  const [products, today, week, month, series, debt, value, orders, recent, teamCount] = await Promise.all([
+  const [products, today, week, month, series, debt, value, orders, recent, teamCount, flagged] = await Promise.all([
     listProducts(ctx),
     ctx.can("sales.create") || full ? salesSummary(ctx, periodStart("today"), { own: seller }) : null,
     full ? salesSummary(ctx, periodStart("7j")) : null,
@@ -61,6 +61,7 @@ export default async function DashboardPage() {
     showOrders ? listOrders(ctx, "open") : null,
     showPos ? recentSales(ctx, { own: seller }) : null,
     ctx.can("team.manage") ? employeeCount(ctx.business.id) : null,
+    full ? countFlaggedSales(ctx, periodStart("7j")) : 0,
   ]);
 
   const alerts = products.filter((p) => p.status !== "ok").sort((a, b) => a.available - b.available);
@@ -153,6 +154,20 @@ export default async function DashboardPage() {
             </ol>
           </CardContent>
         </Card>
+      )}
+
+      {flagged > 0 && (
+        <Link
+          href="/ventes?etat=averifier&periode=7j"
+          className="mb-6 flex items-center gap-3 rounded-xl border border-saffron/40 bg-saffron/10 px-4 py-3 text-sm transition-colors hover:bg-saffron/15"
+        >
+          <AlertTriangle className="size-5 shrink-0 text-warning dark:text-saffron" />
+          <span className="flex-1">
+            <span className="font-semibold">À vérifier :</span> {flagged} vente{flagged > 1 ? "s" : ""} faite{flagged > 1 ? "s" : ""} sans
+            internet {flagged > 1 ? "demandent" : "demande"} votre attention (stock insuffisant, prix différent…).
+          </span>
+          <ArrowRight className="size-4 shrink-0" />
+        </Link>
       )}
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">

@@ -1,7 +1,6 @@
 "use client";
 
 import { Minus, PackageSearch, Percent, Plus, ShoppingCart, Trash2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import type { CustomerOption } from "@/components/customers/customer-dialog";
 import { ProductThumb } from "@/components/products/product-thumb";
@@ -12,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatFCFA, formatQty, unitAllowsDecimals, unitLabel } from "@/lib/format";
 import { roundQty } from "@/lib/domain/stock";
+import type { SaleDraft } from "@/lib/offline/types";
 import { cn } from "@/lib/utils";
-import { createSale } from "@/server/actions/sales";
 import { CheckoutDialog, type CheckoutResult } from "./checkout-dialog";
 
 export interface PosProduct {
@@ -30,12 +29,19 @@ export function PosScreen({
   products,
   categories,
   customers: initialCustomers,
+  submit,
+  allowCustomerCreate = true,
+  bottomNav = true,
 }: {
   products: PosProduct[];
   categories: { id: string; name: string }[];
   customers: CustomerOption[];
+  /** Enregistre la vente : renvoie un message d'erreur, ou null quand c'est fait. */
+  submit: (draft: SaleDraft) => Promise<string | null>;
+  allowCustomerCreate?: boolean;
+  /** Une barre de navigation est-elle affichée en bas de l'écran (téléphone) ? */
+  bottomNav?: boolean;
 }) {
-  const router = useRouter();
   const [cart, setCart] = useState<Map<string, number>>(new Map());
   const [discount, setDiscount] = useState<number | "">("");
   const [showDiscount, setShowDiscount] = useState(false);
@@ -78,18 +84,32 @@ export function PosScreen({
 
   function checkout(result: CheckoutResult) {
     setError(null);
+    const customer = result.customerId ? (customers.find((c) => c.id === result.customerId) ?? null) : null;
+    const draft: SaleDraft = {
+      clientRef: crypto.randomUUID(),
+      items: lines.map((l) => ({
+        productId: l.product.id,
+        name: l.product.name,
+        unit: l.product.unit,
+        quantity: l.qty,
+        unitPrice: l.product.salePrice,
+      })),
+      discount: discountValue,
+      paymentMethod: result.paymentMethod,
+      amountReceived: result.amountReceived,
+      customer: customer && { id: customer.id, name: customer.name, phone: customer.phone },
+    };
     startTransition(async () => {
-      const res = await createSale({
-        items: lines.map((l) => ({ productId: l.product.id, quantity: l.qty })),
-        discount: discountValue,
-        ...result,
-      });
-      if (!res.ok) {
-        setError(res.error);
+      const failure = await submit(draft);
+      if (failure) {
+        setError(failure);
         return;
       }
-      router.push(`/ventes/${res.data.id}?nouvelle=1`);
-      router.refresh();
+      setCheckoutOpen(false);
+      setCartOpen(false);
+      setCart(new Map());
+      setDiscount("");
+      setShowDiscount(false);
     });
   }
 
@@ -305,7 +325,12 @@ export function PosScreen({
 
       {/* Barre panier mobile */}
       {itemCount > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 px-4 pb-3 lg:hidden">
+        <div
+          className={cn(
+            "fixed inset-x-0 z-30 px-4 pb-3 lg:hidden",
+            bottomNav ? "bottom-[calc(4rem+env(safe-area-inset-bottom))]" : "bottom-[env(safe-area-inset-bottom)]",
+          )}
+        >
           <button
             type="button"
             onClick={() => setCartOpen(true)}
@@ -336,6 +361,7 @@ export function PosScreen({
         onConfirm={checkout}
         pending={pending}
         error={error}
+        allowCustomerCreate={allowCustomerCreate}
       />
     </>
   );

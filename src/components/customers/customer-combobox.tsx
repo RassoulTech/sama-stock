@@ -16,12 +16,15 @@ export function CustomerCombobox({
   onChange,
   onCreated,
   invalid,
+  allowCreate = true,
 }: {
   customers: CustomerOption[];
   value: string | null;
   onChange: (id: string | null) => void;
   onCreated: (c: CustomerOption) => void;
   invalid?: boolean;
+  /** Sans internet, on ne peut que choisir un client déjà enregistré. */
+  allowCreate?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -52,16 +55,18 @@ export function CustomerCombobox({
               <CommandList className="max-h-64">
                 <CommandEmpty>Aucun client trouvé.</CommandEmpty>
                 <CommandGroup>
-                  <CommandItem
-                    value="__new__ nouveau client"
-                    onSelect={() => {
-                      setOpen(false);
-                      setCreating(true);
-                    }}
-                    className="font-semibold text-primary"
-                  >
-                    <UserPlus /> Nouveau client
-                  </CommandItem>
+                  {allowCreate && (
+                    <CommandItem
+                      value="__new__ nouveau client"
+                      onSelect={() => {
+                        setOpen(false);
+                        setCreating(true);
+                      }}
+                      className="font-semibold text-primary"
+                    >
+                      <UserPlus /> Nouveau client
+                    </CommandItem>
+                  )}
                   {customers.map((c) => (
                     <CommandItem
                       key={c.id}

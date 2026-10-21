@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth-client";
+import { signOutSafely } from "@/lib/offline/sign-out";
 
 /** Quitte la démo puis ouvre la création de compte. */
 export function DemoSignupButton({
@@ -19,7 +19,10 @@ export function DemoSignupButton({
       disabled={pending}
       onClick={async () => {
         setPending(true);
-        await authClient.signOut();
+        if (!(await signOutSafely())) {
+          setPending(false);
+          return;
+        }
         router.replace("/inscription");
         router.refresh();
       }}
