@@ -30,6 +30,10 @@ export default function MentionsLegalesPage() {
         <dd>
           <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>
         </dd>
+        <dt>Téléphone et WhatsApp</dt>
+        <dd className="num">
+          <a href={`tel:+${LEGAL.whatsapp}`}>{LEGAL.phone}</a>
+        </dd>
         <dt>Directeur de la publication</dt>
         <dd>{LEGAL.director}</dd>
       </dl>

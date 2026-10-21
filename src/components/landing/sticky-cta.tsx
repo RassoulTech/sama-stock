@@ -1,12 +1,11 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/** Barre d'inscription qui reste visible sur mobile une fois le haut de page dépassé. */
-export function StickyCta({ href }: { href: string }) {
+/** Bouton d'action qui reste visible sur mobile une fois le haut de page dépassé (ici : écrire sur WhatsApp). */
+export function StickyCta({ href, label }: { href: string; label: string }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -27,13 +26,15 @@ export function StickyCta({ href }: { href: string }) {
         visible ? "translate-y-0" : "translate-y-full",
       )}
     >
-      <Link
+      <a
         href={href}
+        target="_blank"
+        rel="noopener noreferrer"
         tabIndex={visible ? 0 : -1}
         className="flex h-12 items-center justify-center gap-2 rounded-lg bg-saffron text-[0.9375rem] font-semibold text-saffron-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.35)]"
       >
-        Essai gratuit 14 jours <ArrowRight className="size-4" />
-      </Link>
+        <MessageCircle className="size-[1.125rem]" /> {label}
+      </a>
     </div>
   );
 }

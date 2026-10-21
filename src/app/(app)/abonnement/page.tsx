@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { LicenseView } from "@/components/billing/license-view";
+import { LEGAL } from "@/lib/legal";
 import { activeSaleFor, getLicenseSale } from "@/server/queries/licences";
 import { Banknote, Check, Clock, CreditCard, Info, ShieldCheck, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
@@ -46,7 +47,7 @@ export default async function AbonnementPage() {
   if (ctx.plan.license) {
     const sale = await activeSaleFor(ctx.business.id);
     const detail = sale ? await getLicenseSale(sale.id) : null;
-    return <LicenseView detail={detail} businessName={ctx.business.name} support={process.env.SUPPORT_WHATSAPP ?? null} />;
+    return <LicenseView detail={detail} businessName={ctx.business.name} support={LEGAL.whatsapp} />;
   }
   const history = await db
     .select()

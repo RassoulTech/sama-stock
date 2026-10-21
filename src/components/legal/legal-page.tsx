@@ -16,7 +16,8 @@ export function LegalPage({ title, intro, children }: { title: string; intro: st
 export function ContactLine() {
   return (
     <p>
-      Pour toute question : <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>.
+      Pour toute question : <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a> ou <a href={`tel:+${LEGAL.whatsapp}`}>{LEGAL.phone}</a>{" "}
+      (appel ou WhatsApp).
     </p>
   );
 }

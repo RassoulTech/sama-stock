@@ -1,12 +1,21 @@
 "use client";
 
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, MessageCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 /** Menu « hamburger » de la page d'accueil sur mobile : sections, thème, connexion. */
-export function MobileMenu({ sections, loggedIn }: { sections: readonly (readonly [string, string])[]; loggedIn: boolean }) {
+export function MobileMenu({
+  sections,
+  loggedIn,
+  whatsappHref,
+}: {
+  sections: readonly (readonly [string, string])[];
+  loggedIn: boolean;
+  /** Demande d'installation par WhatsApp (offre principale). */
+  whatsappHref: string;
+}) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +36,7 @@ export function MobileMenu({ sections, loggedIn }: { sections: readonly (readonl
   const close = () => setOpen(false);
 
   return (
-    <div ref={rootRef} className="lg:hidden">
+    <div ref={rootRef} className="xl:hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -70,11 +79,19 @@ export function MobileMenu({ sections, loggedIn }: { sections: readonly (readonl
               </Link>
             ) : (
               <>
-                <Link
-                  href="/inscription"
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-saffron text-[0.9375rem] font-semibold text-saffron-foreground"
                 >
-                  Commencer gratuitement <ArrowRight className="size-4" />
+                  <MessageCircle className="size-[1.125rem]" /> Demander une installation
+                </a>
+                <Link
+                  href="/inscription"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border text-[0.9375rem] font-medium"
+                >
+                  Essai gratuit en ligne <ArrowRight className="size-4" />
                 </Link>
                 <Link
                   href="/connexion"

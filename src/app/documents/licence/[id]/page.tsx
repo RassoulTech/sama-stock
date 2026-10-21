@@ -74,7 +74,7 @@ export default async function LicenseDocumentPage({
             <Logo />
             <p className="pt-2 font-semibold">{LEGAL.editor}</p>
             <p className="text-[#58635e]">
-              {LEGAL.city} · {LEGAL.email}
+              {LEGAL.city} · {LEGAL.phone} · {LEGAL.email}
             </p>
             <p className="text-[#58635e]">
               NINEA {LEGAL.ninea} · RCCM {LEGAL.rccm}

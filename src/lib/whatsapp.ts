@@ -1,4 +1,5 @@
 import { formatDateTime, formatFCFA, formatQty } from "./format";
+import { LEGAL } from "./legal";
 
 export function waLink(phone: string | null | undefined, text: string): string {
   const target = phone ? phone.replace(/\D/g, "") : "";
@@ -81,3 +82,11 @@ export function invitationMessage(businessName: string, roleLabel: string, link:
     `Créez votre compte ici : ${link}`,
   ].join("\n");
 }
+
+/** Lien WhatsApp vers l'équipe Sama Stock (ventes, installation, assistance), message déjà écrit. */
+export function salesLink(text: string): string {
+  return waLink(LEGAL.whatsapp, text);
+}
+
+export const INSTALL_MESSAGE =
+  "Bonjour Sama Stock, je souhaite une démonstration et l'installation de l'application pour mon commerce.";

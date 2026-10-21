@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { PLANS } from "@/lib/domain/plans";
+import { LICENSE_PACKS } from "@/lib/domain/plans";
 import { formatFCFA, formatNumber } from "@/lib/format";
 
-const PRO_PRICE = PLANS.pro.price;
+/** Le forfait le plus accessible, payé une seule fois. */
+const LICENCE_PRICE = LICENSE_PACKS.boutique.price;
 
 function Slider({
   id,
@@ -55,7 +56,7 @@ function Slider({
 }
 
 /** Estimation transparente, à partir des chiffres que le commerçant saisit lui-même. */
-export function LossCalculator() {
+export function LossCalculator({ installHref }: { installHref: string }) {
   const [daily, setDaily] = useState(60000);
   const [missedPct, setMissedPct] = useState(5);
   const [credits, setCredits] = useState(25000);
@@ -63,7 +64,8 @@ export function LossCalculator() {
 
   const missed = Math.round((daily * 30 * missedPct) / 100);
   const total = missed + credits + shrink;
-  const ratio = Math.max(1, Math.floor(total / PRO_PRICE));
+  // Nombre de jours de pertes évitées qui suffisent à payer l'application
+  const days = total > 0 ? Math.max(1, Math.ceil(LICENCE_PRICE / (total / 30))) : null;
 
   return (
     <div className="grid overflow-hidden rounded-2xl border bg-card shadow-[0_1px_2px_rgb(11_19_16/0.04),0_24px_48px_-24px_rgb(11_19_16/0.18)] lg:grid-cols-[1.1fr_1fr]">
@@ -140,15 +142,28 @@ export function LossCalculator() {
         </div>
         <div className="relative space-y-4">
           <p className="text-[0.9375rem] leading-relaxed text-white/85">
-            La formule Pro coûte <strong className="text-white">{formatFCFA(PRO_PRICE)} par mois</strong>, soit{" "}
-            <strong className="text-saffron">{ratio} fois moins</strong> que ce que vous perdez.
+            Votre application coûte <strong className="text-white">{formatFCFA(LICENCE_PRICE)}, une seule fois</strong>
+            {days !== null && (
+              <>
+                {" "}
+                : elle est remboursée en <strong className="text-saffron">{days} jour{days > 1 ? "s" : ""}</strong> de pertes évitées.
+              </>
+            )}
           </p>
-          <Link
-            href="/inscription"
+          <a
+            href={installHref}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-saffron px-5 text-[0.9375rem] font-semibold text-saffron-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.35)] transition-colors hover:bg-[#ec9708]"
           >
-            Arrêter ces pertes, essai gratuit <ArrowRight className="size-4" />
-          </Link>
+            <MessageCircle className="size-4" /> Arrêter ces pertes : demander une installation
+          </a>
+          <p className="text-center text-xs text-white/60">
+            Ou{" "}
+            <Link href="/inscription" className="underline underline-offset-2 hover:text-white">
+              essayez gratuitement 14 jours en ligne
+            </Link>
+          </p>
           <p className="text-center text-xs text-white/50">Estimation à partir de vos propres chiffres.</p>
         </div>
       </div>

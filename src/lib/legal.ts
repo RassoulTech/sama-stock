@@ -9,6 +9,9 @@ export const LEGAL = {
   rccm: "SN.THS.2026.A.4360",
   city: "Thiès, Sénégal",
   email: "digigeek221@gmail.com",
+  /** Contact commercial et assistance (WhatsApp et appels). */
+  phone: "+221 77 383 13 64",
+  whatsapp: "221773831364",
   updatedAt: "19 octobre 2026",
 } as const;
 
