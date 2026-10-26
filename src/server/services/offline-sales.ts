@@ -6,7 +6,7 @@ import { clampSaleDate, computeSyncFlags } from "@/lib/domain/offline";
 import { roundQty } from "@/lib/domain/stock";
 import { unitAllowsDecimals } from "@/lib/format";
 import type { OfflineSaleInput } from "@/lib/offline/schema";
-import { lineTotal, saleTotals } from "@/lib/offline/sale";
+import { lineTotal, saleTotals, unexpectedPriceChange } from "@/lib/offline/sale";
 import type { SyncResult } from "@/lib/offline/types";
 import { ActionError } from "../action";
 import { contextForBusiness, type SessionUser } from "../context";
@@ -54,10 +54,14 @@ export async function recordOfflineSale(user: SessionUser, input: OfflineSaleInp
       if (existing) return existing;
 
       // Regroupe les lignes d'un même produit ; le prix est celui montré au client
-      const merged = new Map<string, { quantity: number; unitPrice: number }>();
+      const merged = new Map<string, { quantity: number; unitPrice: number; negotiated: boolean }>();
       for (const i of input.items) {
         const prev = merged.get(i.productId);
-        merged.set(i.productId, { quantity: roundQty((prev?.quantity ?? 0) + i.quantity), unitPrice: i.unitPrice });
+        merged.set(i.productId, {
+          quantity: roundQty((prev?.quantity ?? 0) + i.quantity),
+          unitPrice: i.unitPrice,
+          negotiated: Boolean(prev?.negotiated || i.negotiated),
+        });
       }
       const ids = [...merged.keys()];
       const rows = await tx
@@ -73,7 +77,10 @@ export async function recordOfflineSale(user: SessionUser, input: OfflineSaleInp
         }
         return { productId: p.id, name: p.name, unit: p.unit, quantity, unitPrice, unitCost: p.costPrice, lineTotal: lineTotal(quantity, unitPrice) };
       });
-      const priceChanged = rows.some((p) => merged.get(p.id)!.unitPrice !== p.salePrice);
+      const priceChanged = unexpectedPriceChange(
+        [...merged.entries()].map(([productId, m]) => ({ productId, ...m })),
+        new Map(rows.map((p) => [p.id, p.salePrice])),
+      );
       const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
       if (input.discount > subtotal) throw new ActionError("La remise dépasse le montant du panier.");
       const { total, amountPaid } = saleTotals(lines, input.discount, input.paymentMethod, input.amountReceived);

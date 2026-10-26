@@ -43,6 +43,8 @@ export interface OutboxItem {
   unit: string;
   quantity: number;
   unitPrice: number;
+  /** Prix négocié avec le client à la caisse (et non un prix qui aurait changé depuis). */
+  negotiated?: boolean;
 }
 
 /** Vente préparée par la caisse, avant d'être envoyée au serveur ou gardée dans le téléphone. */

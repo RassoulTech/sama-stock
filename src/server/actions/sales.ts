@@ -16,7 +16,14 @@ import { applyStockMovement } from "../services/stock";
 
 const saleSchema = z.object({
   items: z
-    .array(z.object({ productId: z.string().min(1), quantity: z.coerce.number().positive("Quantité invalide.").max(10_000_000) }))
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        quantity: z.coerce.number().positive("Quantité invalide.").max(10_000_000),
+        /** Prix négocié avec le client à la caisse ; sans lui, c'est le prix du produit. */
+        unitPrice: z.coerce.number().int("Prix en FCFA entiers.").min(0, "Prix invalide.").max(1_000_000_000).optional(),
+      }),
+    )
     .min(1, "Le panier est vide.")
     .max(200),
   discount: z.coerce.number().int().min(0, "Remise invalide.").default(0),
@@ -40,7 +47,8 @@ export async function createSale(input: z.input<typeof saleSchema>) {
         const existing = await findSaleByClientRef(tx, ctx.business.id, data.clientRef);
         if (existing) return existing.id;
       }
-      const lines = await priceAndReserve(tx, ctx, data.items);
+      const negotiated = new Map(data.items.flatMap((i) => (i.unitPrice === undefined ? [] : [[i.productId, i.unitPrice] as const])));
+      const lines = await priceAndReserve(tx, ctx, data.items, { prices: negotiated });
       return recordShopSale(tx, ctx, {
         lines,
         discount: data.discount,

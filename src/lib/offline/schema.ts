@@ -17,6 +17,8 @@ export const offlineSaleInputSchema = z.object({
         productId: z.string().min(1).max(64),
         quantity: z.number().positive().max(10_000_000),
         unitPrice: z.number().int().min(0).max(1_000_000_000),
+        // Ajout compatible : une vente gardée par une version plus ancienne n'a pas ce champ
+        negotiated: z.boolean().optional(),
       }),
     )
     .min(1)
@@ -41,7 +43,7 @@ export function toSyncInput(s: OutboxSale): OfflineSaleInput {
     businessId: s.businessId,
     locationId: s.locationId,
     createdAt: s.createdAt,
-    items: s.items.map((i) => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice })),
+    items: s.items.map((i) => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.unitPrice, negotiated: i.negotiated ?? false })),
     discount: s.discount,
     paymentMethod: s.paymentMethod,
     amountReceived: s.amountReceived,

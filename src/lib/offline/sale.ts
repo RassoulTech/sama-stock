@@ -20,12 +20,27 @@ export function saleTotals(
   return { subtotal, total, amountPaid };
 }
 
+/**
+ * Le prix a-t-il changé entre la vente et son envoi ? Un prix négocié à la caisse est voulu : il ne compte pas.
+ */
+export function unexpectedPriceChange(
+  items: { productId: string; unitPrice: number; negotiated?: boolean }[],
+  salePrices: Map<string, number>,
+): boolean {
+  return items.some((i) => !i.negotiated && salePrices.has(i.productId) && salePrices.get(i.productId) !== i.unitPrice);
+}
+
 /** Regroupe les lignes d'un même produit (comme le serveur) et retire les quantités nulles. */
 export function mergeItems(items: OutboxItem[]): OutboxItem[] {
   const merged = new Map<string, OutboxItem>();
   for (const i of items) {
     const prev = merged.get(i.productId);
-    merged.set(i.productId, prev ? { ...prev, quantity: roundQty(prev.quantity + i.quantity) } : { ...i, quantity: roundQty(i.quantity) });
+    merged.set(
+      i.productId,
+      prev
+        ? { ...prev, quantity: roundQty(prev.quantity + i.quantity), ...(prev.negotiated || i.negotiated ? { negotiated: true } : {}) }
+        : { ...i, quantity: roundQty(i.quantity) },
+    );
   }
   return [...merged.values()].filter((i) => i.quantity > 0);
 }

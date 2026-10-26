@@ -40,7 +40,8 @@ export function OnlinePos({
     try {
       res = await createSale({
         clientRef: draft.clientRef,
-        items: draft.items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        // Le prix ne part que s'il a été négocié : sinon le serveur prend le prix du produit (toujours à jour)
+        items: draft.items.map((i) => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.negotiated ? i.unitPrice : undefined })),
         discount: draft.discount,
         customerId: draft.customer?.id ?? null,
         paymentMethod: draft.paymentMethod,

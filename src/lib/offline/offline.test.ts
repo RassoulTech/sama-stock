@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clampSaleDate, computeSyncFlags, FUTURE_TOLERANCE_MS, isSyncFlag } from "@/lib/domain/offline";
 import { applySyncResults, outboxSummary, SENT_KEEP_MS, sentToPurge } from "./outbox";
-import { buildOutboxSale, canSellOffline, mergeItems, offlineLabel, saleTotals } from "./sale";
+import { buildOutboxSale, canSellOffline, mergeItems, offlineLabel, saleTotals, unexpectedPriceChange } from "./sale";
 import { MAX_SYNC_BATCH, offlineSaleInputSchema, syncRequestSchema, toSyncInput } from "./schema";
 import { localAvailability, pendingQuantities } from "./stock";
 import type { OfflineSnapshot, OutboxSale, SaleDraft } from "./types";
@@ -191,5 +191,32 @@ describe("format d'envoi", () => {
     expect(syncRequestSchema.safeParse({ version: 1, sales: Array(MAX_SYNC_BATCH).fill(one) }).success).toBe(true);
     expect(syncRequestSchema.safeParse({ version: 1, sales: Array(MAX_SYNC_BATCH + 1).fill(one) }).success).toBe(false);
     expect(syncRequestSchema.safeParse({ version: 2, sales: [one] }).success).toBe(false);
+  });
+});
+
+describe("prix négociés à la caisse", () => {
+  const prices = new Map([
+    ["p1", 1000],
+    ["p2", 2500],
+  ]);
+  it("un prix négocié n'est pas un « prix différent »", () => {
+    expect(unexpectedPriceChange([{ productId: "p1", unitPrice: 800, negotiated: true }], prices)).toBe(false);
+  });
+  it("un prix qui a changé depuis la vente est signalé", () => {
+    expect(unexpectedPriceChange([{ productId: "p2", unitPrice: 2000 }], prices)).toBe(true);
+    expect(unexpectedPriceChange([{ productId: "p2", unitPrice: 2500 }], prices)).toBe(false);
+  });
+  it("le regroupement garde la négociation et le format d'envoi la transporte", () => {
+    const merged = mergeItems([
+      { productId: "p1", name: "A", unit: "piece", quantity: 1, unitPrice: 800, negotiated: true },
+      { productId: "p1", name: "A", unit: "piece", quantity: 2, unitPrice: 800 },
+    ]);
+    expect(merged).toEqual([{ productId: "p1", name: "A", unit: "piece", quantity: 3, unitPrice: 800, negotiated: true }]);
+    const input = toSyncInput({ ...sale(), items: merged });
+    expect(input.items[0]).toEqual({ productId: "p1", quantity: 3, unitPrice: 800, negotiated: true });
+    expect(offlineSaleInputSchema.safeParse(input).success).toBe(true);
+    // Une vente gardée par une ancienne version (sans le champ) reste acceptée
+    const old = { ...input, items: [{ productId: "p1", quantity: 3, unitPrice: 800 }] };
+    expect(offlineSaleInputSchema.safeParse(old).success).toBe(true);
   });
 });

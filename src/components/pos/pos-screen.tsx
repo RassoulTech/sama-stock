@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, PackageSearch, Percent, Plus, ShoppingCart, Trash2, X } from "lucide-react";
+import { Check, Minus, PackageSearch, Pencil, Percent, Plus, ShoppingCart, Trash2, X } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import type { CustomerOption } from "@/components/customers/customer-dialog";
 import { ProductThumb } from "@/components/products/product-thumb";
@@ -43,6 +43,8 @@ export function PosScreen({
   bottomNav?: boolean;
 }) {
   const [cart, setCart] = useState<Map<string, number>>(new Map());
+  /** Prix négociés avec le client, pour cette vente seulement (la fiche produit ne change pas). */
+  const [prices, setPrices] = useState<Map<string, number>>(new Map());
   const [discount, setDiscount] = useState<number | "">("");
   const [showDiscount, setShowDiscount] = useState(false);
   const [q, setQ] = useState("");
@@ -54,10 +56,11 @@ export function PosScreen({
   const [pending, startTransition] = useTransition();
 
   const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const priceOf = (p: PosProduct) => prices.get(p.id) ?? p.salePrice;
   const lines = [...cart.entries()]
     .map(([id, qty]) => ({ product: byId.get(id)!, qty }))
     .filter((l) => l.product);
-  const subtotal = lines.reduce((s, l) => s + Math.round(l.qty * l.product.salePrice), 0);
+  const subtotal = lines.reduce((s, l) => s + Math.round(l.qty * priceOf(l.product)), 0);
   const discountValue = Math.min(Number(discount) || 0, subtotal);
   const total = subtotal - discountValue;
   const itemCount = lines.length;
@@ -76,6 +79,23 @@ export function PosScreen({
       else next.set(id, clamped);
       return next;
     });
+    if (clamped <= 0) setPrice(id, null);
+  }
+
+  /** null : retour au prix habituel du produit. */
+  function setPrice(id: string, price: number | null) {
+    setPrices((prev) => {
+      const next = new Map(prev);
+      const product = byId.get(id);
+      if (price === null || !product || price === product.salePrice) next.delete(id);
+      else next.set(id, Math.max(0, Math.round(price)));
+      return next;
+    });
+  }
+
+  function clearCart() {
+    setCart(new Map());
+    setPrices(new Map());
   }
 
   function add(id: string) {
@@ -92,7 +112,8 @@ export function PosScreen({
         name: l.product.name,
         unit: l.product.unit,
         quantity: l.qty,
-        unitPrice: l.product.salePrice,
+        unitPrice: priceOf(l.product),
+        negotiated: prices.has(l.product.id),
       })),
       discount: discountValue,
       paymentMethod: result.paymentMethod,
@@ -107,7 +128,7 @@ export function PosScreen({
       }
       setCheckoutOpen(false);
       setCartOpen(false);
-      setCart(new Map());
+      clearCart();
       setDiscount("");
       setShowDiscount(false);
     });
@@ -121,7 +142,7 @@ export function PosScreen({
           {itemCount > 0 && <span className="num rounded-full bg-primary px-2 text-xs text-primary-foreground">{itemCount}</span>}
         </h2>
         {itemCount > 0 && (
-          <Button variant="ghost" size="sm" onClick={() => setCart(new Map())}>
+          <Button variant="ghost" size="sm" onClick={clearCart}>
             Vider
           </Button>
         )}
@@ -137,7 +158,7 @@ export function PosScreen({
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{product.name}</p>
-                  <p className="num text-xs text-muted-foreground">{formatFCFA(product.salePrice)} / {unitLabel(product.unit)}</p>
+                  <LinePrice product={product} price={priceOf(product)} onChange={(p) => setPrice(product.id, p)} />
                 </div>
                 <button
                   type="button"
@@ -178,7 +199,7 @@ export function PosScreen({
                     <Plus className="size-4" />
                   </button>
                 </div>
-                <span className="num font-semibold">{formatFCFA(Math.round(qty * product.salePrice))}</span>
+                <span className="num font-semibold">{formatFCFA(Math.round(qty * priceOf(product)))}</span>
               </div>
             </li>
           ))}
@@ -364,5 +385,75 @@ export function PosScreen({
         allowCustomerCreate={allowCustomerCreate}
       />
     </>
+  );
+}
+
+/**
+ * Prix d'une ligne du panier : on le touche pour taper le prix négocié avec le client.
+ * L'ancien prix reste affiché barré, avec un retour au prix habituel en un geste.
+ */
+function LinePrice({ product, price, onChange }: { product: PosProduct; price: number; onChange: (price: number | null) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState<number | "">(price);
+  const negotiated = price !== product.salePrice;
+
+  if (editing) {
+    return (
+      <form
+        className="mt-1 flex items-center gap-1.5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setEditing(false);
+          if (value !== "") onChange(value);
+        }}
+      >
+        <SuffixInput
+          suffix={`FCFA / ${unitLabel(product.unit)}`}
+          min={0}
+          step={1}
+          inputMode="numeric"
+          autoFocus
+          aria-label={`Prix négocié de ${product.name}`}
+          className="h-9 pr-24 text-sm"
+          value={value}
+          onFocus={(e) => e.currentTarget.select()}
+          onChange={(e) => setValue(e.target.value === "" ? "" : Number(e.target.value))}
+        />
+        <Button type="submit" size="icon-sm" aria-label="Valider le prix">
+          <Check />
+        </Button>
+      </form>
+    );
+  }
+
+  return (
+    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+      <button
+        type="button"
+        onClick={() => {
+          setValue(price);
+          setEditing(true);
+        }}
+        className={cn(
+          "num inline-flex items-center gap-1 rounded-md py-0.5 hover:text-foreground",
+          negotiated ? "font-semibold text-primary" : "text-muted-foreground",
+        )}
+        aria-label={`Changer le prix de ${product.name}`}
+      >
+        {formatFCFA(price)} / {unitLabel(product.unit)} <Pencil className="size-3" />
+      </button>
+      {negotiated && (
+        <>
+          <span className="num text-muted-foreground line-through">{formatFCFA(product.salePrice)}</span>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Prix habituel
+          </button>
+        </>
+      )}
+    </div>
   );
 }
