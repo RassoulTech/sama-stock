@@ -1,7 +1,7 @@
 "use server";
 
 import { hashPassword } from "better-auth/crypto";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db, type Tx } from "@/db";
@@ -15,6 +15,7 @@ import { formatDate, formatFCFA, normalizePhone } from "@/lib/format";
 import { ActionError, parse, runAction } from "../action";
 import { requireSuperAdminAction, type AppContext } from "../context";
 import { logAdmin } from "../services/admin-audit";
+import { setCredentialPassword, temporaryPassword } from "../services/passwords";
 import { ensureBusinessSlug } from "../services/business-slug";
 import { importInputSchema, importProductRows, type ImportBatchInput, type ImportBatchResult } from "../services/product-import";
 
@@ -55,23 +56,16 @@ const clientSchema = z.object({
   brandColor: z.enum(COLORS).default("vert"),
 });
 
-/** Mot de passe provisoire lisible à l'oral (sans 0/O ni 1/I/l). */
-function temporaryPassword(): string {
-  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  const bytes = crypto.getRandomValues(new Uint8Array(8));
-  const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
-  return `Sama-${chars.slice(0, 4).join("")}-${chars.slice(4).join("")}`;
-}
-
 /** Numéro de document suivant : SS-2026-0001 (verrou pour éviter deux numéros identiques). */
 async function nextSaleNumber(tx: Tx): Promise<string> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext('sama-stock-license-number'))`);
   const year = new Date().getFullYear();
+  // Le plus grand numéro de l'année (et non le nombre de ventes) : une vente supprimée ne fait jamais réutiliser un numéro
   const [row] = await tx
-    .select({ n: sql<number>`count(*)::int` })
+    .select({ n: sql<number>`coalesce(max(substring(${licenseSales.number} from '[0-9]+$')::int), 0)` })
     .from(licenseSales)
     .where(sql`${licenseSales.number} like ${`SS-${year}-%`}`);
-  return `SS-${year}-${String((row?.n ?? 0) + 1).padStart(4, "0")}`;
+  return `SS-${year}-${String(Number(row?.n ?? 0) + 1).padStart(4, "0")}`;
 }
 
 /** Active la licence d'un commerce et enregistre la vente (et l'acompte éventuel). */
@@ -275,23 +269,8 @@ export async function adminResetOwnerPassword(businessId: string) {
       .where(eq(businesses.id, businessId));
     if (!row?.ownerId) throw new ActionError("Ce commerce n'a pas de propriétaire.");
     const password = temporaryPassword();
-    const hash = await hashPassword(password);
     await db.transaction(async (tx) => {
-      const [cred] = await tx
-        .select({ id: account.id })
-        .from(account)
-        .where(and(eq(account.userId, row.ownerId!), eq(account.providerId, "credential")));
-      if (cred) await tx.update(account).set({ password: hash, updatedAt: new Date() }).where(eq(account.id, cred.id));
-      else {
-        await tx.insert(account).values({
-          id: crypto.randomUUID(),
-          accountId: row.ownerId!,
-          providerId: "credential",
-          userId: row.ownerId!,
-          password: hash,
-          updatedAt: new Date(),
-        });
-      }
+      await setCredentialPassword(tx, row.ownerId!, password);
       await logAdmin(tx, ctx, { action: "reset_password", businessId, targetUserId: row.ownerId, summary: `Mot de passe provisoire créé pour ${row.email}` });
     });
     const slug = row.licensed ? await ensureBusinessSlug(db, businessId) : null;

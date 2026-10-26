@@ -1,5 +1,7 @@
-import { Ban } from "lucide-react";
+import { Ban, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { NO_INDEX } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
@@ -25,6 +27,13 @@ export default async function SuspenduPage() {
             L&apos;accès à « {ctx.business.name} » a été suspendu. Contactez l&apos;équipe Sama Stock pour le réactiver. Vos
             données sont conservées.
           </p>
+          {ctx.isSuperAdmin && (
+            <Button asChild className="w-full">
+              <Link href="/admin">
+                <ShieldCheck /> Ouvrir l&apos;administration
+              </Link>
+            </Button>
+          )}
           <SignOutButton variant="outline" className="w-full" />
         </div>
       </div>

@@ -18,6 +18,8 @@ export function authErrorMessage(error: { code?: string; message?: string; statu
       return "Adresse email invalide.";
     case "INVALID_PASSWORD":
       return "Le mot de passe actuel est incorrect.";
+    case "INVALID_TOKEN":
+      return "Ce lien n'est plus valable : demandez-en un nouveau.";
     case "CREDENTIAL_ACCOUNT_NOT_FOUND":
       return "Vous vous connectez avec Google : aucun mot de passe à changer.";
     default:

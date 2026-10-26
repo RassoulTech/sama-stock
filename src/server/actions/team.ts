@@ -9,8 +9,9 @@ import { invitations, members, user } from "@/db/schema";
 import { INVITABLE_ROLES, ROLE_LABELS } from "@/lib/domain/permissions";
 import { canAdd } from "@/lib/domain/plans";
 import { ActionError, parse, runAction } from "../action";
-import { assertNotDemo, BUSINESS_COOKIE, getContext, LOCATION_COOKIE, requireActionContext } from "../context";
+import { assertNotDemo, BUSINESS_COOKIE, getContext, isSuperAdminEmail, LOCATION_COOKIE, requireActionContext } from "../context";
 import { employeeCount } from "../queries/team";
+import { setCredentialPassword, temporaryPassword } from "../services/passwords";
 
 const INVITATION_DAYS = 7;
 
@@ -116,6 +117,34 @@ export async function changeMemberRole(memberId: string, role: string) {
     if (updated.length === 0) throw new ActionError("Impossible de modifier ce membre.");
     revalidatePath("/equipe");
     return null;
+  });
+}
+
+/**
+ * Mot de passe oublié par un employé : le propriétaire lui en crée un provisoire (sans e-mail).
+ * Refusé si la personne a d'autres commerces sur Sama Stock : elle passe alors par « Mot de passe oublié ».
+ */
+export async function resetMemberPassword(memberId: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("team.manage", { write: false });
+    assertNotDemo(ctx, "La gestion de l'équipe");
+    const [target] = await db
+      .select({ userId: members.userId, role: members.role, name: user.name, email: user.email })
+      .from(members)
+      .innerJoin(user, eq(user.id, members.userId))
+      .where(and(eq(members.id, memberId), eq(members.businessId, ctx.business.id)));
+    if (!target || target.role === "owner") throw new ActionError("Impossible de changer le mot de passe de ce membre.");
+    if (target.userId === ctx.user.id) throw new ActionError("Pour votre propre compte, utilisez « Mon mot de passe ».");
+    const [other] = await db
+      .select({ id: members.id })
+      .from(members)
+      .where(and(eq(members.userId, target.userId), ne(members.businessId, ctx.business.id)));
+    if (other || isSuperAdminEmail(target.email)) {
+      throw new ActionError(`${target.name} utilise aussi Sama Stock ailleurs : il doit passer par « Mot de passe oublié » sur la page de connexion.`);
+    }
+    const password = temporaryPassword();
+    await db.transaction((tx) => setCredentialPassword(tx, target.userId, password, { signOutEverywhere: true }));
+    return { name: target.name, email: target.email, password };
   });
 }
 

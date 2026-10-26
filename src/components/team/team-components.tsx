@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Loader2, MessageCircle, UserPlus, UserX, X } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, MessageCircle, UserPlus, UserX, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { INVITABLE_ROLES, ROLE_DESCRIPTIONS, ROLE_LABELS, type Role } from "@/lib/domain/permissions";
 import { cn } from "@/lib/utils";
 import { invitationMessage, waLink } from "@/lib/whatsapp";
-import { cancelInvitation, changeMemberRole, invitationLink, inviteMember, removeMember } from "@/server/actions/team";
+import { cancelInvitation, changeMemberRole, invitationLink, inviteMember, removeMember, resetMemberPassword } from "@/server/actions/team";
 
 type InvitableRole = (typeof INVITABLE_ROLES)[number];
 
@@ -184,6 +184,71 @@ export function MemberRoleSelect({ memberId, role, disabled }: { memberId: strin
         ))}
       </SelectContent>
     </Select>
+  );
+}
+
+/** Employé qui a oublié son mot de passe : le propriétaire lui en crée un provisoire, affiché une seule fois. */
+export function ResetMemberPasswordButton({ memberId, name }: { memberId: string; name: string }) {
+  const [access, setAccess] = useState<{ email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Copie impossible : le mot de passe reste lisible à l'écran
+    }
+  }
+
+  return (
+    <>
+      <ConfirmAction
+        trigger={
+          <Button variant="ghost" size="icon-sm" aria-label={`Nouveau mot de passe pour ${name}`}>
+            <KeyRound />
+          </Button>
+        }
+        title={`Nouveau mot de passe pour ${name} ?`}
+        description="Son ancien mot de passe ne marchera plus, et ses appareils seront déconnectés dans les minutes qui suivent. Le nouveau s'affiche une seule fois : donnez-le-lui."
+        confirmLabel="Créer le mot de passe"
+        successMessage="Nouveau mot de passe créé"
+        action={async () => {
+          const res = await resetMemberPassword(memberId);
+          if (res.ok) setAccess({ email: res.data.email, password: res.data.password });
+          return res;
+        }}
+      />
+      <Dialog open={access !== null} onOpenChange={(open) => !open && setAccess(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mot de passe de {name}</DialogTitle>
+            <DialogDescription>Donnez-lui ces informations. Il ne s&apos;affichera plus ensuite.</DialogDescription>
+          </DialogHeader>
+          {access && (
+            <div className="space-y-2">
+              <div className="rounded-xl border bg-muted/40 px-3 py-2">
+                <span className="block text-xs text-muted-foreground">E-mail</span>
+                <span className="block truncate font-mono text-sm font-semibold">{access.email}</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-xl border bg-muted/40 px-3 py-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs text-muted-foreground">Mot de passe provisoire</span>
+                  <span className="block font-mono text-sm font-semibold">{access.password}</span>
+                </span>
+                <Button type="button" variant="ghost" size="sm" onClick={() => void copy(access.password)} aria-label="Copier le mot de passe">
+                  {copied ? <Check className="text-primary" /> : <Copy />}
+                </Button>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setAccess(null)}>C&apos;est noté</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

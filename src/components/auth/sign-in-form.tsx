@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient, authErrorMessage } from "@/lib/auth-client";
-import { salesLink } from "@/lib/whatsapp";
 import { GoogleButton, OrSeparator } from "./google-button";
 import { PasswordInput } from "./password-input";
 
@@ -55,9 +54,10 @@ export function SignInForm({
     router.refresh();
   }
 
-  const forgotHref = salesLink(
-    `Bonjour Sama Stock, j'ai oublié le mot de passe de mon compte${email ? ` (${email})` : ""}${brand ? ` pour l'application ${brand.name}` : ""}. Pouvez-vous m'aider ?`,
-  );
+  const forgot = new URLSearchParams();
+  if (brand) forgot.set("b", brand.slug);
+  if (email.trim()) forgot.set("email", email.trim());
+  const forgotHref = `/mot-de-passe-oublie${forgot.size ? `?${forgot}` : ""}`;
 
   return (
     <div className="space-y-6">
@@ -108,9 +108,9 @@ export function SignInForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <Label htmlFor="password">Mot de passe</Label>
-            <a href={forgotHref} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-primary hover:underline">
+            <Link href={forgotHref} className="text-xs font-medium text-primary hover:underline">
               Mot de passe oublié ?
-            </a>
+            </Link>
           </div>
           <PasswordInput
             id="password"

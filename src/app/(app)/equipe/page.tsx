@@ -9,6 +9,7 @@ import {
   InviteDialog,
   MemberRoleSelect,
   RemoveMemberButton,
+  ResetMemberPasswordButton,
 } from "@/components/team/team-components";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +77,7 @@ export default async function EquipePage() {
                       </p>
                     </div>
                     {isRole(m.role) && <MemberRoleSelect memberId={m.id} role={m.role} disabled={ctx.plan.readOnly} />}
+                    {m.role !== "owner" && m.userId !== ctx.user.id && <ResetMemberPasswordButton memberId={m.id} name={m.name} />}
                     {m.role !== "owner" && <RemoveMemberButton memberId={m.id} name={m.name} />}
                   </li>
                 ))}

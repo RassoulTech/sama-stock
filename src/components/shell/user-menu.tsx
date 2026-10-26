@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, LogOut, Monitor, Moon, ShieldCheck, Store, Sun } from "lucide-react";
+import { Check, KeyRound, LogOut, Monitor, Moon, ShieldCheck, Store, Sun } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -101,6 +101,12 @@ export function UserMenu({
           </>
         )}
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/mon-compte">
+            <KeyRound />
+            Mon mot de passe
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
           onSelect={async () => {

@@ -114,7 +114,8 @@ export const getContext = cache(async (): Promise<AppContext | null> => {
 export async function requireContext(permission?: Permission): Promise<BusinessContext> {
   const ctx = await getContext();
   if (!ctx) redirect("/connexion");
-  if (!ctx.business) redirect("/demarrage");
+  // Un administrateur sans commerce arrive directement dans l'administration
+  if (!ctx.business) redirect(ctx.isSuperAdmin ? "/admin" : "/demarrage");
   const bctx = ctx as BusinessContext;
   if (bctx.plan.status === "suspended") redirect("/suspendu");
   if (permission && !bctx.can(permission)) redirect("/tableau-de-bord");

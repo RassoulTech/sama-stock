@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/schema";
+import { resetPasswordEmail, sendMail } from "@/server/mail";
 
 export const isGoogleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -23,6 +24,12 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     autoSignIn: true,
+    // « Mot de passe oublié » : lien valable 1 heure envoyé par e-mail ; les autres appareils sont déconnectés
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendMail({ to: user.email, ...resetPasswordEmail({ name: user.name, url }) });
+    },
   },
   socialProviders: isGoogleEnabled
     ? {
