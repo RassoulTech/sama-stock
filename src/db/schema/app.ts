@@ -63,9 +63,33 @@ export const members = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     role: text("role").notNull(),
+    /** Code PIN à 4 chiffres (empreinte), tapé sur un appareil de la boutique pour ouvrir sa session. */
+    pinHash: text("pin_hash"),
+    pinFailures: integer("pin_failures").notNull().default(0),
+    pinLockedUntil: timestamp("pin_locked_until", { withTimezone: true }),
+    pinSetAt: timestamp("pin_set_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("members_business_user_uq").on(t.businessId, t.userId), index("members_user_idx").on(t.userId)],
+);
+
+/** Téléphone ou tablette activé par le propriétaire : seul endroit où les employés tapent leur code PIN. */
+export const shopDevices = pgTable(
+  "shop_devices",
+  {
+    id: id(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Empreinte SHA-256 du jeton secret gardé dans le cookie de l'appareil. */
+    tokenHash: text("token_hash").notNull().unique(),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (t) => [index("shop_devices_business_idx").on(t.businessId)],
 );
 
 export const invitations = pgTable(

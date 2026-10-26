@@ -5,12 +5,16 @@ import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/db";
-import { invitations, members, user } from "@/db/schema";
+import { invitations, members, session, user } from "@/db/schema";
 import { INVITABLE_ROLES, ROLE_LABELS } from "@/lib/domain/permissions";
 import { canAdd } from "@/lib/domain/plans";
+import { generatePin, isStaffEmail, isValidPin, isWeakPin, staffEmail } from "@/lib/domain/staff-pin";
+import { hashPassword } from "better-auth/crypto";
 import { ActionError, parse, runAction } from "../action";
 import { assertNotDemo, BUSINESS_COOKIE, getContext, isSuperAdminEmail, LOCATION_COOKIE, requireActionContext } from "../context";
 import { employeeCount } from "../queries/team";
+import { ensureBusinessSlug } from "../services/business-slug";
+import { createDevice, DEVICE_COOKIE, DEVICE_COOKIE_OPTIONS, readDevice, revokeDevice } from "../services/devices";
 import { setCredentialPassword, temporaryPassword } from "../services/passwords";
 
 const INVITATION_DAYS = 7;
@@ -135,6 +139,7 @@ export async function resetMemberPassword(memberId: string) {
       .where(and(eq(members.id, memberId), eq(members.businessId, ctx.business.id)));
     if (!target || target.role === "owner") throw new ActionError("Impossible de changer le mot de passe de ce membre.");
     if (target.userId === ctx.user.id) throw new ActionError("Pour votre propre compte, utilisez « Mon mot de passe ».");
+    if (isStaffEmail(target.email)) throw new ActionError("Cet employé se connecte avec son code PIN : changez plutôt son code.");
     const [other] = await db
       .select({ id: members.id })
       .from(members)
@@ -155,8 +160,11 @@ export async function removeMember(memberId: string) {
     const removed = await db
       .delete(members)
       .where(and(eq(members.id, memberId), eq(members.businessId, ctx.business.id), ne(members.role, "owner")))
-      .returning({ id: members.id });
+      .returning({ id: members.id, userId: members.userId });
     if (removed.length === 0) throw new ActionError("Impossible de retirer ce membre.");
+    // Employé sans e-mail : il n'a pas d'autre commerce, ses sessions ouvertes sont fermées
+    const [gone] = await db.select({ email: user.email }).from(user).where(eq(user.id, removed[0]!.userId));
+    if (gone && isStaffEmail(gone.email)) await db.delete(session).where(eq(session.userId, removed[0]!.userId));
     revalidatePath("/equipe");
     return null;
   });
@@ -187,6 +195,117 @@ export async function acceptInvitation(token: string) {
     jar.set(BUSINESS_COOKIE, businessId, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
     jar.delete(LOCATION_COOKIE);
     revalidatePath("/", "layout");
+    return null;
+  });
+}
+
+const employeeSchema = z.object({
+  name: z.string().trim().min(2, "Indiquez le nom de l'employé.").max(80),
+  role: z.enum(INVITABLE_ROLES, { message: "Choisissez un rôle." }),
+  // Facultatif : pour qu'il puisse aussi se connecter depuis son propre téléphone, avec un mot de passe
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(120)
+    .optional()
+    .default("")
+    .refine((v) => v === "" || z.email().safeParse(v).success, "Adresse e-mail invalide."),
+});
+
+/**
+ * Ajoute un employé sans e-mail ni invitation : un code PIN à 4 chiffres lui est créé (affiché une seule fois).
+ * Avec un e-mail facultatif, il reçoit aussi un mot de passe provisoire pour se connecter de partout.
+ */
+export async function addEmployee(input: z.input<typeof employeeSchema>) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("team.manage");
+    assertNotDemo(ctx, "La gestion de l'équipe");
+    const data = parse(employeeSchema, input);
+    const max = ctx.plan.limits.maxEmployees;
+    if (max === 0) throw new ActionError("Votre formule ne comprend pas d'employés.");
+    if (!canAdd(max, await employeeCount(ctx.business.id))) throw new ActionError(`Limite de ${max} employés atteinte.`);
+
+    const pin = generatePin();
+    const pinHash = await hashPassword(pin);
+    const result = await db.transaction(async (tx) => {
+      let userId: string;
+      let password: string | null = null;
+      if (data.email) {
+        const [existing] = await tx.select({ id: user.id }).from(user).where(eq(user.email, data.email));
+        if (existing) {
+          const [already] = await tx
+            .select({ id: members.id })
+            .from(members)
+            .where(and(eq(members.userId, existing.id), eq(members.businessId, ctx.business.id)));
+          if (already) throw new ActionError("Cette personne fait déjà partie de votre équipe.");
+          // Compte Sama Stock existant : il garde son mot de passe
+          userId = existing.id;
+        } else {
+          userId = crypto.randomUUID();
+          await tx.insert(user).values({ id: userId, name: data.name, email: data.email, emailVerified: true });
+          password = temporaryPassword();
+          await setCredentialPassword(tx, userId, password);
+        }
+      } else {
+        userId = crypto.randomUUID();
+        await tx.insert(user).values({ id: userId, name: data.name, email: staffEmail(userId), emailVerified: true });
+      }
+      await tx.insert(members).values({ businessId: ctx.business.id, userId, role: data.role, pinHash, pinSetAt: new Date() });
+      return { password };
+    });
+
+    revalidatePath("/equipe");
+    return { name: data.name, roleLabel: ROLE_LABELS[data.role], pin, email: data.email || null, password: result.password };
+  });
+}
+
+/** Nouveau code PIN pour un membre (le propriétaire peut aussi se donner le sien). Débloque aussi le compte. */
+export async function resetMemberPin(memberId: string, chosen?: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("team.manage", { write: false });
+    assertNotDemo(ctx, "La gestion de l'équipe");
+    const pin = chosen?.trim() || generatePin();
+    if (!isValidPin(pin)) throw new ActionError("Le code doit avoir exactement 4 chiffres.");
+    if (isWeakPin(pin)) throw new ActionError("Code trop facile à deviner (1234, 0000…) : choisissez-en un autre.");
+    const [target] = await db
+      .select({ id: members.id, name: user.name })
+      .from(members)
+      .innerJoin(user, eq(user.id, members.userId))
+      .where(and(eq(members.id, memberId), eq(members.businessId, ctx.business.id)));
+    if (!target) throw new ActionError("Membre introuvable.");
+    await db
+      .update(members)
+      .set({ pinHash: await hashPassword(pin), pinFailures: 0, pinLockedUntil: null, pinSetAt: new Date() })
+      .where(eq(members.id, target.id));
+    revalidatePath("/equipe");
+    return { name: target.name, pin };
+  });
+}
+
+/** Active ce téléphone ou cette tablette pour la boutique : les employés pourront y taper leur code. */
+export async function activateThisDevice(name: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("team.manage", { write: false });
+    assertNotDemo(ctx, "La gestion de l'équipe");
+    const label = parse(z.string().trim().min(2, "Donnez un nom à cet appareil (ex. : Tablette caisse).").max(60), name);
+    const slug = await ensureBusinessSlug(db, ctx.business.id);
+    const { cookie } = await createDevice({ businessId: ctx.business.id, name: label, createdBy: ctx.user.id });
+    (await cookies()).set(DEVICE_COOKIE, cookie, DEVICE_COOKIE_OPTIONS);
+    revalidatePath("/equipe");
+    return { slug };
+  });
+}
+
+/** Retire un appareil (perdu, vendu, employé parti) : on ne peut plus y taper de code. */
+export async function revokeShopDevice(deviceId: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("team.manage", { write: false });
+    assertNotDemo(ctx, "La gestion de l'équipe");
+    if (!(await revokeDevice(ctx.business.id, deviceId))) throw new ActionError("Appareil introuvable.");
+    const current = await readDevice();
+    if (current?.id === deviceId) (await cookies()).delete(DEVICE_COOKIE);
+    revalidatePath("/equipe");
     return null;
   });
 }

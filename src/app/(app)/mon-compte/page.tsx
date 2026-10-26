@@ -5,6 +5,7 @@ import { CreatePasswordForm, PasswordForm } from "@/components/settings/account-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { account } from "@/db/schema";
+import { isStaffEmail } from "@/lib/domain/staff-pin";
 import { requireContext } from "@/server/context";
 
 export const metadata: Metadata = { title: "Mon compte" };
@@ -16,6 +17,24 @@ export default async function MonComptePage() {
     .select({ id: account.id })
     .from(account)
     .where(and(eq(account.userId, ctx.user.id), eq(account.providerId, "credential")));
+
+  // Employé sans e-mail : il se connecte avec son code PIN, géré par le propriétaire
+  if (isStaffEmail(ctx.user.email)) {
+    return (
+      <>
+        <PageHeader title="Mon compte" description={ctx.user.name} />
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle className="font-semibold">Mon code PIN</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Vous ouvrez votre session avec votre code PIN sur l&apos;appareil de la boutique. Pour le changer ou si vous l&apos;avez oublié,
+            demandez au propriétaire : il vous en crée un nouveau depuis la page Équipe.
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
 
   return (
     <>

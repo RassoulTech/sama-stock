@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { notFound, redirect } from "next/navigation";
-import { SignInForm } from "@/components/auth/sign-in-form";
+import { ShopLoginPanel } from "@/components/auth/shop-login-panel";
 import { brandCss } from "@/lib/domain/brand";
 import { shopColors } from "@/lib/domain/shop-brand";
 import { initials } from "@/lib/format";
 import { NO_INDEX } from "@/lib/seo";
 import { getSession } from "@/server/context";
-import { shopBySlug } from "@/server/queries/shop-login";
+import { shopBySlug, staffWithPin } from "@/server/queries/shop-login";
+import { readDevice } from "@/server/services/devices";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -50,6 +51,9 @@ export default async function ShopLoginPage({ params, searchParams }: Props) {
   if (!denied && (await getSession())) redirect(`/b/${shop.slug}/entrer`);
 
   const email = typeof query.email === "string" && /^[^\s@]+@[^\s@]+$/.test(query.email) ? query.email.slice(0, 120) : "";
+  // Appareil activé pour cette boutique : liste des employés et clavier du code PIN
+  const device = await readDevice();
+  const staff = device?.businessId === shop.id ? await staffWithPin(shop.id) : null;
   const colors = shopColors(shop.brandColor);
   const css = brandCss(shop.brandColor);
 
@@ -77,11 +81,11 @@ export default async function ShopLoginPage({ params, searchParams }: Props) {
         </div>
 
         <div className="mt-8 rounded-2xl border bg-card p-6 shadow-[0_24px_48px_-24px_rgb(11_19_16/0.35)] sm:p-7">
-          <SignInForm
-            redirectTo="/tableau-de-bord"
-            googleEnabled={false}
+          <ShopLoginPanel
+            slug={shop.slug!}
+            shopName={shop.name}
+            staff={staff}
             defaultEmail={email}
-            brand={{ name: shop.name, slug: shop.slug! }}
             notice={denied ? `Ce compte n'a pas accès à ${shop.name}. Connectez-vous avec le compte de la boutique.` : null}
           />
         </div>

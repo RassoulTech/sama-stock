@@ -78,9 +78,9 @@ export default async function DashboardPage() {
     // Licence : l'étape n'apparaît que si son forfait permet des employés
     ...(ctx.plan.license
       ? ctx.plan.limits.maxEmployees !== 0
-        ? [{ done: (teamCount ?? 0) > 0, label: "Inviter un employé", href: "/equipe" }]
+        ? [{ done: (teamCount ?? 0) > 0, label: "Ajouter un employé", href: "/equipe" }]
         : []
-      : [{ done: (teamCount ?? 0) > 0, label: "Inviter un employé (formules Pro et Business)", href: "/equipe" }]),
+      : [{ done: (teamCount ?? 0) > 0, label: "Ajouter un employé (formules Pro et Business)", href: "/equipe" }]),
   ];
   const showChecklist = !ctx.business.isDemo && checklist && checklist.some((c) => !c.done) && products.length < 5;
 

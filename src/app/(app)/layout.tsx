@@ -16,7 +16,10 @@ import { brandCss } from "@/lib/domain/brand";
 import { initials } from "@/lib/format";
 import { ROLE_LABELS, type Permission } from "@/lib/domain/permissions";
 import { NO_INDEX } from "@/lib/seo";
+import { isStaffEmail } from "@/lib/domain/staff-pin";
 import { requireContext } from "@/server/context";
+import { readDevice } from "@/server/services/devices";
+import { SwitchUserButton } from "@/components/shell/switch-user-button";
 
 // Espace privé : jamais dans les résultats de recherche
 export const metadata: Metadata = { robots: NO_INDEX };
@@ -43,6 +46,9 @@ const ALL_PERMISSIONS: Permission[] = [
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireContext();
+  // Appareil de la boutique (code PIN des employés) : bouton « Changer d'employé »
+  const device = await readDevice();
+  const sharedDevice = device?.businessId === ctx.business.id && ctx.business.slug ? `/b/${ctx.business.slug}` : null;
   const modules = { pos: ctx.business.modulePos, orders: ctx.business.moduleOrders };
   const nav = buildNav({ can: ctx.can, modules, isSuperAdmin: ctx.isSuperAdmin });
 
@@ -118,8 +124,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 </p>
                 <div className="ml-auto flex items-center gap-2">
                   <LocationSwitcher locations={locationList} currentId={ctx.location.id} />
+                  {sharedDevice && <SwitchUserButton href={sharedDevice} />}
                   <UserMenu
-                    user={{ name: ctx.user.name, email: ctx.user.email }}
+                    user={{ name: ctx.user.name, email: isStaffEmail(ctx.user.email) ? "Connexion par code PIN" : ctx.user.email }}
                     roleLabel={`${ROLE_LABELS[ctx.role]} · ${ctx.business.name}`}
                     memberships={ctx.memberships}
                     currentBusinessId={ctx.business.id}

@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/schema";
 import { resetPasswordEmail, sendMail } from "@/server/mail";
+import { pinSignIn } from "./auth-pin";
 
 export const isGoogleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
@@ -48,5 +49,6 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
     cookieCache: { enabled: true, maxAge: 5 * 60 },
   },
-  plugins: [nextCookies()],
+  // nextCookies doit rester en dernier : il recopie les cookies posés par les autres modules
+  plugins: [pinSignIn(), nextCookies()],
 });

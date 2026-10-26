@@ -18,7 +18,16 @@ export async function employeeCount(businessId: string): Promise<number> {
 
 export async function listTeam(businessId: string) {
   const team = await db
-    .select({ id: members.id, userId: user.id, name: user.name, email: user.email, role: members.role, createdAt: members.createdAt })
+    .select({
+      id: members.id,
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      role: members.role,
+      createdAt: members.createdAt,
+      hasPin: sql<boolean>`${members.pinHash} is not null`,
+      pinLockedUntil: members.pinLockedUntil,
+    })
     .from(members)
     .innerJoin(user, eq(members.userId, user.id))
     .where(eq(members.businessId, businessId))

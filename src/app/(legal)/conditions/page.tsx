@@ -33,7 +33,7 @@ export default function ConditionsPage() {
           par vous.
         </li>
         <li>
-          Le propriétaire du commerce peut inviter des employés et décide de leurs droits ; il reste responsable de leur
+          Le propriétaire du commerce peut ajouter des employés et décide de leurs droits ; il reste responsable de leur
           utilisation du service.
         </li>
       </ul>

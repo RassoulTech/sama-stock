@@ -57,6 +57,13 @@
       "when": 1793002921697,
       "tag": "0007_boutiques_et_index",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793023243137,
+      "tag": "0008_equipe_code_pin",
+      "breakpoints": true
     }
   ]
 }
