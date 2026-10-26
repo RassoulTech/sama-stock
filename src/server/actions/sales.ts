@@ -8,9 +8,10 @@ import { saleItems, sales } from "@/db/schema";
 import { SALE_METHODS } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
-import { nextNumber } from "../services/numbering";
+import { cancelInvoicesOfSale } from "../services/documents";
 import { findSaleByClientRef } from "../services/offline-sales";
-import { assertCustomer, priceAndReserve } from "../services/sale-lines";
+import { priceAndReserve } from "../services/sale-lines";
+import { recordShopSale } from "../services/shop-sale";
 import { applyStockMovement } from "../services/stock";
 
 const saleSchema = z.object({
@@ -40,55 +41,15 @@ export async function createSale(input: z.input<typeof saleSchema>) {
         if (existing) return existing.id;
       }
       const lines = await priceAndReserve(tx, ctx, data.items);
-      const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
-      if (data.discount > subtotal) throw new ActionError("La remise dépasse le montant du panier.");
-      const total = subtotal - data.discount;
-      const amountPaid = data.paymentMethod === "credit" ? 0 : Math.min(data.amountReceived, total);
-
-      const customerId = await assertCustomer(tx, ctx.business.id, data.customerId);
-      if (amountPaid < total && !customerId) {
-        throw new ActionError("Choisissez le client : une vente à crédit ou un paiement partiel doit être rattaché à un client.");
-      }
-
-      const now = new Date();
-      const [sale] = await tx
-        .insert(sales)
-        .values({
-          businessId: ctx.business.id,
-          locationId: ctx.location.id,
-          number: await nextNumber(tx, ctx.business.id, "sale"),
-          kind: "sale",
-          channel: "boutique",
-          status: "completed",
-          customerId,
-          userId: ctx.user.id,
-          subtotal,
-          discount: data.discount,
-          total,
-          amountPaid,
-          paymentMethod: data.paymentMethod,
-          note: data.note || null,
-          createdAt: now,
-          completedAt: now,
-          clientRef: data.clientRef ?? null,
-        })
-        .returning({ id: sales.id });
-
-      await tx.insert(saleItems).values(lines.map((l) => ({ saleId: sale!.id, ...l })));
-      for (const l of lines) {
-        await applyStockMovement(tx, {
-          businessId: ctx.business.id,
-          locationId: ctx.location.id,
-          productId: l.productId,
-          quantity: -l.quantity,
-          type: "sale",
-          refType: "sale",
-          refId: sale!.id,
-          unitCost: l.unitCost,
-          userId: ctx.user.id,
-        });
-      }
-      return sale!.id;
+      return recordShopSale(tx, ctx, {
+        lines,
+        discount: data.discount,
+        customerId: data.customerId,
+        paymentMethod: data.paymentMethod,
+        amountReceived: data.amountReceived,
+        note: data.note,
+        clientRef: data.clientRef,
+      });
     });
 
     revalidatePath("/", "layout");
@@ -110,6 +71,7 @@ export async function cancelSale(id: string) {
       if (sale.status !== "completed") throw new ActionError("Cette vente est déjà annulée.");
 
       await tx.update(sales).set({ status: "cancelled", cancelledAt: new Date() }).where(eq(sales.id, id));
+      await cancelInvoicesOfSale(tx, id);
       const items = await tx.select().from(saleItems).where(eq(saleItems.saleId, id));
       for (const item of items) {
         if (!item.productId) continue;

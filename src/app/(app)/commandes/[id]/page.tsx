@@ -1,7 +1,8 @@
-import { Check, MapPin, MessageCircle, Phone, StickyNote, TrendingUp } from "lucide-react";
+import { Check, FileText, MapPin, MessageCircle, Phone, StickyNote, TrendingUp } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CreateInvoiceDialog } from "@/components/documents/document-actions";
 import { OrderPaymentDialog, OrderStatusButtons } from "@/components/orders/order-actions";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
 import { PageHeader } from "@/components/shared/page-header";
@@ -14,6 +15,7 @@ import { CHANNELS, PAYMENT_METHODS, type Channel, type PaymentMethod } from "@/l
 import { cn } from "@/lib/utils";
 import { orderMessage, waLink } from "@/lib/whatsapp";
 import { requireContext } from "@/server/context";
+import { invoiceOfSale } from "@/server/queries/documents";
 import { getSale } from "@/server/queries/sales";
 
 export const metadata: Metadata = { title: "Commande" };
@@ -25,6 +27,7 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
   const ctx = await requireContext("orders.manage");
   const order = await getSale(ctx, id);
   if (!order || order.kind !== "order" || !isOrderStatus(order.status)) notFound();
+  const invoice = await invoiceOfSale(ctx.business.id, order.id);
 
   const status = order.status as OrderStatus;
   const closed = status === "cancelled" || status === "returned";
@@ -201,6 +204,17 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
               {writable && !closed && rest > 0 && <OrderPaymentDialog id={order.id} rest={rest} />}
             </CardContent>
           </Card>
+          {invoice ? (
+            <Button asChild variant="outline" className="w-full">
+              <Link href={`/factures/${invoice.id}`}>
+                <FileText /> Voir la facture {invoice.number}
+              </Link>
+            </Button>
+          ) : (
+            writable &&
+            !closed &&
+            ctx.can("sales.create") && <CreateInvoiceDialog saleId={order.id} customer={order.customer} />
+          )}
           {closed && (
             <StatusPill tone="gray" className="w-full justify-center py-2 text-sm">
               Commande {ORDER_STATUS_LABELS[status].toLowerCase()} le {order.cancelledAt ? formatDateTime(order.cancelledAt) : "—"}

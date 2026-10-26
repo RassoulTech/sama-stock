@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/page-header";
-import { BusinessForm, LocationsManager, ModulesForm } from "@/components/settings/settings-forms";
+import { BusinessForm, DocumentSettingsForm, LocationsManager, ModulesForm } from "@/components/settings/settings-forms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireContext } from "@/server/context";
 import { and, eq } from "drizzle-orm";
@@ -29,16 +29,27 @@ export default async function ParametresPage() {
 
   return (
     <>
-      <PageHeader title="Paramètres" description="Les informations de votre commerce, reprises sur les reçus." />
+      <PageHeader title="Paramètres" description="Les informations de votre commerce, reprises sur les reçus, devis et factures." />
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-semibold">Mon commerce</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BusinessForm business={ctx.business} disabled={disabled} />
-          </CardContent>
-        </Card>
+        <div className="space-y-5">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-semibold">Mon commerce</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BusinessForm business={ctx.business} disabled={disabled} />
+            </CardContent>
+          </Card>
+          <Card id="documents">
+            <CardHeader>
+              <CardTitle className="font-semibold">Vos devis et factures</CardTitle>
+              <p className="text-sm text-muted-foreground">Ces informations sont imprimées sur chaque devis et chaque facture.</p>
+            </CardHeader>
+            <CardContent>
+              <DocumentSettingsForm business={ctx.business} disabled={disabled} />
+            </CardContent>
+          </Card>
+        </div>
         <div className="space-y-5">
           <Card>
             <CardHeader>

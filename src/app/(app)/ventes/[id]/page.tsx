@@ -1,7 +1,9 @@
-import { CheckCircle2, CloudOff, MessageCircle, Plus, TrendingUp, TriangleAlert, XCircle } from "lucide-react";
+import { CheckCircle2, CloudOff, FileText, Plus, TrendingUp, TriangleAlert, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CreateInvoiceDialog } from "@/components/documents/document-actions";
+import { DownloadPdfButton, ShareDocumentButton } from "@/components/documents/share-document";
 import { PrintButton } from "@/components/sales/print-button";
 import { Receipt } from "@/components/sales/receipt";
 import { ConfirmAction } from "@/components/shared/confirm-action";
@@ -10,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { formatDateTime, formatFCFA } from "@/lib/format";
 import { isSyncFlag, SYNC_FLAGS } from "@/lib/domain/offline";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
-import { receiptMessage, waLink } from "@/lib/whatsapp";
+import { receiptMessage } from "@/lib/whatsapp";
 import { cancelSale } from "@/server/actions/sales";
 import { requireContext } from "@/server/context";
+import { invoiceOfSale } from "@/server/queries/documents";
 import { getSale } from "@/server/queries/sales";
+import { pdfPath, verifyUrl } from "@/server/services/documents";
 
 export const metadata: Metadata = { title: "Reçu" };
 
@@ -29,6 +33,7 @@ export default async function VentePage({
   const ctx = await requireContext("sales.create");
   const sale = await getSale(ctx, id);
   if (!sale || sale.kind !== "sale") notFound();
+  const invoice = await invoiceOfSale(ctx.business.id, sale.id);
 
   const message = receiptMessage({
     businessName: ctx.business.name,
@@ -79,14 +84,28 @@ export default async function VentePage({
             </div>
           )}
           {sale.status === "completed" && (
-            <Button asChild size="lg" className="w-full bg-[#25D366] text-white hover:bg-[#1fb857]">
-              <a href={waLink(sale.customer?.phone, message)} target="_blank" rel="noopener noreferrer">
-                <MessageCircle /> Envoyer sur WhatsApp
-              </a>
+            <ShareDocumentButton
+              pdfUrl={pdfPath("recu", sale.id)}
+              verifyUrl={verifyUrl("recu", sale.id)}
+              fileName={`Recu-${sale.number}.pdf`}
+              phone={sale.customer?.phone}
+              message={message}
+              label="Envoyer le reçu (PDF)"
+            />
+          )}
+          {invoice ? (
+            <Button asChild variant="outline" className="w-full">
+              <Link href={`/factures/${invoice.id}`}>
+                <FileText /> Voir la facture {invoice.number}
+              </Link>
             </Button>
+          ) : (
+            sale.status === "completed" &&
+            !ctx.plan.readOnly && <CreateInvoiceDialog saleId={sale.id} customer={sale.customer} />
           )}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-            <PrintButton />
+            <DownloadPdfButton pdfUrl={pdfPath("recu", sale.id)} label="Reçu PDF" />
+            <PrintButton label="Imprimer" />
             {ctx.can("sales.create") && ctx.business.modulePos && !ctx.plan.readOnly && (
               <Button asChild variant={isNew ? "saffron" : "outline"}>
                 <Link href="/vendre">

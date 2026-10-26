@@ -31,7 +31,7 @@ export async function priceAndReserve(
   tx: Tx,
   ctx: BusinessContext,
   lines: LineInput[],
-  opts: { excludeSaleId?: string } = {},
+  opts: { excludeSaleId?: string; /** Prix imposés (devis transformé en vente) au lieu du prix du produit. */ prices?: Map<string, number> } = {},
 ): Promise<PricedLine[]> {
   // Regroupe les doublons
   const merged = new Map<string, number>();
@@ -66,14 +66,15 @@ export async function priceAndReserve(
           : `« ${p.name} » est en rupture de stock.`,
       );
     }
+    const unitPrice = opts.prices?.get(p.id) ?? p.salePrice;
     return {
       productId: p.id,
       name: p.name,
       unit: p.unit,
       quantity,
-      unitPrice: p.salePrice,
+      unitPrice,
       unitCost: p.costPrice,
-      lineTotal: Math.round(quantity * p.salePrice),
+      lineTotal: Math.round(quantity * unitPrice),
     };
   });
 }

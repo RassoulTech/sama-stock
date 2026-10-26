@@ -1,4 +1,4 @@
-import { formatDateTime, formatFCFA, formatQty } from "./format";
+import { formatDate, formatDateTime, formatFCFA, formatQty } from "./format";
 import { LEGAL } from "./legal";
 
 export function waLink(phone: string | null | undefined, text: string): string {
@@ -37,6 +37,27 @@ export function receiptMessage(input: {
   const rest = input.total - input.amountPaid;
   if (rest > 0) lines.push(`Reste à payer : ${formatFCFA(rest)}`);
   lines.push("", "Merci pour votre confiance !");
+  return lines.join("\n");
+}
+
+/** Message qui accompagne le PDF d'un devis ou d'une facture. */
+export function documentMessage(input: {
+  businessName: string;
+  kind: "devis" | "facture";
+  number: string;
+  date: Date;
+  total: number;
+  rest?: number;
+  validUntil?: Date | null;
+}): string {
+  const lines = [
+    `*${input.businessName}*`,
+    `${input.kind === "devis" ? "Devis" : "Facture"} ${input.number} du ${formatDate(input.date)}`,
+    `Montant : *${formatFCFA(input.total)}*`,
+  ];
+  if (input.kind === "facture" && input.rest !== undefined) lines.push(input.rest > 0 ? `Reste à payer : ${formatFCFA(input.rest)}` : "Facture réglée. Merci !");
+  if (input.kind === "devis" && input.validUntil) lines.push(`Valable jusqu'au ${formatDate(input.validUntil)}`);
+  lines.push("", `Voici votre ${input.kind === "devis" ? "devis" : "facture"} en PDF. Merci pour votre confiance !`);
   return lines.join("\n");
 }
 

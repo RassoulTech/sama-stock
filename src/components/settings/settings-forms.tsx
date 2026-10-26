@@ -4,7 +4,7 @@ import { Building2, ImagePlus, Loader2, MapPin, Pencil, Plus, Trash2, Warehouse 
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { FormError, FormField } from "@/components/shared/form-field";
+import { FormError, FormField, SuffixInput } from "@/components/shared/form-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,9 +19,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { formatPhone } from "@/lib/format";
 import { compressImage } from "@/lib/image";
-import { createLocation, renameLocation, updateBusiness, updateModules } from "@/server/actions/business";
+import { createLocation, renameLocation, updateBusiness, updateDocumentSettings, updateModules } from "@/server/actions/business";
 
 export function BusinessForm({
   business,
@@ -182,6 +183,90 @@ export function ModulesForm({ modulePos, moduleOrders, disabled }: { modulePos: 
         La gestion du stock (produits, entrées, sorties, inventaire) est toujours active.
       </li>
     </ul>
+  );
+}
+
+/** NINEA, RCCM, TVA et mention de bas de page, imprimés sur les devis et factures. */
+export function DocumentSettingsForm({
+  business,
+  disabled,
+}: {
+  business: { ninea: string | null; rccm: string | null; vatRate: number; documentFooter: string | null; quoteValidityDays: number };
+  disabled: boolean;
+}) {
+  const router = useRouter();
+  const [vatRate, setVatRate] = useState(String(business.vatRate === 18 ? 18 : 0));
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <form
+      className="space-y-5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const form = new FormData(e.currentTarget);
+        setError(null);
+        startTransition(async () => {
+          const res = await updateDocumentSettings({
+            ninea: String(form.get("ninea") ?? ""),
+            rccm: String(form.get("rccm") ?? ""),
+            vatRate: vatRate === "18" ? 18 : 0,
+            documentFooter: String(form.get("documentFooter") ?? ""),
+            quoteValidityDays: Number(form.get("quoteValidityDays") ?? 15),
+          });
+          if (!res.ok) return setError(res.error);
+          toast.success("Informations des documents enregistrées");
+          router.refresh();
+        });
+      }}
+    >
+      <div className="grid gap-5 sm:grid-cols-2">
+        <FormField label="NINEA" htmlFor="d-ninea" hint="Facultatif, mais demandé sur une facture officielle.">
+          <Input id="d-ninea" name="ninea" defaultValue={business.ninea ?? ""} disabled={disabled} autoCapitalize="characters" />
+        </FormField>
+        <FormField label="RCCM" htmlFor="d-rccm" hint="Ex. SN DKR 2024 A 12345">
+          <Input id="d-rccm" name="rccm" defaultValue={business.rccm ?? ""} disabled={disabled} autoCapitalize="characters" />
+        </FormField>
+      </div>
+      <FormField label="TVA" htmlFor="d-vat">
+        <Select value={vatRate} onValueChange={setVatRate} disabled={disabled}>
+          <SelectTrigger id="d-vat" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">Non assujetti à la TVA (le plus courant)</SelectItem>
+            <SelectItem value="18">Assujetti : mes prix sont TTC, TVA 18 %</SelectItem>
+          </SelectContent>
+        </Select>
+      </FormField>
+      <FormField label="Validité des devis" htmlFor="d-validity">
+        <SuffixInput
+          id="d-validity"
+          name="quoteValidityDays"
+          suffix="jours"
+          min={1}
+          max={365}
+          defaultValue={business.quoteValidityDays}
+          disabled={disabled}
+        />
+      </FormField>
+      <FormField label="Mention en bas des documents" htmlFor="d-footer" hint="Conditions de paiement, numéro Wave, remerciements…">
+        <Textarea
+          id="d-footer"
+          name="documentFooter"
+          rows={3}
+          maxLength={300}
+          defaultValue={business.documentFooter ?? ""}
+          disabled={disabled}
+          placeholder="Paiement à la livraison par Wave ou Orange Money. Merci pour votre confiance !"
+        />
+      </FormField>
+      <FormError message={error} />
+      <Button type="submit" disabled={disabled || pending}>
+        {pending && <Loader2 className="animate-spin" />}
+        Enregistrer
+      </Button>
+    </form>
   );
 }
 

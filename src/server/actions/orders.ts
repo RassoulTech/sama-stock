@@ -10,6 +10,7 @@ import { canTransition, isOrderStatus, ORDER_STATUS_LABELS, ORDER_STATUSES, orde
 import { ORDER_CHANNELS, PAYING_METHODS } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
+import { cancelInvoicesOfSale } from "../services/documents";
 import { nextNumber } from "../services/numbering";
 import { assertCustomer, priceAndReserve } from "../services/sale-lines";
 import { applyStockMovement, lockStock } from "../services/stock";
@@ -132,6 +133,7 @@ export async function updateOrderStatus(id: string, to: string) {
           ...(to === "cancelled" || to === "returned" ? { cancelledAt: now } : {}),
         })
         .where(eq(sales.id, id));
+      if (to === "cancelled" || to === "returned") await cancelInvoicesOfSale(tx, id);
     });
 
     revalidatePath("/", "layout");

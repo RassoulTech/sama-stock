@@ -136,8 +136,8 @@ const FEATURES = [
   {
     kicker: "Caisse",
     title: "Encaissez en trois touches, envoyez le reçu sur WhatsApp",
-    text: "Espèces, Wave, Orange Money ou à crédit. Le stock baisse tout seul, le reçu part chez le client en un clic.",
-    points: ["Monnaie rendue calculée", "Paiement partiel et crédit", "Reçu imprimable"],
+    text: "Espèces, Wave, Orange Money ou à crédit. Le stock baisse tout seul, le reçu PDF part chez le client en un clic.",
+    points: ["Monnaie rendue calculée", "Paiement partiel et crédit", "Reçu, devis et facture en PDF"],
     visual: <PosVisual />,
   },
   {
@@ -174,7 +174,7 @@ const COMPARISON: [string, string | boolean, string | boolean, string | boolean]
   ["Installé et expliqué chez vous", false, false, true],
   ["Savoir ce qu'il reste, à tout moment", false, "Si c'est à jour", true],
   ["Alerte avant la rupture", false, false, true],
-  ["Reçu envoyé sur WhatsApp", false, false, true],
+  ["Reçus, devis et factures PDF sur WhatsApp", false, false, true],
   ["Commandes en ligne réservées", false, false, true],
   ["Suivi et rappel des crédits", "Au crayon", "Manuel", true],
   ["Vendeurs sans accès à vos marges", false, false, true],

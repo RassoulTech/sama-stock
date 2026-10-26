@@ -3,6 +3,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
   primaryKey,
@@ -49,6 +50,14 @@ export const businesses = pgTable("businesses", {
   brandColor: text("brand_color"),
   /** Adresse de la page de connexion de la boutique (licences) : …/b/quincaillerie-ndiaye */
   slug: text("slug").unique(),
+  /** Informations légales imprimées sur les devis et factures. */
+  ninea: text("ninea"),
+  rccm: text("rccm"),
+  /** 0 = non assujetti à la TVA, 18 = prix TTC avec TVA à 18 %. */
+  vatRate: integer("vat_rate").notNull().default(0),
+  /** Mention libre en bas des documents (conditions de paiement, remerciements…). */
+  documentFooter: text("document_footer"),
+  quoteValidityDays: integer("quote_validity_days").notNull().default(15),
   createdAt: createdAt(),
 });
 
@@ -383,6 +392,76 @@ export const customerPayments = pgTable(
     index("customer_payments_customer_idx").on(t.customerId),
     index("customer_payments_business_created_idx").on(t.businessId, t.createdAt),
   ],
+);
+
+/** Vendeur ou client tels qu'imprimés sur un document (recopiés : le document ne change plus ensuite). */
+export interface DocumentParty {
+  name: string;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  ninea?: string | null;
+  rccm?: string | null;
+}
+
+/** Devis (DEV-2026-0001) et factures (FAC-2026-0001) d'un commerce. */
+export const documents = pgTable(
+  "documents",
+  {
+    id: id(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    type: text("type").notNull(), // devis | facture
+    number: text("number").notNull(),
+    /** devis : en_cours | accepte | refuse | converti — facture : emise | annulee */
+    status: text("status").notNull(),
+    /** Facture : la vente facturée. Devis : la vente créée en le transformant. */
+    saleId: text("sale_id").references(() => sales.id, { onDelete: "set null" }),
+    customerId: text("customer_id").references(() => customers.id, { onDelete: "set null" }),
+    customer: jsonb("customer").$type<DocumentParty>().notNull(),
+    seller: jsonb("seller").$type<DocumentParty>().notNull(),
+    /** 0 ou 18, recopié du commerce à la création. */
+    vatRate: integer("vat_rate").notNull().default(0),
+    subtotal: integer("subtotal").notNull().default(0),
+    discount: integer("discount").notNull().default(0),
+    deliveryFee: integer("delivery_fee").notNull().default(0),
+    total: integer("total").notNull().default(0),
+    validUntil: timestamp("valid_until", { withTimezone: true }),
+    note: text("note"),
+    footer: text("footer"),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("documents_business_number_uq").on(t.businessId, t.number),
+    index("documents_business_type_created_idx").on(t.businessId, t.type, t.createdAt),
+    // Une seule facture valable par vente (une facture annulée peut être refaite)
+    uniqueIndex("documents_invoice_sale_uq").on(t.saleId).where(sql`${t.type} = 'facture' and ${t.status} = 'emise'`),
+  ],
+);
+
+export const documentItems = pgTable(
+  "document_items",
+  {
+    id: id(),
+    documentId: text("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    productId: text("product_id").references(() => products.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    unit: text("unit").notNull(),
+    quantity: qty("quantity").notNull(),
+    unitPrice: integer("unit_price").notNull(),
+    lineTotal: integer("line_total").notNull(),
+    position: integer("position").notNull().default(0),
+  },
+  (t) => [index("document_items_document_idx").on(t.documentId)],
 );
 
 export const subscriptionEvents = pgTable(

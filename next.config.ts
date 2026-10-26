@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  // Génération des fichiers Excel mis en forme (rapports, modèle d'import)
-  serverExternalPackages: ["exceljs"],
+  // Génération des fichiers Excel mis en forme (rapports, modèle d'import) et des PDF (devis, factures, reçus)
+  serverExternalPackages: ["exceljs", "@react-pdf/renderer"],
   // Version de l'application : le service worker remet en cache la caisse hors ligne quand elle change
   env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || `local-${Date.now()}` },
   async headers() {

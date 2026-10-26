@@ -128,6 +128,35 @@ export async function updateBusiness(input: z.input<typeof settingsSchema>) {
   });
 }
 
+const documentSettingsSchema = z.object({
+  ninea: z.string().trim().toUpperCase().max(30, "NINEA trop long.").optional().default(""),
+  rccm: z.string().trim().toUpperCase().max(40, "RCCM trop long.").optional().default(""),
+  vatRate: z.union([z.literal(0), z.literal(18)], { message: "Choisissez le régime de TVA." }),
+  documentFooter: z.string().trim().max(300, "Mention trop longue (300 caractères au plus).").optional().default(""),
+  quoteValidityDays: z.coerce.number().int().min(1, "Au moins 1 jour.").max(365, "Au plus 365 jours."),
+});
+
+/** Informations imprimées sur les devis et factures. */
+export async function updateDocumentSettings(input: z.input<typeof documentSettingsSchema>) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("settings.manage");
+    assertNotDemo(ctx, "La modification des réglages");
+    const data = parse(documentSettingsSchema, input);
+    await db
+      .update(businesses)
+      .set({
+        ninea: data.ninea || null,
+        rccm: data.rccm || null,
+        vatRate: data.vatRate,
+        documentFooter: data.documentFooter || null,
+        quoteValidityDays: data.quoteValidityDays,
+      })
+      .where(eq(businesses.id, ctx.business.id));
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
 export async function updateModules(input: { modulePos: boolean; moduleOrders: boolean }) {
   return runAction(async () => {
     const ctx = await requireActionContext("settings.manage");

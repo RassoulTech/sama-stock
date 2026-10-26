@@ -5,6 +5,7 @@ export type NavIcon =
   | "pos"
   | "sales"
   | "orders"
+  | "documents"
   | "products"
   | "categories"
   | "stock"
@@ -56,6 +57,7 @@ const RULES: NavRule[] = [
   { href: "/vendre", label: "Vendre", icon: "pos", group: "daily", permission: "sales.create", module: "pos" },
   { href: "/ventes", label: "Ventes", icon: "sales", group: "daily", permission: "sales.create", module: "pos" },
   { href: "/commandes", label: "Commandes", icon: "orders", group: "daily", permission: "orders.manage", module: "orders" },
+  { href: "/factures", label: "Devis et factures", short: "Factures", icon: "documents", group: "daily", permission: "sales.create" },
   { href: "/produits", label: "Produits", icon: "products", group: "catalog", permission: "products.view" },
   { href: "/categories", label: "Catégories", icon: "categories", group: "catalog", permission: "products.view" },
   { href: "/stock", label: "Stock", icon: "stock", group: "catalog", anyOf: ["stock.in", "stock.adjust"] },
