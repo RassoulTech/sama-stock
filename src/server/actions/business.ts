@@ -11,9 +11,9 @@ import { BRAND_COLORS, type BrandColor } from "@/lib/domain/brand";
 import { canAdd, TRIAL_DAYS } from "@/lib/domain/plans";
 import { ACTIVITIES, defaultModules, type Activity } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
-import { assertNotDemo, BUSINESS_COOKIE, getContext, LOCATION_COOKIE, requireActionContext } from "../context";
+import { assertNotDemo, BUSINESS_COOKIE, CONTEXT_COOKIE_OPTIONS, getContext, LOCATION_COOKIE, requireActionContext } from "../context";
 
-const cookieOptions = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
+const cookieOptions = CONTEXT_COOKIE_OPTIONS;
 
 const optionalPhone = z
   .string()

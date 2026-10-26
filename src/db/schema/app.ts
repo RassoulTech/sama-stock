@@ -47,6 +47,8 @@ export const businesses = pgTable("businesses", {
   maintenanceEndsAt: timestamp("maintenance_ends_at", { withTimezone: true }),
   /** Couleur de l'application personnalisée (licences), parmi les couleurs proposées. */
   brandColor: text("brand_color"),
+  /** Adresse de la page de connexion de la boutique (licences) : …/b/quincaillerie-ndiaye */
+  slug: text("slug").unique(),
   createdAt: createdAt(),
 });
 
@@ -156,7 +158,12 @@ export const stockLevels = pgTable(
       .references(() => locations.id, { onDelete: "cascade" }),
     quantity: qty("quantity").notNull().default(0),
   },
-  (t) => [primaryKey({ columns: [t.productId, t.locationId] }), index("stock_levels_location_idx").on(t.locationId)],
+  (t) => [
+    primaryKey({ columns: [t.productId, t.locationId] }),
+    index("stock_levels_location_idx").on(t.locationId),
+    // Valeur du stock d'un commerce (tableau de bord) sans relire tout le stock de la plateforme
+    index("stock_levels_business_idx").on(t.businessId),
+  ],
 );
 
 export const stockMovements = pgTable(
@@ -224,17 +231,21 @@ export const purchases = pgTable(
   (t) => [index("purchases_business_idx").on(t.businessId, t.createdAt)],
 );
 
-export const purchaseItems = pgTable("purchase_items", {
-  id: id(),
-  purchaseId: text("purchase_id")
-    .notNull()
-    .references(() => purchases.id, { onDelete: "cascade" }),
-  productId: text("product_id")
-    .notNull()
-    .references(() => products.id, { onDelete: "cascade" }),
-  quantity: qty("quantity").notNull(),
-  unitCost: integer("unit_cost"),
-});
+export const purchaseItems = pgTable(
+  "purchase_items",
+  {
+    id: id(),
+    purchaseId: text("purchase_id")
+      .notNull()
+      .references(() => purchases.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    quantity: qty("quantity").notNull(),
+    unitCost: integer("unit_cost"),
+  },
+  (t) => [index("purchase_items_purchase_idx").on(t.purchaseId), index("purchase_items_product_idx").on(t.productId)],
+);
 
 export const customers = pgTable(
   "customers",
@@ -299,6 +310,12 @@ export const sales = pgTable(
     index("sales_business_completed_idx").on(t.businessId, t.completedAt),
     index("sales_customer_idx").on(t.customerId),
     uniqueIndex("sales_business_client_ref_uq").on(t.businessId, t.clientRef).where(sql`${t.clientRef} is not null`),
+    // Commandes qui réservent du stock : relues à chaque ouverture de la caisse, sans parcourir tout l'historique
+    index("sales_reserving_orders_idx")
+      .on(t.businessId, t.locationId)
+      .where(sql`${t.kind} = 'order' and ${t.status} in ('new', 'preparing')`),
+    // Ventes rattachées à un client : crédits et historique client sans parcourir toutes les ventes
+    index("sales_business_customer_idx").on(t.businessId, t.customerId).where(sql`${t.customerId} is not null`),
   ],
 );
 
@@ -338,7 +355,10 @@ export const customerPayments = pgTable(
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     createdAt: createdAt(),
   },
-  (t) => [index("customer_payments_customer_idx").on(t.customerId)],
+  (t) => [
+    index("customer_payments_customer_idx").on(t.customerId),
+    index("customer_payments_business_created_idx").on(t.businessId, t.createdAt),
+  ],
 );
 
 export const subscriptionEvents = pgTable(

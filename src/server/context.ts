@@ -12,6 +12,8 @@ import { ActionError } from "./action";
 
 export const BUSINESS_COOKIE = "ss_biz";
 export const LOCATION_COOKIE = "ss_loc";
+/** Réglages des cookies qui retiennent le commerce et la boutique choisis (un an). */
+export const CONTEXT_COOKIE_OPTIONS = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
 
 export type Business = typeof businesses.$inferSelect;
 export type Location = typeof locations.$inferSelect;

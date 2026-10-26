@@ -312,7 +312,7 @@ export async function getBusinessForAdmin(id: string) {
       from generate_series(date_trunc('day', now()) - interval '29 days', date_trunc('day', now()), interval '1 day') d
       left join sales s on s.business_id = ${id} and ${DONE} and date_trunc('day', s.completed_at) = d
       group by d order by d`),
-    db.select({ logo: businesses.logo, color: businesses.brandColor }).from(businesses).where(eq(businesses.id, id)),
+    db.select({ logo: businesses.logo, color: businesses.brandColor, slug: businesses.slug }).from(businesses).where(eq(businesses.id, id)),
   ]);
   return {
     business,
@@ -322,7 +322,7 @@ export async function getBusinessForAdmin(id: string) {
     audit,
     locations: locations.rows.map((l) => l.name),
     daily: daily.rows,
-    brand: brand[0] ?? { logo: null, color: null },
+    brand: brand[0] ?? { logo: null, color: null, slug: null },
   };
 }
 

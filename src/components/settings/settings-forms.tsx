@@ -105,7 +105,7 @@ export function BusinessForm({
             const file = e.target.files?.[0];
             if (!file) return;
             try {
-              setLogo(await compressImage(file, 256, 0.85));
+              setLogo(await compressImage(file, 256, 0.85, "jpeg"));
               setLogoTouched(true);
             } catch {
               toast.error("Impossible de lire cette image.");

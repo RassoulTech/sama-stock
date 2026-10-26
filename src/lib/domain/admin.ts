@@ -16,6 +16,7 @@ export const ADMIN_ACTIONS = {
   reset_password: "Nouveau mot de passe",
   brand: "Personnalisation",
   import: "Produits importés",
+  address: "Adresse de connexion",
 } as const;
 
 /** Moyens de paiement d'une licence ou d'une maintenance. */

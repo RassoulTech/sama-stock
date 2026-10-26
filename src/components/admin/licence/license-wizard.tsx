@@ -20,6 +20,8 @@ type Created = {
   businessId: string;
   saleId: string;
   number: string;
+  /** Adresse de la page de connexion de la boutique (…/b/son-nom). */
+  slug: string | null;
   password: string | null;
   email: string;
   phone: string;
@@ -97,7 +99,7 @@ export function LicenseWizard() {
             )}
           </CardHeader>
           <CardContent>
-            <AccessShare ownerName={created.ownerName} businessName={created.businessName} email={created.email} password={created.password} phone={created.phone} />
+            <AccessShare ownerName={created.ownerName} businessName={created.businessName} email={created.email} password={created.password} phone={created.phone} slug={created.slug} />
           </CardContent>
         </Card>
         <Card>

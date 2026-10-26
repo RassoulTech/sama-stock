@@ -43,7 +43,7 @@ export function LogoPicker({ value, onChange }: { value: string | null; onChange
     if (!file) return;
     setBusy(true);
     try {
-      onChange(await compressImage(file, 320, 0.85));
+      onChange(await compressImage(file, 320, 0.85, "jpeg"));
     } catch {
       toast.error("Image illisible. Essayez une photo JPG ou PNG.");
     } finally {

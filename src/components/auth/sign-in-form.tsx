@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient, authErrorMessage } from "@/lib/auth-client";
+import { salesLink } from "@/lib/whatsapp";
 import { GoogleButton, OrSeparator } from "./google-button";
 import { PasswordInput } from "./password-input";
 
@@ -15,17 +16,24 @@ export function SignInForm({
   redirectTo,
   googleEnabled,
   defaultEmail = "",
+  brand = null,
+  notice = null,
 }: {
   redirectTo: string;
   googleEnabled: boolean;
   /** E-mail déjà rempli (lien d'accès envoyé au client par WhatsApp). */
   defaultEmail?: string;
+  /** Page de connexion d'une boutique sous licence : à son nom, sans Google ni inscription. */
+  brand?: { name: string; slug: string } | null;
+  /** Message affiché au-dessus du formulaire (par exemple : compte sans accès à cette boutique). */
+  notice?: string | null;
 }) {
   const router = useRouter();
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const withGoogle = googleEnabled && !brand;
 
   async function signIn(credentials: { email: string; password: string }) {
     setPending(true);
@@ -33,21 +41,42 @@ export function SignInForm({
     const { error } = await authClient.signIn.email(credentials);
     if (error) {
       setPending(false);
-      setError(authErrorMessage(error));
+      const message = authErrorMessage(error);
+      // Compte créé avec Google : il n'a pas de mot de passe, le bouton Google est le bon chemin
+      setError(
+        error.code === "INVALID_EMAIL_OR_PASSWORD" && withGoogle
+          ? `${message} Si vous avez créé votre compte avec Google, utilisez « Continuer avec Google » ci-dessus.`
+          : message,
+      );
       return;
     }
-    router.replace(redirectTo);
+    // Page d'une boutique : on ouvre directement cette boutique (même si le compte en a plusieurs)
+    router.replace(brand ? `/b/${brand.slug}/entrer` : redirectTo);
     router.refresh();
   }
+
+  const forgotHref = salesLink(
+    `Bonjour Sama Stock, j'ai oublié le mot de passe de mon compte${email ? ` (${email})` : ""}${brand ? ` pour l'application ${brand.name}` : ""}. Pouvez-vous m'aider ?`,
+  );
 
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
-        <h1 className="text-2xl font-semibold">Bon retour !</h1>
-        <p className="text-sm text-muted-foreground">Connectez-vous pour retrouver votre commerce.</p>
+        <h1 className="text-2xl font-semibold">{brand ? "Connexion" : "Bon retour !"}</h1>
+        <p className="text-sm text-muted-foreground">
+          {brand
+            ? `Entrez votre e-mail et votre mot de passe pour ouvrir l'application de ${brand.name}.`
+            : "Connectez-vous pour retrouver votre commerce."}
+        </p>
       </div>
 
-      {googleEnabled && (
+      {notice && (
+        <p role="status" className="rounded-xl bg-saffron/15 px-3 py-2 text-sm text-warning dark:text-saffron">
+          {notice}
+        </p>
+      )}
+
+      {withGoogle && (
         <>
           <GoogleButton callbackURL={redirectTo} newUserCallbackURL="/demarrage" />
           <OrSeparator />
@@ -58,7 +87,7 @@ export function SignInForm({
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          void signIn({ email, password });
+          void signIn({ email: email.trim(), password });
         }}
       >
         <div className="space-y-2">
@@ -67,20 +96,29 @@ export function SignInForm({
             id="email"
             type="email"
             autoComplete="email"
+            autoCapitalize="none"
+            inputMode="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="vous@exemple.sn"
+            className="h-11"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Mot de passe</Label>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="password">Mot de passe</Label>
+            <a href={forgotHref} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-primary hover:underline">
+              Mot de passe oublié ?
+            </a>
+          </div>
           <PasswordInput
             id="password"
             autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="h-11"
           />
         </div>
         {error && (
@@ -94,21 +132,23 @@ export function SignInForm({
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Pas encore de compte ?{" "}
-        <Link
-          href={`/inscription${redirectTo !== "/tableau-de-bord" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
-          className="font-semibold text-primary hover:underline"
-        >
-          Essai gratuit 14 jours
-        </Link>
-        <span className="mt-1 block">
-          Juste pour voir ?{" "}
-          <Link href="/demo" className="font-semibold text-primary hover:underline">
-            Essayer la démo
+      {!brand && (
+        <p className="text-center text-sm text-muted-foreground">
+          Pas encore de compte ?{" "}
+          <Link
+            href={`/inscription${redirectTo !== "/tableau-de-bord" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
+            className="font-semibold text-primary hover:underline"
+          >
+            Essai gratuit 14 jours
           </Link>
-        </span>
-      </p>
+          <span className="mt-1 block">
+            Juste pour voir ?{" "}
+            <Link href="/demo" className="font-semibold text-primary hover:underline">
+              Essayer la démo
+            </Link>
+          </span>
+        </p>
+      )}
     </div>
   );
 }

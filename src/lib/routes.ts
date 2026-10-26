@@ -24,7 +24,7 @@ export const PROTECTED_PREFIXES = [
 ] as const;
 
 /** Pages publiques mais sans intérêt pour les moteurs (actions, liens personnels). */
-export const NOT_INDEXED_PREFIXES = ["/api/", "/invitation/"] as const;
+export const NOT_INDEXED_PREFIXES = ["/api/", "/invitation/", "/b/"] as const;
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));

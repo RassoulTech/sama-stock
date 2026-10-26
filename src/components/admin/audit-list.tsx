@@ -7,6 +7,7 @@ import {
   CreditCard,
   FileSpreadsheet,
   KeyRound,
+  Link2,
   LogOut,
   NotebookPen,
   Palette,
@@ -36,6 +37,7 @@ const ICONS: Record<AdminAction, { icon: LucideIcon; tone: string }> = {
   reset_password: { icon: KeyRound, tone: "bg-saffron/15 text-warning dark:text-saffron" },
   brand: { icon: Palette, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
   import: { icon: FileSpreadsheet, tone: "bg-accent text-primary" },
+  address: { icon: Link2, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
 };
 
 export interface AuditEntry {

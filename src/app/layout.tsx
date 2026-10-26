@@ -30,6 +30,12 @@ export const metadata: Metadata = {
   description:
     "Stock, caisse, commandes en ligne et crédits clients au même endroit. Pensé pour les boutiques, e-commerçants et entrepreneurs du Sénégal.",
   applicationName: SITE_NAME,
+  // Déclarés ici (et non par fichiers) pour que la page de connexion d'une boutique puisse les remplacer
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
   openGraph: { type: "website", siteName: SITE_NAME, locale: "fr_SN" },
   twitter: { card: "summary_large_image" },

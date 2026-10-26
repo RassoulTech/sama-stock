@@ -262,7 +262,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
               <CardTitle className="font-semibold">Accès du propriétaire</CardTitle>
             </CardHeader>
             <CardContent>
-              <LicenseAccess businessId={b.id} businessName={b.name} phone={b.phone} />
+              <LicenseAccess businessId={b.id} businessName={b.name} phone={b.phone} slug={brand.slug} licensed={Boolean(s.license)} />
             </CardContent>
           </Card>
 

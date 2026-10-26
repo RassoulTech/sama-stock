@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound, Loader2 } from "lucide-react";
+import { Copy, ExternalLink, KeyRound, Link2, Loader2, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain
 import { isBrandColor, DEFAULT_BRAND, type BrandColor } from "@/lib/domain/brand";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { adminRecordLicensePayment, adminResetOwnerPassword, adminSellLicense, adminUpdateBrand } from "@/server/actions/licences";
+import { adminRecordLicensePayment, adminResetOwnerPassword, adminSellLicense, adminUpdateBrand, adminUpdateSlug } from "@/server/actions/licences";
 import { AccessShare } from "./access-share";
 import { ColorPicker, LogoPicker } from "./brand-picker";
 import { newSaleDraft, SaleFields, saleInput } from "./sale-fields";
@@ -99,14 +99,36 @@ export function LicensePaymentForm({ saleId, balance, maintenancePrice }: { sale
 }
 
 /** Recrée un mot de passe provisoire et affiche de quoi l'envoyer au client. */
-export function LicenseAccess({ businessId, businessName, phone }: { businessId: string; businessName: string; phone: string | null }) {
-  const [access, setAccess] = useState<{ email: string; name: string; password: string } | null>(null);
+export function LicenseAccess({
+  businessId,
+  businessName,
+  phone,
+  slug,
+  licensed,
+}: {
+  businessId: string;
+  businessName: string;
+  phone: string | null;
+  slug: string | null;
+  licensed: boolean;
+}) {
+  const [access, setAccess] = useState<{ email: string; name: string; password: string; slug: string | null } | null>(null);
 
   if (access) {
-    return <AccessShare ownerName={access.name} businessName={businessName} email={access.email} password={access.password} phone={phone} />;
+    return (
+      <AccessShare
+        ownerName={access.name}
+        businessName={businessName}
+        email={access.email}
+        password={access.password}
+        phone={phone}
+        slug={access.slug ?? slug}
+      />
+    );
   }
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
+      {licensed && <LoginAddress businessId={businessId} slug={slug} />}
       <p className="text-sm text-muted-foreground">Le client a perdu son mot de passe ? Créez-en un nouveau et envoyez-le-lui sur WhatsApp, avec le QR code de connexion.</p>
       <ConfirmAction
         trigger={
@@ -124,6 +146,93 @@ export function LicenseAccess({ businessId, businessName, phone }: { businessId:
           return res;
         }}
       />
+    </div>
+  );
+}
+
+/** Adresse de la page de connexion de la boutique (…/b/son-nom) : copier, ouvrir ou modifier. */
+function LoginAddress({ businessId, slug }: { businessId: string; slug: string | null }) {
+  const router = useRouter();
+  const [origin] = useState(() => (typeof window === "undefined" ? "" : window.location.origin));
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(slug ?? "");
+  const [pending, setPending] = useState(false);
+  const url = slug ? `${origin}/b/${slug}` : "";
+
+  async function save(wanted?: string) {
+    setPending(true);
+    const res = await adminUpdateSlug(businessId, { slug: wanted });
+    setPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    setValue(res.data.slug);
+    setEditing(false);
+    toast.success("Adresse enregistrée");
+    router.refresh();
+  }
+
+  if (!slug) {
+    return (
+      <div className="rounded-xl border border-dashed p-3 text-sm">
+        <p className="text-muted-foreground">Cette boutique n&apos;a pas encore sa page de connexion personnalisée.</p>
+        <Button className="mt-2" size="sm" disabled={pending} onClick={() => void save()}>
+          {pending ? <Loader2 className="animate-spin" /> : <Link2 />} Créer l&apos;adresse
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl border bg-muted/40 p-3">
+      <p className="text-xs text-muted-foreground">Adresse de connexion de la boutique (à son nom, sans Google)</p>
+      {editing ? (
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save(value);
+          }}
+        >
+          <span className="text-sm text-muted-foreground">…/b/</span>
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+            className="h-9 w-56 font-mono"
+            aria-label="Adresse de la boutique"
+            autoFocus
+          />
+          <Button type="submit" size="sm" disabled={pending || !value || value === slug}>
+            {pending && <Loader2 className="animate-spin" />} Enregistrer
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>
+            Annuler
+          </Button>
+        </form>
+      ) : (
+        <>
+          <p className="font-mono text-sm font-semibold break-all">{url}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => void navigator.clipboard.writeText(url).then(() => toast.success("Adresse copiée"), () => {})}
+            >
+              <Copy /> Copier
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <a href={`/b/${slug}`} target="_blank" rel="noopener noreferrer">
+                <ExternalLink /> Ouvrir
+              </a>
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(true)}>
+              <Pencil /> Modifier
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

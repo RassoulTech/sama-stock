@@ -10,6 +10,7 @@ import { FormField } from "@/components/shared/form-field";
 import { Button } from "@/components/ui/button";
 import { authClient, authErrorMessage } from "@/lib/auth-client";
 import { DEFAULT_BRAND, isBrandColor, type BrandColor } from "@/lib/domain/brand";
+import { createOwnPassword } from "@/server/actions/account";
 import { updateBrandColor } from "@/server/actions/business";
 
 /** Couleur de l'application (commerces sous licence). */
@@ -81,6 +82,51 @@ export function PasswordForm() {
       <Button type="submit" disabled={pending || !current || !next}>
         {pending && <Loader2 className="animate-spin" />}
         Changer le mot de passe
+      </Button>
+    </form>
+  );
+}
+
+/** Compte créé avec Google : ajouter un mot de passe pour pouvoir aussi se connecter par e-mail. */
+export function CreatePasswordForm({ email }: { email: string }) {
+  const router = useRouter();
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [pending, setPending] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (next.length < 8) return toast.error("Le mot de passe doit faire au moins 8 caractères.");
+    if (next !== confirm) return toast.error("Les deux mots de passe ne sont pas identiques.");
+    setPending(true);
+    const res = await createOwnPassword(next);
+    setPending(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    setNext("");
+    setConfirm("");
+    toast.success("Mot de passe créé. Vous pouvez maintenant vous connecter avec votre e-mail ou avec Google.");
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Vous vous connectez avec Google. Créez un mot de passe pour pouvoir aussi entrer avec <span className="font-medium text-foreground">{email}</span>.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FormField label="Mot de passe" htmlFor="pw-create" hint="8 caractères au moins.">
+          <PasswordInput id="pw-create" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} required />
+        </FormField>
+        <FormField label="Confirmez-le" htmlFor="pw-create-confirm">
+          <PasswordInput id="pw-create-confirm" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+        </FormField>
+      </div>
+      <Button type="submit" disabled={pending || !next}>
+        {pending && <Loader2 className="animate-spin" />}
+        Créer le mot de passe
       </Button>
     </form>
   );

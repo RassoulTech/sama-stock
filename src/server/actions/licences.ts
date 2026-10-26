@@ -8,12 +8,14 @@ import { db, type Tx } from "@/db";
 import { account, businesses, licensePayments, licenseSales, locations, members, user } from "@/db/schema";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
 import { BRAND_COLORS, type BrandColor } from "@/lib/domain/brand";
+import { isValidSlug } from "@/lib/domain/slug";
 import { addMonths, computePlanState, LICENSE_PACKS, MAINTENANCE_INCLUDED_MONTHS, type LicensePackId } from "@/lib/domain/plans";
 import { ACTIVITIES, defaultModules, type Activity } from "@/lib/domain/sales";
 import { formatDate, formatFCFA, normalizePhone } from "@/lib/format";
 import { ActionError, parse, runAction } from "../action";
 import { requireSuperAdminAction, type AppContext } from "../context";
 import { logAdmin } from "../services/admin-audit";
+import { ensureBusinessSlug } from "../services/business-slug";
 import { importInputSchema, importProductRows, type ImportBatchInput, type ImportBatchResult } from "../services/product-import";
 
 const PACKS = Object.keys(LICENSE_PACKS) as [LicensePackId, ...LicensePackId[]];
@@ -111,7 +113,9 @@ async function activateLicense(tx: Tx, ctx: AppContext, businessId: string, sale
     businessId,
     summary: `Licence ${pack.label} vendue ${formatFCFA(sale.price)} (${number})${sale.deposit > 0 ? `, acompte ${formatFCFA(sale.deposit)}` : ""}`,
   });
-  return { saleId: created!.id, number };
+  // Adresse de la page de connexion de la boutique (…/b/son-nom), créée une seule fois
+  const slug = await ensureBusinessSlug(tx, businessId);
+  return { saleId: created!.id, number, slug };
 }
 
 /** Crée le compte du propriétaire avec un mot de passe provisoire (ou réutilise son compte s'il existe). */
@@ -162,8 +166,8 @@ export async function adminCreateLicenseClient(input: { client: z.input<typeof c
         name: client.activity === "ecommerce" ? "Stock principal" : "Boutique principale",
         kind: client.activity === "ecommerce" ? "depot" : "boutique",
       });
-      const { saleId, number } = await activateLicense(tx, ctx, businessId, sale);
-      return { businessId, saleId, number, password: owner.password };
+      const { saleId, number, slug } = await activateLicense(tx, ctx, businessId, sale);
+      return { businessId, saleId, number, slug, password: owner.password };
     });
 
     revalidatePath("/admin", "layout");
@@ -265,7 +269,7 @@ export async function adminResetOwnerPassword(businessId: string) {
   return runAction(async () => {
     const ctx = await requireSuperAdminAction();
     const [row] = await db
-      .select({ ownerId: businesses.ownerId, email: user.email, name: user.name })
+      .select({ ownerId: businesses.ownerId, email: user.email, name: user.name, licensed: sql<boolean>`${businesses.licensePack} is not null` })
       .from(businesses)
       .innerJoin(user, eq(user.id, businesses.ownerId))
       .where(eq(businesses.id, businessId));
@@ -290,7 +294,8 @@ export async function adminResetOwnerPassword(businessId: string) {
       }
       await logAdmin(tx, ctx, { action: "reset_password", businessId, targetUserId: row.ownerId, summary: `Mot de passe provisoire créé pour ${row.email}` });
     });
-    return { email: row.email, name: row.name, password };
+    const slug = row.licensed ? await ensureBusinessSlug(db, businessId) : null;
+    return { email: row.email, name: row.name, password, slug };
   });
 }
 
@@ -324,6 +329,28 @@ export async function adminUpdateBrand(businessId: string, input: { brandColor: 
     revalidatePath("/admin", "layout");
     revalidatePath("/", "layout");
     return null;
+  });
+}
+
+/** Adresse de la page de connexion de la boutique : créée à partir du nom, ou choisie par l'administrateur. */
+export async function adminUpdateSlug(businessId: string, input: { slug?: string }) {
+  return runAction(async () => {
+    const ctx = await requireSuperAdminAction();
+    const wanted = (input.slug ?? "").trim().toLowerCase();
+    const slug = await db.transaction(async (tx) => {
+      if (!wanted) return ensureBusinessSlug(tx, businessId);
+      if (!isValidSlug(wanted)) {
+        throw new ActionError("Adresse invalide : 3 à 40 lettres minuscules, chiffres et tirets (ex. quincaillerie-ndiaye).");
+      }
+      const [other] = await tx.select({ id: businesses.id }).from(businesses).where(eq(businesses.slug, wanted));
+      if (other && other.id !== businessId) throw new ActionError("Cette adresse est déjà prise par une autre boutique.");
+      await tx.update(businesses).set({ slug: wanted }).where(eq(businesses.id, businessId));
+      await logAdmin(tx, ctx, { action: "address", businessId, summary: `Adresse de connexion : /b/${wanted}` });
+      return wanted;
+    });
+    if (!slug) throw new ActionError("Commerce introuvable.");
+    revalidatePath("/admin", "layout");
+    return { slug };
   });
 }
 

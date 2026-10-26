@@ -50,6 +50,13 @@
       "when": 1792620543588,
       "tag": "0006_hors_ligne",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793002921697,
+      "tag": "0007_boutiques_et_index",
+      "breakpoints": true
     }
   ]
 }

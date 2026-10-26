@@ -4,7 +4,7 @@ import { BusinessForm, LocationsManager, ModulesForm } from "@/components/settin
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireContext } from "@/server/context";
 import { and, eq } from "drizzle-orm";
-import { BrandColorForm, PasswordForm } from "@/components/settings/account-settings";
+import { BrandColorForm, CreatePasswordForm, PasswordForm } from "@/components/settings/account-settings";
 import { db } from "@/db";
 import { account } from "@/db/schema";
 
@@ -14,7 +14,7 @@ export default async function ParametresPage() {
   const ctx = await requireContext("settings.manage");
   const disabled = ctx.plan.readOnly;
   const max = ctx.plan.limits.maxLocations;
-  // Mot de passe modifiable seulement pour un compte e-mail (pas pour une connexion Google seule)
+  // Compte e-mail : changer le mot de passe ; compte créé avec Google : en créer un
   const [credential] = await db
     .select({ id: account.id })
     .from(account)
@@ -73,16 +73,12 @@ export default async function ParametresPage() {
               </CardContent>
             </Card>
           )}
-          {credential && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-semibold">Mon mot de passe</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PasswordForm />
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-semibold">Mon mot de passe</CardTitle>
+            </CardHeader>
+            <CardContent>{credential ? <PasswordForm /> : <CreatePasswordForm email={ctx.user.email} />}</CardContent>
+          </Card>
         </div>
       </div>
     </>

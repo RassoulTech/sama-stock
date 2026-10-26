@@ -34,18 +34,21 @@ export function AccessShare({
   email,
   password,
   phone,
+  slug = null,
 }: {
   ownerName: string;
   businessName: string;
   email: string;
   password: string | null;
   phone: string | null;
+  /** Adresse de la page de connexion de la boutique ; à défaut, la connexion de Sama Stock. */
+  slug?: string | null;
 }) {
   // Affiché seulement après une action dans le navigateur : l'adresse du site est connue tout de suite
   const [origin] = useState(() => (typeof window === "undefined" ? "" : window.location.origin));
   const [qr, setQr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const url = origin ? `${origin}/connexion?email=${encodeURIComponent(email)}` : "";
+  const url = origin ? `${origin}${slug ? `/b/${slug}` : "/connexion"}?email=${encodeURIComponent(email)}` : "";
 
   useEffect(() => {
     if (!url) return;
@@ -76,6 +79,7 @@ export function AccessShare({
     <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-3">
         {[
+          ...(slug && origin ? [{ label: "Adresse de son application", value: `${origin}/b/${slug}` }] : []),
           { label: "E-mail", value: email },
           ...(password ? [{ label: "Mot de passe provisoire", value: password }] : []),
         ].map((f) => (
