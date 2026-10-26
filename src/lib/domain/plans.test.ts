@@ -69,9 +69,9 @@ describe("licences", () => {
   const base = { plan: "trial", trialEndsAt: null, periodEndsAt: null, suspendedAt: null };
 
   it("respecte les prix des forfaits validés", () => {
-    expect(LICENSE_PACKS.boutique).toMatchObject({ price: 75_000, maintenancePrice: 25_000 });
-    expect(LICENSE_PACKS.pro).toMatchObject({ price: 135_000, maintenancePrice: 30_000 });
-    expect(LICENSE_PACKS.business).toMatchObject({ price: 250_000, maintenancePrice: 40_000 });
+    expect(LICENSE_PACKS.boutique).toMatchObject({ price: 50_000, maintenancePrice: 15_000 });
+    expect(LICENSE_PACKS.pro).toMatchObject({ price: 75_000, maintenancePrice: 20_000 });
+    expect(LICENSE_PACKS.business).toMatchObject({ price: 90_000, maintenancePrice: 25_000 });
   });
 
   it("une licence est active avec les limites de son forfait", () => {
