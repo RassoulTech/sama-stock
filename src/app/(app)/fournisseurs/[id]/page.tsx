@@ -1,7 +1,8 @@
-import { ArrowDownToLine, MessageCircle, Pencil, Phone, ShoppingBasket } from "lucide-react";
+import { ArrowDownToLine, MessageCircle, Pencil, Phone, ShoppingBasket, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConfirmAction } from "@/components/shared/confirm-action";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime, formatFCFA, formatPhone } from "@/lib/format";
 import { waLink } from "@/lib/whatsapp";
+import { deleteSupplier } from "@/server/actions/suppliers";
 import { requireContext } from "@/server/context";
 import { getSupplier } from "@/server/queries/stock";
 import { Pagination } from "@/components/shared/pagination";
@@ -51,14 +53,30 @@ export default async function FournisseurPage({ params, searchParams }: { params
               </>
             )}
             {ctx.can("suppliers.manage") && !ctx.plan.readOnly && (
-              <SupplierDialog
-                supplier={supplier}
-                trigger={
-                  <Button variant="outline">
-                    <Pencil /> Modifier
-                  </Button>
-                }
-              />
+              <>
+                <SupplierDialog
+                  supplier={supplier}
+                  trigger={
+                    <Button variant="outline">
+                      <Pencil /> Modifier
+                    </Button>
+                  }
+                />
+                <ConfirmAction
+                  trigger={
+                    <Button variant="destructive">
+                      <Trash2 /> Supprimer
+                    </Button>
+                  }
+                  title={`Supprimer le fournisseur ${supplier.name} ?`}
+                  description="Sa fiche est effacée. Ses entrées de stock restent dans l'historique et le stock ne change pas : elles n'affichent simplement plus de fournisseur."
+                  confirmLabel="Supprimer le fournisseur"
+                  destructive
+                  successMessage="Fournisseur supprimé"
+                  action={deleteSupplier.bind(null, supplier.id)}
+                  redirectTo="/fournisseurs"
+                />
+              </>
             )}
             {ctx.can("stock.in") && !ctx.plan.readOnly && (
               <Button asChild>

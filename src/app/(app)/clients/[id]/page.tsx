@@ -1,10 +1,11 @@
-import { HandCoins, MapPin, MessageCircle, Pencil, Phone, Receipt } from "lucide-react";
+import { HandCoins, MapPin, MessageCircle, Pencil, Phone, Receipt, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomerDialog } from "@/components/customers/customer-dialog";
 import { PaymentDialog } from "@/components/customers/payment-dialog";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
+import { ConfirmAction } from "@/components/shared/confirm-action";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
@@ -15,6 +16,7 @@ import { formatDateTime, formatFCFA, formatPhone } from "@/lib/format";
 import { PAGE_SIZE, readPage } from "@/lib/pagination";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
 import { debtReminderMessage, waLink } from "@/lib/whatsapp";
+import { deleteCustomer } from "@/server/actions/customers";
 import { requireContext } from "@/server/context";
 import { getCustomer } from "@/server/queries/customers";
 
@@ -60,6 +62,22 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
                     <Pencil /> Modifier
                   </Button>
                 }
+              />
+            )}
+            {writable && debt === 0 && (
+              <ConfirmAction
+                trigger={
+                  <Button variant="destructive">
+                    <Trash2 /> Supprimer
+                  </Button>
+                }
+                title={`Supprimer le client ${customer.name} ?`}
+                description="Sa fiche et ses remboursements sont effacés. Ses ventes passées restent dans vos ventes et vos rapports, sans nom de client, et ses factures gardent son nom."
+                confirmLabel="Supprimer le client"
+                destructive
+                successMessage="Client supprimé"
+                action={deleteCustomer.bind(null, customer.id)}
+                redirectTo="/clients"
               />
             )}
           </>

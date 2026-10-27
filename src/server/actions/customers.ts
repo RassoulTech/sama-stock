@@ -59,6 +59,40 @@ export async function updateCustomer(id: string, input: z.input<typeof customerS
   });
 }
 
+/**
+ * Supprime un client qui ne doit rien et n'a pas de commande en cours. Ses ventes passées restent dans les ventes et
+ * les rapports (sans nom de client), ses factures gardent son nom imprimé ; ses remboursements sont effacés avec lui.
+ */
+export async function deleteCustomer(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("customers.manage");
+    await db.transaction(async (tx) => {
+      const [customer] = await tx
+        .select({ id: customers.id })
+        .from(customers)
+        .where(and(eq(customers.id, id), eq(customers.businessId, ctx.business.id)))
+        .for("update");
+      if (!customer) throw new ActionError("Client introuvable.");
+
+      const [row] = await tx
+        .select({
+          debt: sql<number>`coalesce(sum(${sales.total} - ${sales.amountPaid}) filter (where ${COMPLETED_SALE}), 0)::int`,
+          openOrders: sql<number>`(count(*) filter (where ${sales.kind} = 'order' and ${sales.status} in ('new', 'preparing', 'shipping')))::int`,
+        })
+        .from(sales)
+        .where(and(eq(sales.businessId, ctx.business.id), eq(sales.customerId, id)));
+      const debt = Number(row?.debt ?? 0);
+      if (debt > 0) throw new ActionError(`Ce client vous doit encore ${formatFCFA(debt)}. Enregistrez son paiement avant de le supprimer.`);
+      if (Number(row?.openOrders ?? 0) > 0) {
+        throw new ActionError("Ce client a une commande en cours. Livrez-la ou annulez-la avant de le supprimer.");
+      }
+      await tx.delete(customers).where(eq(customers.id, id));
+    });
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
 const paymentSchema = z.object({
   customerId: z.string().min(1),
   amount: z.coerce.number().int("Montant en FCFA entiers.").positive("Le montant doit être supérieur à 0."),

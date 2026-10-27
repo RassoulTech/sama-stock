@@ -49,3 +49,17 @@ export async function updateSupplier(id: string, input: z.input<typeof supplierS
     return updated[0]!;
   });
 }
+
+/** Supprime le fournisseur : ses entrées de stock restent dans l'historique, sans nom de fournisseur. */
+export async function deleteSupplier(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("suppliers.manage");
+    const deleted = await db
+      .delete(suppliers)
+      .where(and(eq(suppliers.id, id), eq(suppliers.businessId, ctx.business.id)))
+      .returning({ id: suppliers.id });
+    if (deleted.length === 0) throw new ActionError("Fournisseur introuvable.");
+    revalidatePath("/", "layout");
+    return null;
+  });
+}

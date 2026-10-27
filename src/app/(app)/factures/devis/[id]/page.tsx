@@ -1,15 +1,17 @@
-import { ExternalLink, Pencil } from "lucide-react";
+import { ExternalLink, Pencil, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ConvertQuoteDialog, QuoteStatusButtons } from "@/components/documents/document-actions";
 import { DocumentView } from "@/components/documents/document-view";
 import { DownloadPdfButton, ShareDocumentButton } from "@/components/documents/share-document";
+import { ConfirmAction } from "@/components/shared/confirm-action";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { quoteDisplayStatus, QUOTE_STATUS_LABELS, QUOTE_STATUS_TONES } from "@/lib/domain/documents";
 import { documentMessage } from "@/lib/whatsapp";
+import { deleteQuote } from "@/server/actions/documents";
 import { requireContext } from "@/server/context";
 import { getDocument } from "@/server/queries/documents";
 import { pdfPath, verifyUrl } from "@/server/services/documents";
@@ -78,6 +80,20 @@ export default async function DevisPage({ params }: { params: Promise<{ id: stri
                     <Pencil /> Modifier le devis
                   </Link>
                 </Button>
+                <ConfirmAction
+                  trigger={
+                    <Button variant="destructive" className="w-full">
+                      <Trash2 /> Supprimer le devis
+                    </Button>
+                  }
+                  title={`Supprimer le devis ${doc.number} ?`}
+                  description="Le devis et son PDF sont effacés pour de bon. Si vous l'avez déjà envoyé, le lien reçu par le client ne marchera plus."
+                  confirmLabel="Supprimer le devis"
+                  destructive
+                  successMessage="Devis supprimé"
+                  action={deleteQuote.bind(null, doc.id)}
+                  redirectTo="/factures?onglet=devis"
+                />
               </>
             )
           )}

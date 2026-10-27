@@ -2,7 +2,7 @@ import { ArrowDownToLine, ArrowUpFromLine, History, Pencil } from "lucide-react"
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArchiveProductButton } from "@/components/products/archive-product-button";
+import { ArchiveProductButton, DeleteProductButton } from "@/components/products/archive-product-button";
 import { ProductThumb } from "@/components/products/product-thumb";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusPill, StockBadge } from "@/components/shared/stock-badge";
@@ -57,6 +57,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
               {ctx.can("products.manage") && (
                 <>
                   <ArchiveProductButton id={product.id} archived={product.archived} />
+                  {!product.hasHistory && <DeleteProductButton id={product.id} name={product.name} />}
                   <Button asChild>
                     <Link href={`/produits/${product.id}/modifier`}>
                       <Pencil /> Modifier

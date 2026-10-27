@@ -264,6 +264,28 @@ export async function setQuoteStatus(id: string, status: string) {
   });
 }
 
+/** Supprime un devis tant qu'il n'est pas transformé en vente (un devis transformé reste lié à sa vente). */
+export async function deleteQuote(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("sales.create");
+    const deleted = await db
+      .delete(documents)
+      .where(
+        and(
+          eq(documents.id, id),
+          eq(documents.businessId, ctx.business.id),
+          eq(documents.type, "devis"),
+          inArray(documents.status, ["en_cours", "accepte", "refuse"]),
+          ...ownQuotes(ctx),
+        ),
+      )
+      .returning({ id: documents.id });
+    if (deleted.length === 0) throw new ActionError("Ce devis est introuvable ou déjà transformé en vente : il ne peut plus être supprimé.");
+    revalidatePath("/factures", "layout");
+    return null;
+  });
+}
+
 const convertSchema = z.object({
   paymentMethod: z.enum(SALE_METHODS, { message: "Choisissez le mode de paiement." }),
   amountReceived: z.coerce.number().int().min(0).default(0),

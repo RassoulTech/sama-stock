@@ -9,7 +9,7 @@ import { isUnitId, unitAllowsDecimals } from "@/lib/format";
 import { canAdd } from "@/lib/domain/plans";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext, type BusinessContext } from "../context";
-import { countActiveProducts } from "../queries/products";
+import { countActiveProducts, productHasHistory } from "../queries/products";
 import { applyStockMovement } from "../services/stock";
 
 const money = (label: string) =>
@@ -167,6 +167,28 @@ export async function setProductArchived(id: string, archived: boolean) {
       )
       .returning({ id: products.id });
     if (updated.length === 0) throw new ActionError("Produit introuvable.");
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
+/** Efface un produit qui n'a jamais servi (créé par erreur, en double…). Un produit déjà utilisé s'archive. */
+export async function deleteProduct(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("products.manage");
+    await db.transaction(async (tx) => {
+      const [product] = await tx
+        .select({ id: products.id })
+        .from(products)
+        .where(and(eq(products.id, id), eq(products.businessId, ctx.business.id)))
+        .for("update");
+      if (!product) throw new ActionError("Produit introuvable.");
+      if (await productHasHistory(tx, id)) {
+        throw new ActionError("Ce produit a déjà été vendu, acheté ou mis dans un devis : archivez-le plutôt, son historique reste juste.");
+      }
+      // Son stock de départ part avec lui
+      await tx.delete(products).where(eq(products.id, id));
+    });
     revalidatePath("/", "layout");
     return null;
   });

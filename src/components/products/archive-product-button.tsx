@@ -1,9 +1,9 @@
 "use client";
 
-import { Archive, ArchiveRestore } from "lucide-react";
+import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { Button } from "@/components/ui/button";
-import { setProductArchived } from "@/server/actions/products";
+import { deleteProduct, setProductArchived } from "@/server/actions/products";
 
 export function ArchiveProductButton({ id, archived }: { id: string; archived: boolean }) {
   return archived ? (
@@ -32,6 +32,26 @@ export function ArchiveProductButton({ id, archived }: { id: string; archived: b
       destructive
       successMessage="Produit archivé"
       action={() => setProductArchived(id, true)}
+      redirectTo="/produits"
+    />
+  );
+}
+
+/** Seulement pour un produit qui n'a jamais servi : il est effacé pour de bon. */
+export function DeleteProductButton({ id, name }: { id: string; name: string }) {
+  return (
+    <ConfirmAction
+      trigger={
+        <Button variant="destructive">
+          <Trash2 /> Supprimer
+        </Button>
+      }
+      title={`Supprimer « ${name} » ?`}
+      description="Il n'a encore été ni vendu ni acheté : il est effacé pour de bon, avec son stock de départ."
+      confirmLabel="Supprimer le produit"
+      destructive
+      successMessage="Produit supprimé"
+      action={() => deleteProduct(id)}
       redirectTo="/produits"
     />
   );

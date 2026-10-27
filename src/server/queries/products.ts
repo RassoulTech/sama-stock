@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
-import { db } from "@/db";
-import { categories, locations, products, stockLevels, stockMovements, user } from "@/db/schema";
+import { db, type DbOrTx } from "@/db";
+import { categories, documentItems, locations, products, purchaseItems, saleItems, stockLevels, stockMovements, user } from "@/db/schema";
 import { roundQty, stockStatus, type StockStatus } from "@/lib/domain/stock";
 import type { BusinessContext } from "../context";
 import { reservedQuantities } from "../services/stock";
@@ -175,7 +175,22 @@ export async function getProduct(ctx: BusinessContext, id: string) {
     perLocation,
     current,
     movements,
+    hasHistory: await productHasHistory(db, p.id),
   };
+}
+
+/**
+ * Le produit a déjà servi : vendu, acheté, mis dans un devis ou bougé en stock (autre que son stock de départ).
+ * On ne peut alors plus l'effacer sans fausser les rapports : on l'archive.
+ */
+export async function productHasHistory(tx: DbOrTx, productId: string) {
+  const res = await tx.execute<{ used: boolean }>(sql`select (
+    exists (select 1 from ${saleItems} where ${saleItems.productId} = ${productId})
+    or exists (select 1 from ${purchaseItems} where ${purchaseItems.productId} = ${productId})
+    or exists (select 1 from ${documentItems} where ${documentItems.productId} = ${productId})
+    or exists (select 1 from ${stockMovements} where ${stockMovements.productId} = ${productId} and ${stockMovements.type} <> 'initial')
+  ) as used`);
+  return Boolean(res.rows[0]?.used);
 }
 
 export type ProductDetail = NonNullable<Awaited<ReturnType<typeof getProduct>>>;
