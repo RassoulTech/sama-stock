@@ -18,6 +18,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { WeekRevenueBars } from "@/components/charts/revenue-charts";
 import { MobileHome, type MobileAction } from "@/components/dashboard/mobile-home";
+import { Greeting } from "@/components/shared/greeting";
 import { ProductThumb } from "@/components/products/product-thumb";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
 import { PageHeader } from "@/components/shared/page-header";
@@ -97,10 +98,8 @@ export default async function DashboardPage() {
   return (
     <>
       <MobileHome
-        greeting={now.getUTCHours() < 18 ? "Bonjour" : "Bonsoir"}
         firstName={firstName}
-        subtitle={`${ctx.business.name}${ctx.locations.length > 1 ? ` · ${ctx.location.name}` : ""}`}
-        logo={ctx.plan.license && ctx.business.logo ? ctx.business.logo : null}
+        dateLabel={todayLabel.format(now).replace(/^./, (c) => c.toUpperCase())}
         alerts={alerts.length}
         searchable={ctx.can("products.view")}
         actions={mobileActions}
@@ -111,7 +110,11 @@ export default async function DashboardPage() {
 
       <PageHeader
         className="max-lg:hidden"
-        title={`Bonjour ${firstName} !`}
+        title={
+          <>
+            <Greeting />, {firstName} !
+          </>
+        }
         description={
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays className="size-4" />
@@ -194,7 +197,7 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
         {today && (
           <StatCard
             className="max-lg:hidden"
@@ -248,7 +251,7 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {series && (
           <Card className="max-lg:hidden lg:col-span-2">
             <CardHeader>
@@ -261,7 +264,7 @@ export default async function DashboardPage() {
           </Card>
         )}
 
-        <Card className={cn(!series && "lg:col-span-2")}>
+        <Card className={cn(!series && "xl:col-span-2")}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-semibold">
               <AlertTriangle className="size-4 text-warning dark:text-saffron" /> Alertes de stock

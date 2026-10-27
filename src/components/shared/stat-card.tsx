@@ -28,17 +28,17 @@ export function StatCard({
 }) {
   const body = (
     <>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[0.8125rem] font-medium text-muted-foreground">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-[0.8125rem] leading-snug font-medium text-muted-foreground">{label}</p>
         <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", TONES[tone])}>
           <Icon className="size-4" />
         </span>
       </div>
-      <p className="num mt-3 text-[1.375rem] leading-none font-semibold tracking-[-0.03em] sm:text-[1.625rem]">
+      <p className="num mt-3 flex min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 text-[1.25rem] leading-none font-semibold tracking-[-0.03em] min-[400px]:text-[1.375rem] sm:text-[1.5rem] xl:text-[1.625rem]">
         {typeof value === "string" && value.endsWith(" FCFA") ? (
           <>
-            {value.slice(0, -5)}
-            <span className="ml-1 text-xs font-medium tracking-normal text-muted-foreground sm:text-[0.8125rem]">FCFA</span>
+            <span className="whitespace-nowrap">{value.slice(0, -5)}</span>
+            <span className="text-xs font-medium tracking-normal text-muted-foreground sm:text-[0.8125rem]">FCFA</span>
           </>
         ) : (
           value

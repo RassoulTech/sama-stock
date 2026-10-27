@@ -75,9 +75,9 @@ export function BusinessForm({
             <ImagePlus className="size-6" />
           )}
         </button>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <p className="text-sm font-medium">Logo (affiché sur les reçus)</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" variant="outline" disabled={disabled} onClick={() => fileRef.current?.click()}>
               {logo ? "Changer" : "Ajouter"}
             </Button>

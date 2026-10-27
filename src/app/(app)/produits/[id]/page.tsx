@@ -69,8 +69,8 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
         }
       />
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+      <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-3">
+        <Card>
           <CardContent className="space-y-5">
             <ProductThumb
               name={product.name}
@@ -112,7 +112,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        <div className="space-y-5 lg:col-span-2">
+        <div className="space-y-5 xl:col-span-2">
           {current && (
             <Card>
               <CardContent>

@@ -66,7 +66,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         }
       />
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-3">
         <div className="space-y-5">
           <Card className={debt > 0 ? "ring-destructive/25" : undefined}>
             <CardContent className="space-y-4">
@@ -110,7 +110,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
           </Card>
         </div>
 
-        <Card className="lg:col-span-2">
+        <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="font-semibold">Historique</CardTitle>
           </CardHeader>

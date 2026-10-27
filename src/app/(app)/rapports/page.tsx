@@ -99,7 +99,7 @@ export default async function RapportsPage({ searchParams }: { searchParams: Pro
         resultLabel={period.label}
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard label="Chiffre d'affaires" value={formatFCFA(summary.revenue)} icon={Wallet} hint={`${summary.count} ventes`} />
         <StatCard label="Bénéfice brut" value={formatFCFA(summary.profit)} icon={TrendingUp} tone={summary.profit < 0 ? "danger" : "primary"} />
         <StatCard label="Marge moyenne" value={`${margin} %`} icon={Percent} tone="neutral" />

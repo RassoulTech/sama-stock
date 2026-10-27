@@ -91,8 +91,8 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
         </ol>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-3">
+        <div className="space-y-5 xl:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="font-semibold">Produits</CardTitle>

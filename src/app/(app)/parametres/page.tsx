@@ -31,7 +31,7 @@ export default async function ParametresPage() {
     <>
       <PageHeader title="Paramètres" description="Les informations de votre commerce, reprises sur les reçus, devis et factures." />
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <Card>
             <CardHeader>
               <CardTitle className="font-semibold">Mon commerce</CardTitle>
@@ -50,7 +50,7 @@ export default async function ParametresPage() {
             </CardContent>
           </Card>
         </div>
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <Card>
             <CardHeader>
               <CardTitle className="font-semibold">Modules</CardTitle>

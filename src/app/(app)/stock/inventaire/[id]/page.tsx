@@ -26,7 +26,7 @@ export default async function InventaireDetailPage({ params }: { params: Promise
         actions={<PrintButton label="Imprimer" />}
       />
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Stat label="Produits comptés" value={String(inv.counted)} />
         <Stat label="Écarts" value={String(inv.gaps)} />
         {showCost && <Stat label="Valeur manquante" value={formatFCFA(inv.missingValue)} tone={inv.missingValue > 0 ? "danger" : undefined} />}
