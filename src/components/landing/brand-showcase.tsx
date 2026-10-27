@@ -1,12 +1,12 @@
 import { BarChart3, Home, Package, ShoppingCart, Users } from "lucide-react";
-import { BRAND_COLORS, type BrandColor } from "@/lib/domain/brand";
+import { BRAND_PALETTES, brandTheme, type BrandPreset } from "@/lib/domain/brand";
 import { cn } from "@/lib/utils";
 
 /** Commerces fictifs, pour montrer une même application à trois marques différentes. */
 const EXAMPLES: {
   name: string;
   initials: string;
-  color: BrandColor;
+  color: BrandPreset;
   sales: string;
   products: [string, string][];
 }[] = [
@@ -47,7 +47,7 @@ export function BrandShowcase() {
   return (
     <div className="grid gap-6 sm:grid-cols-3">
       {EXAMPLES.map((e, i) => {
-        const c = BRAND_COLORS[e.color];
+        const c = brandTheme(e.color);
         return (
           <figure key={e.name} className="reveal mx-auto w-full max-w-[16rem]">
             {/* Le téléphone du milieu est un peu plus haut (décalage séparé de l'animation d'apparition) */}
@@ -103,7 +103,7 @@ export function BrandShowcase() {
                   ))}
                 </div>
               </div>
-              <figcaption className="mt-3 text-center text-xs text-muted-foreground">{c.label}</figcaption>
+              <figcaption className="mt-3 text-center text-xs text-muted-foreground">{BRAND_PALETTES[e.color].label}</figcaption>
             </div>
           </figure>
         );

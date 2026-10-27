@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
-import { isBrandColor, DEFAULT_BRAND, type BrandColor } from "@/lib/domain/brand";
+import { DEFAULT_BRAND, normalizeBrand } from "@/lib/domain/brand";
 import { formatFCFA } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { adminRecordLicensePayment, adminResetOwnerPassword, adminSellLicense, adminUpdateBrand, adminUpdateSlug } from "@/server/actions/licences";
 import { AccessShare } from "./access-share";
-import { ColorPicker, LogoPicker } from "./brand-picker";
+import { LogoPicker, PalettePicker } from "./brand-picker";
 import { newSaleDraft, SaleFields, saleInput } from "./sale-fields";
 
 /** Argent reçu : solde de la licence, ou maintenance annuelle (prolonge d'un an). */
@@ -238,13 +238,14 @@ function LoginAddress({ businessId, slug }: { businessId: string; slug: string |
   );
 }
 
-/** Couleur et logo de l'application du client. */
-export function BrandForm({ businessId, color, logo }: { businessId: string; color: string | null; logo: string | null }) {
+/** Couleurs et logo de l'application du client. */
+export function BrandForm({ businessId, businessName, color, logo }: { businessId: string; businessName: string; color: string | null; logo: string | null }) {
   const router = useRouter();
-  const [value, setValue] = useState<BrandColor>(isBrandColor(color) ? color : DEFAULT_BRAND);
+  const initial = normalizeBrand(color) ?? DEFAULT_BRAND;
+  const [value, setValue] = useState(initial);
   const [image, setImage] = useState(logo);
   const [pending, setPending] = useState(false);
-  const changed = value !== (isBrandColor(color) ? color : DEFAULT_BRAND) || image !== logo;
+  const changed = value !== initial || image !== logo;
 
   async function save() {
     setPending(true);
@@ -260,7 +261,7 @@ export function BrandForm({ businessId, color, logo }: { businessId: string; col
   return (
     <div className="space-y-4">
       <LogoPicker value={image} onChange={setImage} />
-      <ColorPicker value={value} onChange={setValue} />
+      <PalettePicker value={value} onChange={setValue} logo={image} name={businessName} />
       <Button disabled={!changed || pending} onClick={() => void save()}>
         {pending && <Loader2 className="animate-spin" />}
         Enregistrer

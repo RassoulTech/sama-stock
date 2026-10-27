@@ -11,6 +11,7 @@ import {
   LogOut,
   NotebookPen,
   Palette,
+  Store,
   TimerOff,
   Wrench,
   type LucideIcon,
@@ -38,6 +39,7 @@ const ICONS: Record<AdminAction, { icon: LucideIcon; tone: string }> = {
   brand: { icon: Palette, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
   import: { icon: FileSpreadsheet, tone: "bg-accent text-primary" },
   address: { icon: Link2, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
+  info: { icon: Store, tone: "bg-muted text-muted-foreground" },
 };
 
 export interface AuditEntry {

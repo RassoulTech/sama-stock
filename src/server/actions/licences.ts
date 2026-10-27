@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db, type Tx } from "@/db";
 import { account, businesses, licensePayments, licenseSales, locations, members, user } from "@/db/schema";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
-import { BRAND_COLORS, type BrandColor } from "@/lib/domain/brand";
+import { brandLabel, DEFAULT_BRAND, normalizeBrand } from "@/lib/domain/brand";
 import { isValidSlug } from "@/lib/domain/slug";
 import { addMonths, computePlanState, LICENSE_PACKS, MAINTENANCE_INCLUDED_MONTHS, type LicensePackId } from "@/lib/domain/plans";
 import { ACTIVITIES, defaultModules, type Activity } from "@/lib/domain/sales";
@@ -23,7 +23,8 @@ import { importInputSchema, importProductRows, type ImportBatchInput, type Impor
 
 const PACKS = Object.keys(LICENSE_PACKS) as [LicensePackId, ...LicensePackId[]];
 const METHODS = Object.keys(LICENSE_PAYMENT_METHODS) as [LicensePaymentMethod, ...LicensePaymentMethod[]];
-const COLORS = Object.keys(BRAND_COLORS) as [BrandColor, ...BrandColor[]];
+/** Palette proposée ou couleurs libres de l'application du client. */
+const brandValue = z.string().transform((v, ctx) => normalizeBrand(v) ?? (ctx.addIssue({ code: "custom", message: "Couleurs inconnues." }), z.NEVER));
 const money = (max: number) => z.coerce.number({ message: "Montant invalide." }).int("Montant sans virgule.").min(0, "Montant invalide.").max(max);
 
 const saleSchema = z.object({
@@ -55,7 +56,7 @@ const clientSchema = z.object({
   phone,
   ownerName: z.string().trim().min(2, "Donnez le nom du propriétaire.").max(80),
   ownerEmail: z.string().trim().toLowerCase().email("Adresse e-mail invalide : elle sert à se connecter."),
-  brandColor: z.enum(COLORS).default("vert"),
+  brandColor: brandValue.default(DEFAULT_BRAND),
 });
 
 /** Numéro de document suivant : SS-2026-0001 (verrou pour éviter deux numéros identiques). */
@@ -289,7 +290,7 @@ export async function adminUpdateBrand(businessId: string, input: { brandColor: 
     const ctx = await requireSuperAdminAction();
     const data = parse(
       z.object({
-        brandColor: z.enum(COLORS, { message: "Couleur inconnue." }),
+        brandColor: brandValue,
         logo: z
           .string()
           .max(400_000, "Logo trop lourd.")
@@ -307,7 +308,7 @@ export async function adminUpdateBrand(businessId: string, input: { brandColor: 
       await logAdmin(tx, ctx, {
         action: "brand",
         businessId,
-        summary: `Couleur « ${BRAND_COLORS[data.brandColor].label} »${data.logo !== undefined ? (data.logo ? ", logo ajouté" : ", logo retiré") : ""}`,
+        summary: `Couleurs « ${brandLabel(data.brandColor)} »${data.logo !== undefined ? (data.logo ? ", logo ajouté" : ", logo retiré") : ""}`,
       });
     });
     revalidatePath("/admin", "layout");

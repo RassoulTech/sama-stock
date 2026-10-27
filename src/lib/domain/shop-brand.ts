@@ -1,8 +1,8 @@
-import { BRAND_COLORS, DEFAULT_BRAND, isBrandColor } from "./brand";
+import { brandTheme } from "./brand";
 
-/** Couleurs d'une boutique (sa couleur choisie, sinon le vert Sama Stock). */
+/** Couleurs d'une boutique (sa palette, sinon le vert Sama Stock), déjà rendues lisibles. */
 export function shopColors(color: string | null | undefined) {
-  return BRAND_COLORS[isBrandColor(color) ? color : DEFAULT_BRAND];
+  return brandTheme(color);
 }
 
 /** Logo utilisable pour fabriquer une icône (PNG ou JPEG ; le générateur d'images ne lit pas le WebP). */

@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DEFAULT_BRAND, type BrandColor } from "@/lib/domain/brand";
+import { DEFAULT_BRAND } from "@/lib/domain/brand";
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
 import { ShareDocumentButton } from "@/components/documents/share-document";
 import { adminCreateLicenseClient } from "@/server/actions/licences";
 import type { LicenceShare } from "@/server/services/licence-documents";
 import { AccessShare } from "./access-share";
-import { ColorPicker } from "./brand-picker";
+import { PalettePicker } from "./brand-picker";
 import { newSaleDraft, SaleFields, saleInput, type SaleDraft } from "./sale-fields";
 
 type Created = {
@@ -52,7 +52,7 @@ export function LicenseWizard() {
   const [business, setBusiness] = useState({ name: "", activity: "boutique" as Activity, city: "", phone: "" });
   const [owner, setOwner] = useState({ name: "", email: "" });
   const [sale, setSale] = useState<SaleDraft>(newSaleDraft());
-  const [color, setColor] = useState<BrandColor>(DEFAULT_BRAND);
+  const [color, setColor] = useState<string>(DEFAULT_BRAND);
   const [pending, setPending] = useState(false);
   const [created, setCreated] = useState<Created | null>(null);
 
@@ -192,9 +192,11 @@ export function LicenseWizard() {
         <SaleFields value={sale} onChange={setSale} />
       </Step>
 
-      <Step n={4} title="La couleur de son application">
-        <p className="mb-3 text-sm text-muted-foreground">Son application prend cette couleur. Le logo s&apos;ajoute juste après, depuis sa fiche.</p>
-        <ColorPicker value={color} onChange={setColor} />
+      <Step n={4} title="Les couleurs de son application">
+        <p className="mb-3 text-sm text-muted-foreground">
+          Son application prend ces couleurs. Le logo s&apos;ajoute juste après, depuis sa fiche : vous pourrez alors prendre les couleurs du logo.
+        </p>
+        <PalettePicker value={color} onChange={setColor} name={business.name.trim() || undefined} />
       </Step>
 
       {/* Sur téléphone, le bouton reste à la fin du formulaire pour ne pas cacher les champs */}

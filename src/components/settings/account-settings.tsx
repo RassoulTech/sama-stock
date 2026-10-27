@@ -4,20 +4,30 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ColorPicker } from "@/components/admin/licence/brand-picker";
+import { PalettePicker } from "@/components/admin/licence/brand-picker";
 import { PasswordInput } from "@/components/auth/password-input";
 import { FormField } from "@/components/shared/form-field";
 import { Button } from "@/components/ui/button";
 import { authClient, authErrorMessage } from "@/lib/auth-client";
-import { DEFAULT_BRAND, isBrandColor, type BrandColor } from "@/lib/domain/brand";
+import { DEFAULT_BRAND, normalizeBrand } from "@/lib/domain/brand";
 import { createOwnPassword } from "@/server/actions/account";
 import { updateBrandColor } from "@/server/actions/business";
 
-/** Couleur de l'application (commerces sous licence). */
-export function BrandColorForm({ color, disabled }: { color: string | null; disabled?: boolean }) {
+/** Couleurs de l'application (commerces sous licence). */
+export function BrandColorForm({
+  color,
+  logo,
+  name,
+  disabled,
+}: {
+  color: string | null;
+  logo: string | null;
+  name: string;
+  disabled?: boolean;
+}) {
   const router = useRouter();
-  const initial = isBrandColor(color) ? color : DEFAULT_BRAND;
-  const [value, setValue] = useState<BrandColor>(initial);
+  const initial = normalizeBrand(color) ?? DEFAULT_BRAND;
+  const [value, setValue] = useState(initial);
   const [pending, setPending] = useState(false);
 
   async function save() {
@@ -26,17 +36,17 @@ export function BrandColorForm({ color, disabled }: { color: string | null; disa
     setPending(false);
     if (!res.ok) toast.error(res.error);
     else {
-      toast.success("Couleur enregistrée");
+      toast.success("Couleurs enregistrées");
       router.refresh();
     }
   }
 
   return (
     <div className="space-y-4">
-      <ColorPicker value={value} onChange={setValue} />
+      <PalettePicker value={value} onChange={setValue} logo={logo} name={name} />
       <Button disabled={disabled || pending || value === initial} onClick={() => void save()}>
         {pending && <Loader2 className="animate-spin" />}
-        Appliquer la couleur
+        Appliquer les couleurs
       </Button>
     </div>
   );

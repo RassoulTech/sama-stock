@@ -6,7 +6,8 @@ import { z } from "zod";
 import { db } from "@/db";
 import { businesses, businessNotes, session, user } from "@/db/schema";
 import { computePlanState } from "@/lib/domain/plans";
-import { formatDate } from "@/lib/format";
+import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
+import { formatDate, normalizePhone } from "@/lib/format";
 import { ActionError, parse, runAction } from "../action";
 import { getSession, requireSuperAdminAction } from "../context";
 import { logAdmin } from "../services/admin-audit";
@@ -115,6 +116,53 @@ export async function adminSetSuspended(businessId: string, suspended: boolean) 
       });
     });
     revalidatePath("/admin", "layout");
+    return null;
+  });
+}
+
+const infoSchema = z.object({
+  name: z.string().trim().min(2, "Donnez le nom du commerce.").max(80),
+  activity: z.enum(Object.keys(ACTIVITIES) as [Activity, ...Activity[]], { message: "Choisissez l'activité." }),
+  phone: z
+    .string()
+    .trim()
+    .transform((v, ctx) => {
+      if (!v) return null;
+      const p = normalizePhone(v);
+      if (!p) {
+        ctx.addIssue({ code: "custom", message: "Numéro de téléphone invalide (ex. 77 123 45 67)." });
+        return z.NEVER;
+      }
+      return p;
+    }),
+  city: z.string().trim().max(60).optional().default(""),
+  address: z.string().trim().max(160).optional().default(""),
+});
+
+const INFO_LABELS = { name: "nom", activity: "activité", phone: "téléphone", city: "ville", address: "adresse" } as const;
+
+/** Infos du commerce corrigées par l'administrateur. Son adresse de connexion (…/b/son-nom) ne change pas. */
+export async function adminUpdateBusiness(businessId: string, input: z.input<typeof infoSchema>) {
+  return runAction(async () => {
+    const ctx = await requireSuperAdminAction();
+    const before = await load(businessId);
+    if (before.isDemo) throw new ActionError("Les boutiques de démonstration ne se modifient pas.");
+    const data = parse(infoSchema, input);
+    const next = { name: data.name, activity: data.activity, phone: data.phone, city: data.city || null, address: data.address || null };
+    const changed = (Object.keys(next) as (keyof typeof next)[]).filter((k) => (before[k] ?? null) !== next[k]);
+    if (changed.length === 0) return null;
+    await db.transaction(async (tx) => {
+      await tx.update(businesses).set(next).where(eq(businesses.id, businessId));
+      await logAdmin(tx, ctx, {
+        action: "info",
+        businessId,
+        summary: `Infos modifiées : ${changed
+          .map((k) => (k === "name" ? `nom (« ${before.name} » → « ${next.name} »)` : INFO_LABELS[k]))
+          .join(", ")}`,
+      });
+    });
+    revalidatePath("/admin", "layout");
+    revalidatePath("/", "layout");
     return null;
   });
 }

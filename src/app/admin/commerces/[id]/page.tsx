@@ -6,6 +6,7 @@ import { AuditList } from "@/components/admin/audit-list";
 import { LicenseCard } from "@/components/admin/licence/license-card";
 import { BrandForm, LicenseAccess, SellLicenseForm } from "@/components/admin/licence/license-forms";
 import { BarChart } from "@/components/admin/bar-chart";
+import { BusinessInfoCard } from "@/components/admin/business-info";
 import { BusinessNotes } from "@/components/admin/business-notes";
 import { ContactButtons, HealthPill, relativeDay } from "@/components/admin/contact-buttons";
 import { PageHeader } from "@/components/shared/page-header";
@@ -32,7 +33,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const data = await getBusinessForAdmin(id);
   if (!data) notFound();
-  const { business: b, members, notes, audit, locations, daily, brand } = data;
+  const { business: b, members, notes, audit, locations, daily, brand, address } = data;
   const s = b.state;
   const activeSale = s.license ? await activeSaleFor(id) : null;
   const licence = activeSale ? await getLicenseSale(activeSale.id) : null;
@@ -184,37 +185,28 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-semibold">Informations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-2.5 text-sm">
-                {[
-                  ["Propriétaire", b.ownerName ?? "—"],
-                  ["E-mail", b.ownerEmail ?? "—"],
-                  ["Téléphone", b.phone ? formatPhone(b.phone) : "—"],
-                  ["Ville", b.city ?? "—"],
-                  ["Boutiques", locations.join(", ") || "—"],
-                  ["Inscrit le", formatDate(b.createdAt)],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-3">
-                    <dt className="shrink-0 text-muted-foreground">{k}</dt>
-                    <dd className="min-w-0 text-right font-medium break-words">{v}</dd>
-                  </div>
-                ))}
-              </dl>
-            </CardContent>
-          </Card>
+          <BusinessInfoCard
+            businessId={b.id}
+            info={{ name: b.name, activity: b.activity, phone: b.phone, city: b.city, address }}
+            rows={[
+              ["Propriétaire", b.ownerName ?? "—"],
+              ["E-mail", b.ownerEmail ?? "—"],
+              ["Téléphone", b.phone ? formatPhone(b.phone) : "—"],
+              ["Ville", b.city ?? "—"],
+              ["Adresse", address ?? "—"],
+              ["Boutiques", locations.join(", ") || "—"],
+              ["Inscrit le", formatDate(b.createdAt)],
+            ]}
+          />
 
           {s.license && (
             <Card id="personnalisation">
               <CardHeader>
                 <CardTitle className="font-semibold">Son application</CardTitle>
-                <p className="text-sm text-muted-foreground">Logo et couleur : dans son menu, sur ses reçus.</p>
+                <p className="text-sm text-muted-foreground">Logo et couleurs : dans son menu, sur ses reçus.</p>
               </CardHeader>
               <CardContent>
-                <BrandForm businessId={b.id} color={brand.color} logo={brand.logo} />
+                <BrandForm businessId={b.id} businessName={b.name} color={brand.color} logo={brand.logo} />
               </CardContent>
             </Card>
           )}

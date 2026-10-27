@@ -76,11 +76,11 @@ export default async function ParametresPage() {
           {ctx.plan.license && (
             <Card>
               <CardHeader>
-                <CardTitle className="font-semibold">Couleur de votre application</CardTitle>
-                <p className="text-sm text-muted-foreground">Elle s&apos;applique au menu, aux boutons et aux graphiques. Votre logo se change dans « Mon commerce ».</p>
+                <CardTitle className="font-semibold">Couleurs de votre application</CardTitle>
+                <p className="text-sm text-muted-foreground">Elles s&apos;appliquent au menu, aux boutons et à la carte de l&apos;accueil. Votre logo se change dans « Mon commerce ».</p>
               </CardHeader>
               <CardContent>
-                <BrandColorForm color={ctx.business.brandColor} disabled={disabled} />
+                <BrandColorForm color={ctx.business.brandColor} logo={ctx.business.logo} name={ctx.business.name} disabled={disabled} />
               </CardContent>
             </Card>
           )}

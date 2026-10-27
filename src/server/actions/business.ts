@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { businesses, locations, members } from "@/db/schema";
 import { normalizePhone } from "@/lib/format";
-import { BRAND_COLORS, type BrandColor } from "@/lib/domain/brand";
+import { normalizeBrand } from "@/lib/domain/brand";
 import { canAdd, TRIAL_DAYS } from "@/lib/domain/plans";
 import { ACTIVITIES, defaultModules, type Activity } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
@@ -205,13 +205,14 @@ export async function renameLocation(input: { id: string } & z.input<typeof loca
   });
 }
 
-/** Couleur de l'application : réservée aux commerces qui ont acheté leur licence. */
+/** Couleurs de l'application (palette proposée ou couleurs libres) : réservées aux commerces qui ont acheté leur licence. */
 export async function updateBrandColor(color: string) {
   return runAction(async () => {
     const ctx = await requireActionContext("settings.manage");
     assertNotDemo(ctx, "La personnalisation");
     if (!ctx.plan.license) throw new ActionError("La personnalisation des couleurs est incluse dans les licences Sama Stock.");
-    const value = parse(z.enum(Object.keys(BRAND_COLORS) as [BrandColor, ...BrandColor[]], { message: "Couleur inconnue." }), color);
+    const value = normalizeBrand(color);
+    if (!value) throw new ActionError("Couleurs inconnues.");
     await db.update(businesses).set({ brandColor: value }).where(eq(businesses.id, ctx.business.id));
     revalidatePath("/", "layout");
     return null;

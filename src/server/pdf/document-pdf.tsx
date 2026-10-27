@@ -2,7 +2,7 @@
 import "server-only";
 import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import QRCode from "qrcode";
-import { BRAND_COLORS, isBrandColor } from "@/lib/domain/brand";
+import { shopColors } from "@/lib/domain/shop-brand";
 import { amountSentence, vatBreakdown } from "@/lib/domain/documents";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
 import { formatDate, formatDateTime, formatFCFA, formatNumber, formatPhone, formatQty } from "@/lib/format";
@@ -60,7 +60,7 @@ function TotalRow({ label, value, strong, color }: { label: string; value: strin
 }
 
 export function DocumentPdf({ doc, verifyUrl, qr }: { doc: PublicDocument; verifyUrl: string; qr: string }) {
-  const brand = isBrandColor(doc.brandColor) ? BRAND_COLORS[doc.brandColor].primary : BRAND_COLORS.vert.primary;
+  const brand = shopColors(doc.brandColor).primary;
   const receipt = doc.kind === "recu";
   const vat = doc.vatRate > 0 ? vatBreakdown(doc.lines, doc.discount, doc.deliveryFee, doc.vatRate) : null;
   const cancelled = doc.status === "annulee" || doc.status === "cancelled" || Boolean(doc.payment?.cancelled);
