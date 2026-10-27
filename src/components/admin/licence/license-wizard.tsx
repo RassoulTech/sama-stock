@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DEFAULT_BRAND, type BrandColor } from "@/lib/domain/brand";
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
+import { ShareDocumentButton } from "@/components/documents/share-document";
 import { adminCreateLicenseClient } from "@/server/actions/licences";
+import type { LicenceShare } from "@/server/services/licence-documents";
 import { AccessShare } from "./access-share";
 import { ColorPicker } from "./brand-picker";
 import { newSaleDraft, SaleFields, saleInput, type SaleDraft } from "./sale-fields";
@@ -27,6 +29,8 @@ type Created = {
   phone: string;
   ownerName: string;
   businessName: string;
+  /** Facture PDF à envoyer au client (lien signé, message WhatsApp). */
+  invoice: LicenceShare | null;
 };
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
@@ -91,6 +95,17 @@ export function LicenseWizard() {
             </div>
           </CardContent>
         </Card>
+        {created.invoice && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-semibold">Facture du client</CardTitle>
+              <p className="text-sm text-muted-foreground">La facture en PDF, avec le QR code de vérification, part directement sur son WhatsApp.</p>
+            </CardHeader>
+            <CardContent>
+              <ShareDocumentButton {...created.invoice} label="Envoyer la facture (PDF)" />
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader>
             <CardTitle className="font-semibold">Accès du client</CardTitle>
@@ -110,7 +125,7 @@ export function LicenseWizard() {
             {[
               { href: `${base}/importer`, icon: FileSpreadsheet, title: "Importer ses produits", text: "Depuis son fichier Excel ou son cahier recopié" },
               { href: `${base}#personnalisation`, icon: ImagePlus, title: "Ajouter son logo", text: "Il apparaît dans son application et sur ses reçus" },
-              { href: `/documents/licence/${created.saleId}?type=facture`, icon: FileText, title: "Facture et reçu", text: "À imprimer ou à envoyer en PDF" },
+              { href: `/documents/licence/${created.saleId}?type=facture`, icon: FileText, title: "Voir la facture", text: "À imprimer, à télécharger ou à envoyer" },
               { href: base, icon: Store, title: "Voir sa fiche", text: "Paiements, maintenance, notes" },
             ].map((a) => (
               <Link key={a.title} href={a.href} className="flex gap-3 rounded-xl border p-3 transition-colors hover:border-primary/40 hover:bg-accent/40">

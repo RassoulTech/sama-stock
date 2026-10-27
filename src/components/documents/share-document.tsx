@@ -19,6 +19,7 @@ export function ShareDocumentButton({
   phone,
   message,
   label = "Envoyer le PDF",
+  size = "lg",
   className,
 }: {
   pdfUrl: string;
@@ -27,6 +28,7 @@ export function ShareDocumentButton({
   phone: string | null | undefined;
   message: string;
   label?: string;
+  size?: "sm" | "default" | "lg";
   className?: string;
 }) {
   const fileRef = useRef<File | null>(null);
@@ -63,7 +65,7 @@ export function ShareDocumentButton({
 
   return (
     <>
-      <Button type="button" size="lg" onClick={send} disabled={pending} className={className ?? "w-full bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]"}>
+      <Button type="button" size={size} onClick={send} disabled={pending} className={className ?? "w-full bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]"}>
         {pending ? <Loader2 className="animate-spin" /> : <MessageCircle />} {label}
       </Button>
       <DesktopShareDialog

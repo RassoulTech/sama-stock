@@ -10,6 +10,8 @@ import { formatDate, formatFCFA } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { adminCancelLicenseSale } from "@/server/actions/licences";
 import { balanceOf, type getLicenseSale } from "@/server/queries/licences";
+import { ShareDocumentButton } from "@/components/documents/share-document";
+import { licenceShare } from "@/server/services/licence-documents";
 import { LicensePaymentForm } from "./license-forms";
 
 type Detail = NonNullable<Awaited<ReturnType<typeof getLicenseSale>>>;
@@ -77,6 +79,8 @@ export function LicenseCard({ detail }: { detail: Detail }) {
             <p className="text-[11px] text-muted-foreground">puis {formatFCFA(sale.maintenance_price)} / an</p>
           </div>
         </div>
+
+        {sale.status === "active" && <ShareDocumentButton {...licenceShare(sale, "facture")} label="Envoyer la facture (PDF) sur WhatsApp" />}
 
         <section className="space-y-3 rounded-xl border p-4">
           <p className="text-sm font-semibold">Enregistrer de l&apos;argent reçu</p>

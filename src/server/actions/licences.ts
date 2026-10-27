@@ -12,6 +12,8 @@ import { isValidSlug } from "@/lib/domain/slug";
 import { addMonths, computePlanState, LICENSE_PACKS, MAINTENANCE_INCLUDED_MONTHS, type LicensePackId } from "@/lib/domain/plans";
 import { ACTIVITIES, defaultModules, type Activity } from "@/lib/domain/sales";
 import { formatDate, formatFCFA, normalizePhone } from "@/lib/format";
+import { getLicenseSale } from "../queries/licences";
+import { licenceShare } from "../services/licence-documents";
 import { ActionError, parse, runAction } from "../action";
 import { requireSuperAdminAction, type AppContext } from "../context";
 import { logAdmin } from "../services/admin-audit";
@@ -165,7 +167,10 @@ export async function adminCreateLicenseClient(input: { client: z.input<typeof c
     });
 
     revalidatePath("/admin", "layout");
-    return { ...result, email: client.ownerEmail, phone: client.phone, ownerName: client.ownerName, businessName: client.businessName };
+    // Facture PDF à envoyer tout de suite au client sur WhatsApp
+    const detail = await getLicenseSale(result.saleId);
+    const invoice = detail ? licenceShare(detail.sale, "facture") : null;
+    return { ...result, invoice, email: client.ownerEmail, phone: client.phone, ownerName: client.ownerName, businessName: client.businessName };
   });
 }
 

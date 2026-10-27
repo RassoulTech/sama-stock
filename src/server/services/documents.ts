@@ -2,7 +2,7 @@ import "server-only";
 import { and, eq, like, sql } from "drizzle-orm";
 import type { Tx } from "@/db";
 import { businesses, documents, type DocumentParty } from "@/db/schema";
-import { signDocumentToken, verifyDocumentToken, type PublicDocKind } from "@/lib/domain/document-token";
+import { signDocumentToken, type SignedDocKind, verifyDocumentToken } from "@/lib/domain/document-token";
 import { dakarYear, documentNumber, documentPrefix, type DocumentType } from "@/lib/domain/documents";
 import { SITE_URL } from "@/lib/seo";
 import type { BusinessContext } from "../context";
@@ -47,7 +47,7 @@ function secret(): string {
   return value;
 }
 
-export function documentToken(kind: PublicDocKind, id: string): string {
+export function documentToken(kind: SignedDocKind, id: string): string {
   return signDocumentToken(secret(), kind, id);
 }
 
@@ -56,11 +56,11 @@ export function readDocumentToken(token: string) {
 }
 
 /** Page publique d'authenticité (QR code, lien envoyé au client). */
-export function verifyUrl(kind: PublicDocKind, id: string): string {
+export function verifyUrl(kind: SignedDocKind, id: string): string {
   return `${SITE_URL}/verifier/${documentToken(kind, id)}`;
 }
 
 /** Chemin du PDF, relatif au site (même lien pour la boutique et pour son client). */
-export function pdfPath(kind: PublicDocKind, id: string): string {
+export function pdfPath(kind: SignedDocKind, id: string): string {
   return `/verifier/${documentToken(kind, id)}/pdf`;
 }

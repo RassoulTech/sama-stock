@@ -3,6 +3,7 @@
 import { Copy, ExternalLink, KeyRound, Link2, Loader2, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useOrigin } from "@/components/shared/use-origin";
 import { toast } from "sonner";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { FormField, SuffixInput } from "@/components/shared/form-field";
@@ -153,7 +154,7 @@ export function LicenseAccess({
 /** Adresse de la page de connexion de la boutique (…/b/son-nom) : copier, ouvrir ou modifier. */
 function LoginAddress({ businessId, slug }: { businessId: string; slug: string | null }) {
   const router = useRouter();
-  const [origin] = useState(() => (typeof window === "undefined" ? "" : window.location.origin));
+  const origin = useOrigin();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(slug ?? "");
   const [pending, setPending] = useState(false);

@@ -94,4 +94,13 @@ describe("jeton des liens publics", () => {
     expect(verifyDocumentToken(secret, "n'importe quoi")).toBeNull();
     expect(verifyDocumentToken(secret, `${token}.x`)).toBeNull();
   });
+
+  it("signe aussi la facture et le devis d'une licence, sans confusion avec ceux d'une boutique", () => {
+    const token = signDocumentToken(secret, "licence_facture", id);
+    expect(token).toMatch(/^lf./);
+    expect(verifyDocumentToken(secret, token)).toEqual({ kind: "licence_facture", id });
+    expect(verifyDocumentToken(secret, signDocumentToken(secret, "licence_devis", id))).toEqual({ kind: "licence_devis", id });
+    // Changer « lf » en « f » ne donne pas une facture de boutique valable
+    expect(verifyDocumentToken(secret, token.replace(/^lf/, "f"))).toBeNull();
+  });
 });

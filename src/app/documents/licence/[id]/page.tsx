@@ -1,18 +1,19 @@
-import { ArrowLeft, MessageCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PrintButton } from "@/components/admin/licence/print-button";
 import { Logo } from "@/components/brand/logo";
+import { DownloadPdfButton, ShareDocumentButton } from "@/components/documents/share-document";
 import { Button } from "@/components/ui/button";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
 import { isLicensePack, LICENSE_PACKS } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatPhone } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 import { NO_INDEX } from "@/lib/seo";
-import { waLink } from "@/lib/whatsapp";
 import { requireSuperAdmin } from "@/server/context";
 import { balanceOf, getLicenseSale } from "@/server/queries/licences";
+import { licenceShare } from "@/server/services/licence-documents";
 
 export const metadata: Metadata = { title: "Document de licence", robots: NO_INDEX };
 
@@ -37,13 +38,7 @@ export default async function LicenseDocumentPage({
   const licencePayments = payments.filter((p) => p.kind === "licence");
   const maintenancePayments = payments.filter((p) => p.kind === "maintenance");
   const rest = balanceOf(sale);
-  const title = `${KINDS[kind]} N° ${sale.number}`;
-  const share = [
-    `*${title}* — Sama Stock`,
-    `${sale.business} : licence ${pack?.label ?? sale.pack} (utilisation à vie)`,
-    `Montant : ${formatFCFA(sale.agreed_price)}`,
-    kind === "facture" ? (rest > 0 ? `Déjà payé : ${formatFCFA(sale.paid_licence)} · Reste : ${formatFCFA(rest)}` : "Entièrement payée. Merci !") : "Acompte de 50 % à la commande, solde à l'installation.",
-  ].join("\n");
+  const share = licenceShare(sale, kind);
 
   return (
     <div className="min-h-dvh bg-muted/50 py-6 print:bg-white print:py-0">
@@ -57,13 +52,8 @@ export default async function LicenseDocumentPage({
           <Button asChild variant="outline" size="sm">
             <Link href={`/documents/licence/${sale.id}?type=${kind === "devis" ? "facture" : "devis"}`}>Voir {kind === "devis" ? "la facture" : "le devis"}</Link>
           </Button>
-          {sale.phone && (
-            <Button asChild variant="outline" size="sm">
-              <a href={waLink(sale.phone, share)} target="_blank" rel="noopener noreferrer">
-                <MessageCircle /> Résumé WhatsApp
-              </a>
-            </Button>
-          )}
+          <DownloadPdfButton pdfUrl={share.pdfUrl} label="Télécharger le PDF" />
+          <ShareDocumentButton {...share} size="sm" label={`Envoyer ${kind === "facture" ? "la facture" : "le devis"} (PDF)`} className="bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]" />
           <PrintButton />
         </div>
       </div>

@@ -2,9 +2,16 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 /** Document joignable par un lien public : facture, devis ou reçu d'une vente. */
 export type PublicDocKind = "facture" | "devis" | "recu";
+/** Facture ou devis d'une licence vendue par Sama Stock à un commerçant. */
+export type LicenceDocKind = "licence_facture" | "licence_devis";
+export type SignedDocKind = PublicDocKind | LicenceDocKind;
 
-const CODES: Record<PublicDocKind, string> = { facture: "f", devis: "d", recu: "r" };
-const KINDS: Record<string, PublicDocKind> = { f: "facture", d: "devis", r: "recu" };
+const CODES: Record<SignedDocKind, string> = { facture: "f", devis: "d", recu: "r", licence_facture: "lf", licence_devis: "ld" };
+const KINDS: Record<string, SignedDocKind> = { f: "facture", d: "devis", r: "recu", lf: "licence_facture", ld: "licence_devis" };
+
+export function isLicenceDocKind(kind: SignedDocKind): kind is LicenceDocKind {
+  return kind === "licence_facture" || kind === "licence_devis";
+}
 const ID_RE = /^[0-9a-f-]{36}$/;
 
 function signature(secret: string, code: string, id: string): string {
@@ -14,12 +21,12 @@ function signature(secret: string, code: string, id: string): string {
 }
 
 /** Jeton du lien public et du QR code : `<type>.<id>.<signature>`. Rien à stocker, impossible à deviner. */
-export function signDocumentToken(secret: string, kind: PublicDocKind, id: string): string {
+export function signDocumentToken(secret: string, kind: SignedDocKind, id: string): string {
   const code = CODES[kind];
   return `${code}.${id}.${signature(secret, code, id)}`;
 }
 
-export function verifyDocumentToken(secret: string, token: string): { kind: PublicDocKind; id: string } | null {
+export function verifyDocumentToken(secret: string, token: string): { kind: SignedDocKind; id: string } | null {
   const [code, id, sig, ...rest] = token.split(".");
   if (rest.length > 0 || !code || !id || !sig) return null;
   const kind = KINDS[code];

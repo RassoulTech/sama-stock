@@ -61,6 +61,29 @@ export function documentMessage(input: {
   return lines.join("\n");
 }
 
+/** Message qui accompagne le PDF de la facture (ou du devis) d'une licence envoyé au commerçant. */
+export function licenceDocumentMessage(input: {
+  kind: "devis" | "facture";
+  number: string;
+  ownerName: string | null;
+  businessName: string;
+  packLabel: string;
+  total: number;
+  paid: number;
+}): string {
+  const hello = `Bonjour${input.ownerName ? ` ${input.ownerName.split(" ")[0]}` : ""},`;
+  const rest = Math.max(0, input.total - input.paid);
+  const lines = [
+    hello,
+    `Voici ${input.kind === "facture" ? "la facture" : "le devis"} N° ${input.number} de votre application Sama Stock pour *${input.businessName}* (licence ${input.packLabel}, à vie).`,
+    `Montant : *${formatFCFA(input.total)}*`,
+  ];
+  if (input.kind === "facture") lines.push(rest > 0 ? `Déjà payé : ${formatFCFA(input.paid)} · Reste à payer : ${formatFCFA(rest)}` : "Entièrement payée. Merci pour votre confiance !");
+  else lines.push("Acompte de 50 % à la commande, solde à l'installation.");
+  lines.push("", "L'équipe Sama Stock");
+  return lines.join("\n");
+}
+
 export function orderMessage(input: {
   businessName: string;
   customerName: string;
