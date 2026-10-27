@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Bell, ChevronRight, FileText, type LucideIcon, Plus, Search, ShoppingCart, Users } from "lucide-react";
+import { ArrowDownToLine, ChevronRight, FileText, type LucideIcon, Plus, Search, ShoppingCart, TriangleAlert, Users } from "lucide-react";
 import Link from "next/link";
 import { Greeting } from "@/components/shared/greeting";
 import { formatFCFA } from "@/lib/format";
@@ -62,7 +62,7 @@ export function MobileHome({
             aria-label={alerts > 0 ? `${alerts} alerte${alerts > 1 ? "s" : ""} de stock` : "Alertes de stock"}
             className="relative grid size-11 shrink-0 place-items-center rounded-full border bg-card text-foreground"
           >
-            <Bell className="size-5" />
+            <TriangleAlert className="size-5" />
             {alerts > 0 && (
               <span className="num absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white ring-2 ring-background">
                 {alerts > 99 ? "99+" : alerts}

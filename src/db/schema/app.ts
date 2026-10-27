@@ -77,6 +77,10 @@ export const members = pgTable(
     pinFailures: integer("pin_failures").notNull().default(0),
     pinLockedUntil: timestamp("pin_locked_until", { withTimezone: true }),
     pinSetAt: timestamp("pin_set_at", { withTimezone: true }),
+    /** Notifications voulues (ventes, commandes, stock, son) ; null = toutes, avec le son. */
+    notifyPrefs: jsonb("notify_prefs").$type<Partial<Record<"sale" | "order" | "stock" | "sound", boolean>>>(),
+    /** Dernière ouverture de la liste des notifications : celles d'après sont « non lues ». */
+    notificationsSeenAt: timestamp("notifications_seen_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("members_business_user_uq").on(t.businessId, t.userId), index("members_user_idx").on(t.userId)],
@@ -589,4 +593,42 @@ export const licensePayments = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("license_payments_sale_idx").on(t.saleId), index("license_payments_business_idx").on(t.businessId)],
+);
+
+/** Ce qui se passe dans un commerce et que le propriétaire et les gérants veulent savoir : vente, commande, stock. */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: id(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // sale | order | stock_low | stock_out
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    /** Page ouverte en touchant la notification. */
+    href: text("href"),
+    /** Personne à l'origine de l'événement : elle ne reçoit pas sa propre notification. */
+    actorId: text("actor_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("notifications_business_created_idx").on(t.businessId, t.createdAt)],
+);
+
+/** Téléphone (navigateur) d'un utilisateur abonné aux notifications, même application fermée. */
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent"),
+    createdAt: createdAt(),
+    lastSuccessAt: timestamp("last_success_at", { withTimezone: true }),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)],
 );

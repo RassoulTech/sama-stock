@@ -1,12 +1,16 @@
 import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
+import { NotificationSettings } from "@/components/notifications/notification-settings";
 import { PageHeader } from "@/components/shared/page-header";
 import { CreatePasswordForm, PasswordForm } from "@/components/settings/account-settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { account } from "@/db/schema";
+import { receivesNotifications } from "@/lib/domain/notifications";
 import { isStaffEmail } from "@/lib/domain/staff-pin";
 import { requireContext } from "@/server/context";
+import { pushPublicKey } from "@/server/push";
+import { memberNotifySettings } from "@/server/queries/notifications";
 
 export const metadata: Metadata = { title: "Mon compte" };
 
@@ -17,6 +21,17 @@ export default async function MonComptePage() {
     .select({ id: account.id })
     .from(account)
     .where(and(eq(account.userId, ctx.user.id), eq(account.providerId, "credential")));
+  const notifications = receivesNotifications(ctx.role) ? (
+    <Card id="notifications" className="mt-5 max-w-2xl scroll-mt-20">
+      <CardHeader>
+        <CardTitle className="font-semibold">Notifications</CardTitle>
+        <p className="text-sm text-muted-foreground">Ventes, commandes et alertes de stock de {ctx.business.name}, avec un son.</p>
+      </CardHeader>
+      <CardContent>
+        <NotificationSettings publicKey={pushPublicKey()} prefs={(await memberNotifySettings(ctx)).prefs} />
+      </CardContent>
+    </Card>
+  ) : null;
 
   // Employé sans e-mail : il se connecte avec son code PIN, géré par le propriétaire
   if (isStaffEmail(ctx.user.email)) {
@@ -32,6 +47,7 @@ export default async function MonComptePage() {
             demandez au propriétaire : il vous en crée un nouveau depuis la page Équipe.
           </CardContent>
         </Card>
+        {notifications}
       </>
     );
   }
@@ -45,6 +61,7 @@ export default async function MonComptePage() {
         </CardHeader>
         <CardContent>{credential ? <PasswordForm /> : <CreatePasswordForm email={ctx.user.email} />}</CardContent>
       </Card>
+      {notifications}
     </>
   );
 }

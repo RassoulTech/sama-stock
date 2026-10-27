@@ -71,6 +71,13 @@
       "when": 1793044731101,
       "tag": "0009_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793132552649,
+      "tag": "0010_notifications",
+      "breakpoints": true
     }
   ]
 }

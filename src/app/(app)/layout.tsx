@@ -7,6 +7,7 @@ import { OfflineProvider } from "@/components/offline/offline-provider";
 import { AppProvider, type ClientAppInfo } from "@/components/shell/app-provider";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { LocationSwitcher } from "@/components/shell/location-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ClientBrand, PoweredBy } from "@/components/shell/client-brand";
 import { buildNav } from "@/components/shell/nav";
 import { PlanBanner } from "@/components/shell/plan-banner";
@@ -17,6 +18,7 @@ import { ShopAppSync } from "@/components/pwa/shop-app-sync";
 import { brandCss } from "@/lib/domain/brand";
 import { shopColors } from "@/lib/domain/shop-brand";
 import { initials } from "@/lib/format";
+import { receivesNotifications } from "@/lib/domain/notifications";
 import { ROLE_LABELS, type Permission } from "@/lib/domain/permissions";
 import { NO_INDEX } from "@/lib/seo";
 import { isStaffEmail } from "@/lib/domain/staff-pin";
@@ -165,6 +167,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   <LocationSwitcher locations={locationList} currentId={ctx.location.id} />
                   {shopApp && <InstallAppButton appName={shopApp.name} label="Installer" size="sm" className="hidden sm:inline-flex" />}
                   {sharedDevice && <SwitchUserButton href={sharedDevice} />}
+                  {receivesNotifications(ctx.role) && <NotificationBell />}
                   <UserMenu
                     user={{ name: ctx.user.name, email: isStaffEmail(ctx.user.email) ? "Connexion par code PIN" : ctx.user.email }}
                     roleLabel={`${ROLE_LABELS[ctx.role]} · ${ctx.business.name}`}

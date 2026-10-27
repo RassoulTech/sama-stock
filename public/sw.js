@@ -100,3 +100,46 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(caches.match(request).then((hit) => hit || fetch(request)));
   }
 });
+
+/* Notifications (vente, commande, stock) envoyées par le serveur, même application fermée. */
+const VIBRATIONS = { sale: [120, 60, 120], order: [200, 80, 200], stock_low: [300, 120, 300], stock_out: [400, 150, 400, 150, 400] };
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {}
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const w of windows) w.postMessage({ type: "sama-notification", notification: data });
+      // Application ouverte devant la personne : elle joue son propre son et affiche le message elle-même
+      if (windows.some((w) => w.visibilityState === "visible")) return;
+      await self.registration.showNotification(data.title || "Sama Stock", {
+        body: data.body || "",
+        icon: data.icon || "/icon-192.png",
+        tag: data.tag,
+        data: { url: data.url || "/tableau-de-bord" },
+        vibrate: VIBRATIONS[data.kind] || [200, 100, 200],
+        timestamp: Date.now(),
+      });
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || "/tableau-de-bord", self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const open = windows.find((w) => new URL(w.url).origin === self.location.origin);
+      if (open) {
+        await open.focus();
+        if ("navigate" in open) return open.navigate(target);
+        return;
+      }
+      return self.clients.openWindow(target);
+    })(),
+  );
+});

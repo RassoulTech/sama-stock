@@ -4,13 +4,15 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { saleItems, sales } from "@/db/schema";
+import { customers, saleItems, sales } from "@/db/schema";
 import { formatFCFA, formatQty } from "@/lib/format";
+import { orderMessage } from "@/lib/domain/notifications";
 import { canTransition, isOrderStatus, ORDER_STATUS_LABELS, ORDER_STATUSES, orderStockEffect } from "@/lib/domain/orders";
 import { ORDER_CHANNELS, PAYING_METHODS } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
 import { cancelInvoicesOfSale } from "../services/documents";
+import { notify, watchStock } from "../services/notifications";
 import { nextNumber } from "../services/numbering";
 import { assertCustomer, priceAndReserve } from "../services/sale-lines";
 import { applyStockMovement, lockStock } from "../services/stock";
@@ -37,6 +39,7 @@ export async function createOrder(input: z.input<typeof orderSchema>) {
 
     const id = await db.transaction(async (tx) => {
       const customerId = await assertCustomer(tx, ctx.business.id, data.customerId);
+      const stockAlerts = await watchStock(tx, ctx, data.items.map((i) => i.productId));
       const lines = await priceAndReserve(tx, ctx, data.items);
       const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0);
       const total = subtotal + data.deliveryFee;
@@ -62,8 +65,11 @@ export async function createOrder(input: z.input<typeof orderSchema>) {
           deliveryAddress: data.deliveryAddress || null,
           note: data.note || null,
         })
-        .returning({ id: sales.id });
+        .returning({ id: sales.id, number: sales.number });
       await tx.insert(saleItems).values(lines.map((l) => ({ saleId: order!.id, ...l })));
+      await stockAlerts();
+      const [customer] = customerId ? await tx.select({ name: customers.name }).from(customers).where(eq(customers.id, customerId)) : [];
+      await notify(tx, ctx, orderMessage({ id: order!.id, number: order!.number, total, customerName: customer?.name ?? null, channel: data.channel }));
       return order!.id;
     });
 

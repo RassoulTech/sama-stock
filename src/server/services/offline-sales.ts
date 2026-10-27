@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, type DbOrTx } from "@/db";
 import { customers, products, saleItems, sales } from "@/db/schema";
+import { saleMessage } from "@/lib/domain/notifications";
 import { clampSaleDate, computeSyncFlags } from "@/lib/domain/offline";
 import { roundQty } from "@/lib/domain/stock";
 import { unitAllowsDecimals } from "@/lib/format";
@@ -10,6 +11,7 @@ import { lineTotal, saleTotals, unexpectedPriceChange } from "@/lib/offline/sale
 import type { SyncResult } from "@/lib/offline/types";
 import { ActionError } from "../action";
 import { contextForBusiness, type SessionUser } from "../context";
+import { notify, watchStock } from "./notifications";
 import { nextNumber } from "./numbering";
 import { applyStockMovement, lockStock, reservedQuantities } from "./stock";
 
@@ -97,6 +99,7 @@ export async function recordOfflineSale(user: SessionUser, input: OfflineSaleInp
       }
 
       await lockStock(tx, businessId, locationId, ids);
+      const stockAlerts = await watchStock(tx, ctx, ids);
       const [row] = await tx
         .insert(sales)
         .values({
@@ -138,6 +141,8 @@ export async function recordOfflineSale(user: SessionUser, input: OfflineSaleInp
         });
         if (roundQty(left - (reserved.get(l.productId) ?? 0)) < 0) negativeStock = true;
       }
+      await stockAlerts();
+      await notify(tx, ctx, saleMessage({ id: row!.id, number: row!.number, total, itemCount: lines.length, actorName: ctx.user.name, offline: true }));
       const flags = computeSyncFlags({ negativeStock, priceChanged, customerMissing, creditWithoutCustomer: amountPaid < total && !customerId });
       if (flags.length > 0) await tx.update(sales).set({ syncFlags: flags }).where(eq(sales.id, row!.id));
       return row!;

@@ -9,6 +9,7 @@ import { formatQty, unitAllowsDecimals } from "@/lib/format";
 import { EXIT_REASONS, LOSS_REASONS, roundQty, weightedAverageCost } from "@/lib/domain/stock";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext, type BusinessContext } from "../context";
+import { watchStock } from "../services/notifications";
 import { applyStockMovement, lockStock, reservedQuantities } from "../services/stock";
 
 const positiveQty = z.coerce.number({ message: "Quantité invalide." }).positive("La quantité doit être supérieure à 0.").max(10_000_000);
@@ -153,6 +154,7 @@ export async function createStockExit(input: z.input<typeof exitSchema>) {
       if (data.quantity > physical) {
         throw new ActionError(`Il ne reste que ${formatQty(physical, product.unit)} de « ${product.name} » ici.`);
       }
+      const stockAlerts = await watchStock(tx, ctx, [data.productId]);
       await applyStockMovement(tx, {
         businessId: ctx.business.id,
         locationId: ctx.location.id,
@@ -164,6 +166,7 @@ export async function createStockExit(input: z.input<typeof exitSchema>) {
         unitCost: product.costPrice,
         userId: ctx.user.id,
       });
+      await stockAlerts();
     });
 
     revalidatePath("/", "layout");
@@ -201,6 +204,7 @@ export async function submitInventory(input: z.input<typeof inventorySchema>) {
       const ids = data.counts.map((c) => c.productId);
       const map = await loadProducts(tx, ctx, ids);
       const physical = await lockStock(tx, ctx.business.id, ctx.location.id, ids);
+      const stockAlerts = await watchStock(tx, ctx, ids);
       const result: InventoryLine[] = [];
       const inventoryId = crypto.randomUUID();
 
@@ -234,6 +238,7 @@ export async function submitInventory(input: z.input<typeof inventorySchema>) {
           value: showCost ? Math.round(difference * product.costPrice) : 0,
         });
       }
+      await stockAlerts();
       return { inventoryId, result };
     });
 
@@ -266,6 +271,7 @@ export async function createTransfer(input: z.input<typeof transferSchema>) {
       const map = await loadProducts(tx, ctx, ids);
       const physical = await lockStock(tx, ctx.business.id, ctx.location.id, ids);
       const reserved = await reservedQuantities(tx, ctx.business.id, ctx.location.id, ids);
+      const stockAlerts = await watchStock(tx, ctx, ids);
       const transferId = crypto.randomUUID();
       const totals = new Map<string, number>();
       for (const item of data.items) totals.set(item.productId, (totals.get(item.productId) ?? 0) + item.quantity);
@@ -289,6 +295,7 @@ export async function createTransfer(input: z.input<typeof transferSchema>) {
         await applyStockMovement(tx, { ...common, locationId: ctx.location.id, quantity: -quantity, type: "transfer_out" });
         await applyStockMovement(tx, { ...common, locationId: destination.id, quantity, type: "transfer_in" });
       }
+      await stockAlerts();
     });
 
     revalidatePath("/", "layout");

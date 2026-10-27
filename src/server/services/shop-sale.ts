@@ -1,9 +1,11 @@
 import "server-only";
 import type { Tx } from "@/db";
 import { saleItems, sales } from "@/db/schema";
+import { saleMessage } from "@/lib/domain/notifications";
 import type { SaleMethod } from "@/lib/domain/sales";
 import { ActionError } from "../action";
 import type { BusinessContext } from "../context";
+import { notify, watchStock } from "./notifications";
 import { nextNumber } from "./numbering";
 import { assertCustomer, type PricedLine } from "./sale-lines";
 import { applyStockMovement } from "./stock";
@@ -37,6 +39,7 @@ export async function recordShopSale(
     throw new ActionError("Choisissez le client : une vente à crédit ou un paiement partiel doit être rattaché à un client.");
   }
 
+  const stockAlerts = await watchStock(tx, ctx, input.lines.map((l) => l.productId));
   const now = new Date();
   const [sale] = await tx
     .insert(sales)
@@ -60,7 +63,7 @@ export async function recordShopSale(
       completedAt: now,
       clientRef: input.clientRef ?? null,
     })
-    .returning({ id: sales.id });
+    .returning({ id: sales.id, number: sales.number });
 
   await tx.insert(saleItems).values(input.lines.map((l) => ({ saleId: sale!.id, ...l })));
   for (const l of input.lines) {
@@ -76,5 +79,7 @@ export async function recordShopSale(
       userId: ctx.user.id,
     });
   }
+  await stockAlerts();
+  await notify(tx, ctx, saleMessage({ id: sale!.id, number: sale!.number, total, itemCount: input.lines.length, actorName: ctx.user.name }));
   return sale!.id;
 }
