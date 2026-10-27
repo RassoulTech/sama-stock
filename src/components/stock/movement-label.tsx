@@ -11,6 +11,8 @@ export function reasonLabel(reason: string | null) {
 }
 
 export function SignedQty({ quantity, unit, className }: { quantity: number; unit?: string; className?: string }) {
+  // Écart nul d'un inventaire : le produit a été compté et tout était là
+  if (quantity === 0) return <span className={cn("font-semibold whitespace-nowrap text-muted-foreground", className)}>Conforme</span>;
   const positive = quantity > 0;
   return (
     <span

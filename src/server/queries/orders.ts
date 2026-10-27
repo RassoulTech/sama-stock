@@ -37,7 +37,12 @@ function baseConditions(ctx: BusinessContext, f: OrderSearch = {}): SQL[] {
   return c;
 }
 
-export async function listOrders(ctx: BusinessContext, filter: OrderFilter, search: OrderSearch = {}) {
+export async function listOrders(
+  ctx: BusinessContext,
+  filter: OrderFilter,
+  search: OrderSearch = {},
+  page: { limit: number; offset: number } = { limit: 300, offset: 0 },
+) {
   const conditions = baseConditions(ctx, search);
   const statuses = ORDER_FILTERS[filter].statuses;
   if (statuses) conditions.push(inArray(sales.status, [...statuses]));
@@ -58,8 +63,9 @@ export async function listOrders(ctx: BusinessContext, filter: OrderFilter, sear
     .from(sales)
     .leftJoin(customers, eq(sales.customerId, customers.id))
     .where(and(...conditions))
-    .orderBy(desc(sales.createdAt))
-    .limit(300);
+    .orderBy(desc(sales.createdAt), desc(sales.id))
+    .limit(page.limit)
+    .offset(page.offset);
 }
 
 export async function orderCounts(ctx: BusinessContext, search: OrderSearch = {}): Promise<Record<string, number>> {

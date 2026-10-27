@@ -1,0 +1,55 @@
+"use server";
+
+import { and, eq } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { z } from "zod";
+import { db } from "@/db";
+import { businesses, members } from "@/db/schema";
+import { inviteDeviceToken, verifyDeviceInvite } from "@/lib/domain/device-invite";
+import { SHOP_COOKIE } from "@/lib/shop-app";
+import { ActionError, parse, runAction } from "../action";
+import { createDevice, DEVICE_COOKIE, DEVICE_COOKIE_OPTIONS, SHOP_COOKIE_OPTIONS } from "../services/devices";
+
+const EXPIRED = "Ce QR code n'est plus valable. Demandez au propriétaire d'en afficher un nouveau (Équipe › Activer un autre appareil).";
+
+/**
+ * Active l'appareil qui a scanné le QR code du propriétaire. Pas de session ici : c'est le jeton signé qui
+ * prouve l'accord du propriétaire. Il ne sert qu'une fois (jeton d'appareil dérivé, unique en base).
+ */
+export async function activateInvitedDevice(token: string, name: string) {
+  return runAction(async () => {
+    const secret = process.env.BETTER_AUTH_SECRET ?? "";
+    const invite = verifyDeviceInvite(secret, String(token ?? ""));
+    if (!invite) throw new ActionError(EXPIRED);
+    const label = parse(z.string().trim().min(2, "Donnez un nom à cet appareil (ex. : Téléphone de Moussa).").max(60), name);
+
+    // Le propriétaire qui a montré le QR code a toujours la main sur le commerce
+    const [owner] = await db
+      .select({ slug: businesses.slug, suspendedAt: businesses.suspendedAt, isDemo: businesses.isDemo })
+      .from(members)
+      .innerJoin(businesses, eq(businesses.id, members.businessId))
+      .where(and(eq(members.businessId, invite.businessId), eq(members.userId, invite.userId), eq(members.role, "owner")));
+    if (!owner?.slug || owner.isDemo) throw new ActionError(EXPIRED);
+    if (owner.suspendedAt) throw new ActionError("Ce commerce est suspendu. Contactez Sama Stock.");
+
+    let cookie: string;
+    try {
+      ({ cookie } = await createDevice({
+        businessId: invite.businessId,
+        name: label,
+        createdBy: invite.userId,
+        token: inviteDeviceToken(secret, invite.nonce),
+      }));
+    } catch (error) {
+      // Index unique sur l'empreinte du jeton : ce QR code a déjà activé un appareil
+      if ((error as { code?: string; cause?: { code?: string } }).code === "23505" || (error as { cause?: { code?: string } }).cause?.code === "23505") {
+        throw new ActionError("Ce QR code a déjà servi pour un appareil. Demandez-en un nouveau au propriétaire.");
+      }
+      throw error;
+    }
+    const jar = await cookies();
+    jar.set(DEVICE_COOKIE, cookie, DEVICE_COOKIE_OPTIONS);
+    jar.set(SHOP_COOKIE, owner.slug, SHOP_COOKIE_OPTIONS);
+    return { slug: owner.slug };
+  });
+}

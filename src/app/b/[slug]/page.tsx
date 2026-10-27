@@ -1,12 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ShopLoginPanel } from "@/components/auth/shop-login-panel";
-import { brandCss } from "@/lib/domain/brand";
+import { ShopShell } from "@/components/auth/shop-shell";
+import { InstallAppBanner } from "@/components/pwa/install-app";
 import { shopColors } from "@/lib/domain/shop-brand";
-import { initials } from "@/lib/format";
+import { isGoogleEnabled } from "@/lib/auth";
 import { NO_INDEX } from "@/lib/seo";
+import { OTHER_ACCOUNT_PARAM } from "@/lib/shop-app";
 import { getSession } from "@/server/context";
-import { shopBySlug, staffWithPin } from "@/server/queries/shop-login";
+import { shopBySlug, shopIcon, staffWithPin } from "@/server/queries/shop-login";
 import { readDevice } from "@/server/services/devices";
 
 type Props = {
@@ -24,10 +27,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     robots: NO_INDEX,
     applicationName: shop.name,
     // L'icône installée sur le téléphone porte le nom et le logo de la boutique, et ouvre cette page
-    manifest: `/b/${shop.slug}/manifest.webmanifest`,
+    manifest: `/b/${shop.slug}/manifest.webmanifest?v=${shop.version}`,
     icons: {
-      icon: [{ url: `/b/${shop.slug}/icone/192`, type: "image/png", sizes: "192x192" }],
-      apple: [{ url: `/b/${shop.slug}/icone/180`, type: "image/png", sizes: "180x180" }],
+      icon: [{ url: shopIcon(shop, 192), type: "image/png", sizes: "192x192" }],
+      apple: [{ url: shopIcon(shop, 180), type: "image/png", sizes: "180x180" }],
     },
     appleWebApp: { capable: true, title: shop.name, statusBarStyle: "default" },
   };
@@ -39,7 +42,7 @@ export async function generateViewport({ params }: Props): Promise<Viewport> {
   return { themeColor: shopColors(shop?.brandColor).sidebar };
 }
 
-/** Page de connexion d'une boutique sous licence : son nom, son logo, ses couleurs, et seulement e-mail et mot de passe. */
+/** Page de connexion d'une boutique : clavier du code PIN sur ses appareils, e-mail et mot de passe partout. */
 export default async function ShopLoginPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const shop = await shopBySlug(slug);
@@ -54,44 +57,30 @@ export default async function ShopLoginPage({ params, searchParams }: Props) {
   // Appareil activé pour cette boutique : liste des employés et clavier du code PIN
   const device = await readDevice();
   const staff = device?.businessId === shop.id ? await staffWithPin(shop.id) : null;
-  const colors = shopColors(shop.brandColor);
-  const css = brandCss(shop.brandColor);
 
   return (
-    <div className="relative flex min-h-dvh flex-col bg-background">
-      {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
-      <div aria-hidden className="absolute inset-x-0 top-0 h-72 sm:h-80" style={{ backgroundColor: colors.sidebar }}>
-        <div className="absolute inset-0 bg-[radial-gradient(60%_80%_at_20%_0%,rgb(255_255_255/0.16),transparent_70%)]" />
-      </div>
-
-      <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-12 pb-8 sm:pt-16">
-        <div className="flex flex-col items-center text-center text-white">
-          <span className="grid size-20 place-items-center overflow-hidden rounded-2xl bg-white shadow-[0_12px_32px_-12px_rgb(0_0_0/0.45)] ring-4 ring-white/20">
-            {shop.logo ? (
-              // eslint-disable-next-line @next/next/no-img-element -- logo en data URL
-              <img src={shop.logo} alt={`Logo de ${shop.name}`} className="size-full object-cover" />
-            ) : (
-              <span className="text-2xl font-bold" style={{ color: colors.primary }}>
-                {initials(shop.name)}
-              </span>
-            )}
-          </span>
-          <p className="mt-4 text-[1.375rem] leading-tight font-semibold tracking-[-0.02em]">{shop.name}</p>
-          {shop.city && <p className="mt-1 text-sm text-white/75">{shop.city}</p>}
+    <ShopShell
+      shop={shop}
+      footer={
+        <div className="mt-4 space-y-3">
+          <InstallAppBanner appName={shop.name} iconUrl={shopIcon(shop, 192)} />
+          <p className="text-center text-xs text-muted-foreground">
+            Pas votre commerce ?{" "}
+            <Link href={`/connexion?${OTHER_ACCOUNT_PARAM}=1`} prefetch={false} className="font-medium text-foreground underline-offset-2 hover:underline">
+              Se connecter à un autre compte
+            </Link>
+          </p>
         </div>
-
-        <div className="mt-8 rounded-2xl border bg-card p-6 shadow-[0_24px_48px_-24px_rgb(11_19_16/0.35)] sm:p-7">
-          <ShopLoginPanel
-            slug={shop.slug!}
-            shopName={shop.name}
-            staff={staff}
-            defaultEmail={email}
-            notice={denied ? `Ce compte n'a pas accès à ${shop.name}. Connectez-vous avec le compte de la boutique.` : null}
-          />
-        </div>
-
-        <p className="mt-auto pt-10 text-center text-[11px] tracking-wide text-muted-foreground uppercase">Propulsé par Sama Stock</p>
-      </main>
-    </div>
+      }
+    >
+      <ShopLoginPanel
+        slug={shop.slug!}
+        shopName={shop.name}
+        staff={staff}
+        defaultEmail={email}
+        googleEnabled={isGoogleEnabled && !shop.licensed}
+        notice={denied ? `Ce compte n'a pas accès à ${shop.name}. Connectez-vous avec le compte de la boutique.` : null}
+      />
+    </ShopShell>
   );
 }

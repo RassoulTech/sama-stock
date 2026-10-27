@@ -4,18 +4,19 @@ import Link from "next/link";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 import { movementTypeLabel, reasonLabel, SignedQty } from "@/components/stock/movement-label";
 import { param, pickParam, resolvePeriod, type PeriodPreset, type SearchParams } from "@/lib/filters";
 import { formatDateTime } from "@/lib/format";
+import { pageSlice, readPage } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/context";
 import { listCategories } from "@/server/queries/products";
-import { listMovements, MOVEMENT_GROUPS, type MovementGroup } from "@/server/queries/stock";
+import { countMovements, listMovements, MOVEMENT_GROUPS, type MovementGroup } from "@/server/queries/stock";
 
 export const metadata: Metadata = { title: "Historique du stock" };
 
 const PRESETS: PeriodPreset[] = ["today", "7j", "30j", "mois", "mois-dernier", "90j", "tout"];
-const LIMIT = 300;
 
 export default async function HistoriquePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const ctx = await requireContext("products.view");
@@ -25,11 +26,13 @@ export default async function HistoriquePage({ searchParams }: { searchParams: P
   const q = param(params, "q")?.slice(0, 60) ?? "";
   const categories = await listCategories(ctx.business.id);
   const categoryId = pickParam(params, "categorie", categories.map((c) => c.id));
-  const movements = await listMovements(ctx, { group, from: period.from, to: period.to, q, categoryId, limit: LIMIT });
+  const filters = { group, from: period.from, to: period.to, q, categoryId };
+  const page = readPage(params);
+  const [movements, total] = await Promise.all([listMovements(ctx, filters, pageSlice(page)), countMovements(ctx, filters)]);
 
   const typeHref = (key: MovementGroup) => {
     const next = new URLSearchParams();
-    for (const [k, v] of Object.entries(params)) if (typeof v === "string" && k !== "type") next.set(k, v);
+    for (const [k, v] of Object.entries(params)) if (typeof v === "string" && k !== "type" && k !== "page") next.set(k, v);
     if (key !== "all") next.set("type", key);
     const qs = next.toString();
     return qs ? `/stock/historique?${qs}` : "/stock/historique";
@@ -54,7 +57,7 @@ export default async function HistoriquePage({ searchParams }: { searchParams: P
             : []
         }
         period={{ value: period.key, presets: PRESETS, fallback: "30j", du: period.du, au: period.au, customLabel: period.label }}
-        resultLabel={`${movements.length}${movements.length >= LIMIT ? "+" : ""} mouvement${movements.length > 1 ? "s" : ""}`}
+        resultLabel={`${total} mouvement${total > 1 ? "s" : ""}`}
         extraKeys={["type"]}
         className="mb-3"
       />
@@ -101,6 +104,7 @@ export default async function HistoriquePage({ searchParams }: { searchParams: P
           ))}
         </ul>
       )}
+      <Pagination path="/stock/historique" params={params} page={page} total={total} />
     </>
   );
 }

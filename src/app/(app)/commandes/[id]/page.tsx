@@ -195,7 +195,7 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
                 {order.deliveryAddress ?? <span className="text-muted-foreground">Pas d&apos;adresse</span>}
               </p>
               {message && (
-                <Button asChild className="w-full bg-[#25D366] text-white hover:bg-[#1fb857]">
+                <Button asChild className="w-full bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]">
                   <a href={waLink(order.customer?.phone, message)} target="_blank" rel="noopener noreferrer">
                     <MessageCircle /> Envoyer le récapitulatif
                   </a>

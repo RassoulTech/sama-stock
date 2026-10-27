@@ -46,15 +46,12 @@ export interface SaleFilters {
   q?: string;
 }
 
-/** Nombre maximum de ventes affichées en une fois. */
-export const SALES_LIMIT = 500;
-
 /** Motif « contient » pour ILIKE (les caractères % et _ tapés sont pris à la lettre). */
 export function likePattern(q: string) {
   return `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 }
 
-export async function listSales(ctx: BusinessContext, f: SaleFilters) {
+function saleConditions(ctx: BusinessContext, f: SaleFilters): SQL[] {
   const conditions: SQL[] = [eq(sales.businessId, ctx.business.id), eq(sales.kind, "sale")];
   if (f.from) conditions.push(gte(sales.createdAt, f.from));
   if (f.to) conditions.push(lt(sales.createdAt, f.to));
@@ -79,7 +76,12 @@ export async function listSales(ctx: BusinessContext, f: SaleFilters) {
     );
   }
   if (f.q) conditions.push(or(ilike(sales.number, likePattern(f.q)), ilike(customers.name, likePattern(f.q)))!);
+  return conditions;
+}
 
+/** Une page de ventes (les plus récentes d'abord). */
+export async function listSales(ctx: BusinessContext, f: SaleFilters, page: { limit: number; offset: number }) {
+  const conditions = saleConditions(ctx, f);
   return db
     .select({
       id: sales.id,
@@ -99,8 +101,25 @@ export async function listSales(ctx: BusinessContext, f: SaleFilters) {
     .leftJoin(customers, eq(sales.customerId, customers.id))
     .leftJoin(seller, eq(sales.userId, seller.id))
     .where(and(...conditions))
-    .orderBy(desc(sales.createdAt))
-    .limit(SALES_LIMIT + 1);
+    .orderBy(desc(sales.createdAt), desc(sales.id))
+    .limit(page.limit)
+    .offset(page.offset);
+}
+
+/** Totaux de toutes les ventes filtrées (pas seulement la page affichée). */
+export async function salesSummary(ctx: BusinessContext, f: SaleFilters) {
+  const completed = sql`${sales.status} = 'completed'`;
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      valid: sql<number>`(count(*) filter (where ${completed}))::int`,
+      revenue: sql<number>`coalesce(sum(${sales.total}) filter (where ${completed}), 0)::bigint`,
+      cashed: sql<number>`coalesce(sum(${sales.amountPaid}) filter (where ${completed}), 0)::bigint`,
+    })
+    .from(sales)
+    .leftJoin(customers, eq(sales.customerId, customers.id))
+    .where(and(...saleConditions(ctx, f)));
+  return { count: row?.count ?? 0, valid: row?.valid ?? 0, revenue: Number(row?.revenue ?? 0), cashed: Number(row?.cashed ?? 0) };
 }
 
 /** Ventes faites sans internet qui demandent une vérification (stock négatif, prix différent…). */

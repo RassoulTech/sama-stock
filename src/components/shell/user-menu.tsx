@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, KeyRound, LogOut, Monitor, Moon, ShieldCheck, Store, Sun } from "lucide-react";
+import { Check, Download, KeyRound, LogOut, Monitor, Moon, ShieldCheck, Store, Sun } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useInstall } from "@/components/pwa/install-app";
 import { initials } from "@/lib/format";
 import { signOutSafely } from "@/lib/offline/sign-out";
 import { switchBusiness } from "@/server/actions/business";
@@ -24,18 +25,23 @@ export function UserMenu({
   memberships,
   currentBusinessId,
   isSuperAdmin,
+  appName = null,
 }: {
   user: { name: string; email: string };
   roleLabel: string;
   memberships: { businessId: string; businessName: string }[];
   currentBusinessId: string;
   isSuperAdmin: boolean;
+  /** Application de la boutique à installer sur cet appareil (son nom). */
+  appName?: string | null;
 }) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const installer = useInstall(appName ?? "l'application");
 
   return (
     <DropdownMenu>
+      {installer.dialog}
       <DropdownMenuTrigger
         className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label="Mon compte"
@@ -101,6 +107,12 @@ export function UserMenu({
           </>
         )}
         <DropdownMenuSeparator />
+        {appName && installer.mode !== "hidden" && (
+          <DropdownMenuItem onSelect={() => void installer.install()}>
+            <Download />
+            Installer l&apos;application
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href="/mon-compte">
             <KeyRound />

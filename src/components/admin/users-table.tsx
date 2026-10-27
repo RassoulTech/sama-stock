@@ -3,6 +3,7 @@
 import { LogOut, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
 import { GoogleIcon } from "@/components/brand/google-icon";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { FilterChips } from "@/components/shared/filter-chips";
@@ -40,6 +41,7 @@ export function UsersTable({ rows, initialQuery = "" }: { rows: AdminUserRow[]; 
   const filtered = rows.filter(
     (r) => test[filter](r) && matchesSearch(q, r.name, r.email, ...r.memberships.map((m) => m.business)),
   );
+  const { setTop, ...pager } = usePaged(filtered, `${q}|${filter}`);
 
   return (
     <div className="space-y-4">
@@ -58,8 +60,8 @@ export function UsersTable({ rows, initialQuery = "" }: { rows: AdminUserRow[]; 
       {filtered.length === 0 ? (
         <p className="surface p-6 text-center text-sm text-muted-foreground">Aucun utilisateur ne correspond.</p>
       ) : (
-        <ul className="surface divide-y">
-          {filtered.map((u) => (
+        <ul ref={setTop} className="surface scroll-mt-20 divide-y">
+          {pager.items.map((u) => (
             <li key={u.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-3 p-4 sm:flex sm:items-center">
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-semibold text-primary">
                 {initials(u.name || u.email)}
@@ -129,6 +131,7 @@ export function UsersTable({ rows, initialQuery = "" }: { rows: AdminUserRow[]; 
           ))}
         </ul>
       )}
+      <ClientPagination pager={pager} />
     </div>
   );
 }

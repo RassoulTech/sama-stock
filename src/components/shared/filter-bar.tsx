@@ -66,6 +66,8 @@ export function FilterBar({
 
   function apply(updates: Record<string, string | null>) {
     const next = new URLSearchParams(searchParams.toString());
+    // Nouveaux filtres : on revient à la première page des résultats
+    next.delete("page");
     for (const [k, v] of Object.entries(updates)) {
       if (v === null || v === "") next.delete(k);
       else next.set(k, v);

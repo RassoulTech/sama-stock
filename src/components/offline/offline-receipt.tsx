@@ -87,7 +87,7 @@ export function OfflineReceipt({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
         <Receipt sale={data} business={business} />
         <div className="space-y-3 print:hidden">
-          <Button asChild size="lg" className="w-full bg-[#25D366] text-white hover:bg-[#1fb857]">
+          <Button asChild size="lg" className="w-full bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]">
             <a href={waLink(sale.customerPhone, message)} target="_blank" rel="noopener noreferrer">
               <MessageCircle /> Envoyer sur WhatsApp
             </a>

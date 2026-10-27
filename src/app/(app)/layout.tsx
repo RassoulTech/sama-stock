@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { LogoMark } from "@/components/brand/logo";
 import { DemoBanner } from "@/components/demo/demo-banner";
@@ -12,17 +12,50 @@ import { buildNav } from "@/components/shell/nav";
 import { PlanBanner } from "@/components/shell/plan-banner";
 import { Sidebar } from "@/components/shell/sidebar";
 import { UserMenu } from "@/components/shell/user-menu";
+import { InstallAppButton } from "@/components/pwa/install-app";
+import { ShopAppSync } from "@/components/pwa/shop-app-sync";
 import { brandCss } from "@/lib/domain/brand";
+import { shopColors } from "@/lib/domain/shop-brand";
 import { initials } from "@/lib/format";
 import { ROLE_LABELS, type Permission } from "@/lib/domain/permissions";
 import { NO_INDEX } from "@/lib/seo";
 import { isStaffEmail } from "@/lib/domain/staff-pin";
 import { requireContext } from "@/server/context";
+import { shopIcon } from "@/server/queries/shop-login";
+import { currentShopApp } from "@/server/shop-app";
 import { readDevice } from "@/server/services/devices";
 import { SwitchUserButton } from "@/components/shell/switch-user-button";
 
-// Espace privé : jamais dans les résultats de recherche
-export const metadata: Metadata = { robots: NO_INDEX };
+const DARK_BAR = "#0b1210";
+
+// Espace privé : jamais dans les résultats de recherche. L'application installée depuis ici est celle de la boutique :
+// son nom, son icône (logo), et elle s'ouvre sur sa page de connexion.
+export async function generateMetadata(): Promise<Metadata> {
+  const shop = await currentShopApp();
+  if (!shop) return { robots: NO_INDEX };
+  return {
+    robots: NO_INDEX,
+    applicationName: shop.name,
+    manifest: `/b/${shop.slug}/manifest.webmanifest?v=${shop.version}`,
+    icons: {
+      icon: [{ url: shopIcon(shop, 192), type: "image/png", sizes: "192x192" }],
+      apple: [{ url: shopIcon(shop, 180), type: "image/png", sizes: "180x180" }],
+    },
+    appleWebApp: { capable: true, title: shop.name, statusBarStyle: "default" },
+  };
+}
+
+// Barre du téléphone aux couleurs de la boutique (licences)
+export async function generateViewport(): Promise<Viewport> {
+  const shop = await currentShopApp();
+  if (!shop?.licensed) return {};
+  return {
+    themeColor: [
+      { media: "(prefers-color-scheme: light)", color: shopColors(shop.brandColor).sidebar },
+      { media: "(prefers-color-scheme: dark)", color: DARK_BAR },
+    ],
+  };
+}
 
 const ALL_PERMISSIONS: Permission[] = [
   "dashboard.full",
@@ -46,6 +79,7 @@ const ALL_PERMISSIONS: Permission[] = [
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireContext();
+  const shopApp = await currentShopApp();
   // Appareil de la boutique (code PIN des employés) : bouton « Changer d'employé »
   const device = await readDevice();
   const sharedDevice = device?.businessId === ctx.business.id && ctx.business.slug ? `/b/${ctx.business.slug}` : null;
@@ -79,6 +113,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <AppProvider value={info}>
       <OfflineProvider identity={{ userId: ctx.user.id, businessId: ctx.business.id, locationId: ctx.location.id }}>
         {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+        <ShopAppSync
+          light={licensed ? shopColors(ctx.business.brandColor).sidebar : "#0b6e4f"}
+          dark={DARK_BAR}
+          rememberSlug={licensed && shopApp ? shopApp.slug : null}
+        />
         <div className="min-h-dvh lg:grid lg:grid-cols-[244px_minmax(0,1fr)]">
           <Sidebar
             items={menu}
@@ -124,6 +163,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 </p>
                 <div className="ml-auto flex items-center gap-2">
                   <LocationSwitcher locations={locationList} currentId={ctx.location.id} />
+                  {shopApp && <InstallAppButton appName={shopApp.name} label="Installer" size="sm" className="hidden sm:inline-flex" />}
                   {sharedDevice && <SwitchUserButton href={sharedDevice} />}
                   <UserMenu
                     user={{ name: ctx.user.name, email: isStaffEmail(ctx.user.email) ? "Connexion par code PIN" : ctx.user.email }}
@@ -131,6 +171,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                     memberships={ctx.memberships}
                     currentBusinessId={ctx.business.id}
                     isSuperAdmin={ctx.isSuperAdmin}
+                    appName={shopApp?.name ?? null}
                   />
                 </div>
               </div>

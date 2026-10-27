@@ -23,9 +23,20 @@ export interface ShopDevice {
 
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
-/** Nouvel appareil : renvoie la valeur du cookie à poser sur cet appareil. */
-export async function createDevice(input: { businessId: string; name: string; createdBy: string }): Promise<{ device: ShopDevice; cookie: string }> {
-  const token = randomBytes(32).toString("base64url");
+/** Boutique ouverte sur cet appareil (son adresse /b/…) : la page de connexion y ramène. Rien de secret. */
+export const SHOP_COOKIE_OPTIONS = { ...DEVICE_COOKIE_OPTIONS, httpOnly: false };
+
+/**
+ * Nouvel appareil : renvoie la valeur du cookie à poser sur cet appareil.
+ * `token` est fourni pour une invitation par QR code (toujours le même : l'invitation ne sert qu'une fois).
+ */
+export async function createDevice(input: {
+  businessId: string;
+  name: string;
+  createdBy: string;
+  token?: string;
+}): Promise<{ device: ShopDevice; cookie: string }> {
+  const token = input.token ?? randomBytes(32).toString("base64url");
   const [row] = await db
     .insert(shopDevices)
     .values({ businessId: input.businessId, name: input.name, tokenHash: hashToken(token), createdBy: input.createdBy })

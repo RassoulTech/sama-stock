@@ -5,10 +5,12 @@ import { AdminStat } from "@/components/admin/admin-stat";
 import { ContactButtons } from "@/components/admin/contact-buttons";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { isLicensePack, LICENSE_ORDER, LICENSE_PACKS } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatNumber } from "@/lib/format";
+import { pageSlice, readPage } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { balanceOf, licenseSummary, listLicenseSales, type LicenseSaleRow } from "@/server/queries/licences";
 
@@ -47,7 +49,7 @@ export default async function AdminLicensesPage({ searchParams }: { searchParams
   const sum = licenseSummary(sales);
   const view: View = typeof params.vue === "string" && params.vue in VIEWS ? (params.vue as View) : "tous";
   const due = new Set([...sum.maintenanceSoon, ...sum.maintenanceOver].map((s) => s.id));
-  const shown = sales.filter((s) => {
+  const matching = sales.filter((s) => {
     if (view === "annulees") return s.status !== "active";
     if (s.status !== "active") return view === "tous";
     if (view === "a-encaisser") return balanceOf(s) > 0;
@@ -55,6 +57,9 @@ export default async function AdminLicensesPage({ searchParams }: { searchParams
     if (view === "soldees") return balanceOf(s) === 0;
     return true;
   });
+  const page = readPage(params);
+  const { limit, offset } = pageSlice(page);
+  const shown = matching.slice(offset, offset + limit);
   const count = (v: View) =>
     v === "tous"
       ? sales.length
@@ -201,6 +206,7 @@ export default async function AdminLicensesPage({ searchParams }: { searchParams
           })}
         </ul>
       )}
+      <Pagination path="/admin/licences" params={params} page={page} total={matching.length} />
     </>
   );
 }

@@ -7,9 +7,12 @@ import { PaymentDialog } from "@/components/customers/payment-dialog";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { SearchParams } from "@/lib/filters";
 import { formatDateTime, formatFCFA, formatPhone } from "@/lib/format";
+import { PAGE_SIZE, readPage } from "@/lib/pagination";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
 import { debtReminderMessage, waLink } from "@/lib/whatsapp";
 import { requireContext } from "@/server/context";
@@ -17,18 +20,22 @@ import { getCustomer } from "@/server/queries/customers";
 
 export const metadata: Metadata = { title: "Client" };
 
-export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ClientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<SearchParams> }) {
   const { id } = await params;
+  const query = await searchParams;
+  const page = readPage(query);
   const ctx = await requireContext("customers.manage");
-  const data = await getCustomer(ctx, id);
+  const data = await getCustomer(ctx, id, page * PAGE_SIZE);
   if (!data) notFound();
-  const { customer, history, payments, debt } = data;
+  const { customer, history, payments, historyTotal, debt } = data;
   const writable = !ctx.plan.readOnly;
 
   const timeline = [
     ...history.map((h) => ({ kind: "sale" as const, date: h.createdAt, h })),
     ...payments.map((p) => ({ kind: "payment" as const, date: p.createdAt, p })),
-  ].sort((a, b) => +new Date(b.date) - +new Date(a.date));
+  ]
+    .sort((a, b) => +new Date(b.date) - +new Date(a.date))
+    .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <>
@@ -152,6 +159,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                 )}
               </ul>
             )}
+            <Pagination path={`/clients/${customer.id}`} params={query} page={page} total={historyTotal} />
           </CardContent>
         </Card>
       </div>

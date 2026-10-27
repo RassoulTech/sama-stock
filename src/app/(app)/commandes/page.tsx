@@ -5,11 +5,13 @@ import { redirect } from "next/navigation";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterBar } from "@/components/shared/filter-bar";
+import { Pagination } from "@/components/shared/pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { param, pickParam, resolvePeriod, type PeriodPreset, type SearchParams } from "@/lib/filters";
 import { formatDateTime, formatFCFA } from "@/lib/format";
+import { pageSlice, readPage } from "@/lib/pagination";
 import { CHANNELS, ORDER_CHANNELS, type Channel } from "@/lib/domain/sales";
 import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/context";
@@ -29,7 +31,8 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
   const q = param(params, "q")?.slice(0, 60) ?? "";
   const search = { from: period.from, to: period.to, channel, q };
 
-  const [orders, counts] = await Promise.all([listOrders(ctx, filter, search), orderCounts(ctx, search)]);
+  const page = readPage(params);
+  const [orders, counts] = await Promise.all([listOrders(ctx, filter, search, pageSlice(page)), orderCounts(ctx, search)]);
 
   const countFor = (f: OrderFilter) => {
     const statuses = ORDER_FILTERS[f].statuses;
@@ -39,7 +42,7 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
   // Les onglets de statut gardent les autres filtres
   const statusHref = (key: OrderFilter) => {
     const next = new URLSearchParams();
-    for (const [k, v] of Object.entries(params)) if (typeof v === "string" && k !== "filtre") next.set(k, v);
+    for (const [k, v] of Object.entries(params)) if (typeof v === "string" && k !== "filtre" && k !== "page") next.set(k, v);
     if (key !== "open") next.set("filtre", key);
     const qs = next.toString();
     return qs ? `/commandes?${qs}` : "/commandes";
@@ -138,6 +141,7 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
           ))}
         </ul>
       )}
+      <Pagination path="/commandes" params={params} page={page} total={countFor(filter)} />
     </>
   );
 }

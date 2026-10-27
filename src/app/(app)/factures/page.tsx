@@ -4,21 +4,25 @@ import Link from "next/link";
 import { PaymentStatus } from "@/components/sales/sale-status";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { quoteDisplayStatus, QUOTE_STATUS_LABELS, QUOTE_STATUS_TONES } from "@/lib/domain/documents";
 import { param, type SearchParams } from "@/lib/filters";
 import { formatDate, formatFCFA } from "@/lib/format";
+import { pageSlice, readPage } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/context";
-import { DOCUMENTS_LIMIT, listDocuments } from "@/server/queries/documents";
+import { listDocuments } from "@/server/queries/documents";
 
 export const metadata: Metadata = { title: "Devis et factures" };
 
 export default async function FacturesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const ctx = await requireContext("sales.create");
-  const tab = param(await searchParams, "onglet") === "devis" ? "devis" : "facture";
-  const rows = await listDocuments(ctx, tab);
+  const params = await searchParams;
+  const tab = param(params, "onglet") === "devis" ? "devis" : "facture";
+  const page = readPage(params);
+  const { rows, total } = await listDocuments(ctx, tab, pageSlice(page));
   const writable = !ctx.plan.readOnly;
   const missingLegal = ctx.can("settings.manage") && !ctx.business.ninea && !ctx.business.rccm;
 
@@ -123,9 +127,7 @@ export default async function FacturesPage({ searchParams }: { searchParams: Pro
           })}
         </ul>
       )}
-      {rows.length >= DOCUMENTS_LIMIT && (
-        <p className="mt-4 text-center text-xs text-muted-foreground">Les {DOCUMENTS_LIMIT} documents les plus récents sont affichés.</p>
-      )}
+      <Pagination path="/factures" params={params} page={page} total={total} />
     </>
   );
 }

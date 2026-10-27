@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
 import { FilterChips } from "@/components/shared/filter-chips";
 import { matchesSearch, SearchInput } from "@/components/shared/search-input";
 import { ADMIN_ACTIONS, type AdminAction } from "@/lib/domain/admin";
@@ -23,6 +24,7 @@ export function AuditFeed({ entries }: { entries: AuditEntry[] }) {
   const filtered = entries.filter(
     (e) => inGroup(e) && matchesSearch(q, e.summary, e.business, e.actor_email, e.target_email, ADMIN_ACTIONS[e.action as AdminAction]),
   );
+  const { setTop, ...pager } = usePaged(filtered, `${q}|${group}`);
 
   return (
     <div className="space-y-4">
@@ -39,9 +41,10 @@ export function AuditFeed({ entries }: { entries: AuditEntry[] }) {
           })),
         ]}
       />
-      <div className="rounded-xl border bg-card p-4 sm:p-5">
-        <AuditList entries={filtered} />
+      <div ref={setTop} className="scroll-mt-20 rounded-xl border bg-card p-4 sm:p-5">
+        <AuditList entries={pager.items} />
       </div>
+      <ClientPagination pager={pager} />
     </div>
   );
 }

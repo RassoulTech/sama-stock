@@ -6,7 +6,7 @@ import { listAudit } from "@/server/queries/admin";
 export const metadata: Metadata = { title: "Journal des actions" };
 
 export default async function AdminAuditPage() {
-  const entries = await listAudit({ limit: 500 });
+  const entries = await listAudit({ limit: 1000 });
   return (
     <>
       <PageHeader

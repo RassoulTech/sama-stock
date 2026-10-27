@@ -45,7 +45,11 @@ export async function listCustomers(businessId: string) {
 
 export type CustomerRow = Awaited<ReturnType<typeof listCustomers>>[number];
 
-export async function getCustomer(ctx: BusinessContext, id: string) {
+/**
+ * Fiche client. L'historique mêle achats et remboursements par date : pour la page n, on lit les n premières pages
+ * de chaque liste, puis la page appelante découpe la tranche voulue (`historyTotal` = achats + remboursements).
+ */
+export async function getCustomer(ctx: BusinessContext, id: string, upTo = 30) {
   const [customer] = await db
     .select()
     .from(customers)
@@ -66,7 +70,7 @@ export async function getCustomer(ctx: BusinessContext, id: string) {
     .from(sales)
     .where(and(eq(sales.businessId, ctx.business.id), eq(sales.customerId, id)))
     .orderBy(desc(sales.createdAt))
-    .limit(100);
+    .limit(upTo);
 
   const payments = await db
     .select({
@@ -81,14 +85,25 @@ export async function getCustomer(ctx: BusinessContext, id: string) {
     .leftJoin(user, eq(customerPayments.userId, user.id))
     .where(and(eq(customerPayments.businessId, ctx.business.id), eq(customerPayments.customerId, id)))
     .orderBy(desc(customerPayments.createdAt))
-    .limit(100);
+    .limit(upTo);
+
+  const [[saleCount], [paymentCount]] = await Promise.all([
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(sales)
+      .where(and(eq(sales.businessId, ctx.business.id), eq(sales.customerId, id))),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(customerPayments)
+      .where(and(eq(customerPayments.businessId, ctx.business.id), eq(customerPayments.customerId, id))),
+  ]);
 
   const [debtRow] = await db
     .select({ debt: sql<number>`coalesce(sum(${sales.total} - ${sales.amountPaid}), 0)::int` })
     .from(sales)
     .where(and(eq(sales.businessId, ctx.business.id), eq(sales.customerId, id), COMPLETED_SALE));
 
-  return { customer, history, payments, debt: Number(debtRow?.debt ?? 0) };
+  return { customer, history, payments, historyTotal: (saleCount?.n ?? 0) + (paymentCount?.n ?? 0), debt: Number(debtRow?.debt ?? 0) };
 }
 
 export async function totalCustomerDebt(businessId: string) {

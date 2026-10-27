@@ -2,6 +2,7 @@
 
 import { LogOut, Monitor, Smartphone } from "lucide-react";
 import { useState } from "react";
+import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { matchesSearch, SearchInput } from "@/components/shared/search-input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export interface AdminSessionRow {
 export function SessionsTable({ rows }: { rows: AdminSessionRow[] }) {
   const [q, setQ] = useState("");
   const filtered = rows.filter((r) => matchesSearch(q, r.name, r.email, r.device, r.ip));
+  const { setTop, ...pager } = usePaged(filtered, q);
 
   return (
     <div className="space-y-4">
@@ -31,8 +33,8 @@ export function SessionsTable({ rows }: { rows: AdminSessionRow[] }) {
       {filtered.length === 0 ? (
         <p className="surface p-6 text-center text-sm text-muted-foreground">Aucune session active.</p>
       ) : (
-        <ul className="surface divide-y">
-          {filtered.map((s) => {
+        <ul ref={setTop} className="surface scroll-mt-20 divide-y">
+          {pager.items.map((s) => {
             const DeviceIcon = s.mobile ? Smartphone : Monitor;
             return (
               <li key={s.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
@@ -79,6 +81,7 @@ export function SessionsTable({ rows }: { rows: AdminSessionRow[] }) {
           })}
         </ul>
       )}
+      <ClientPagination pager={pager} />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { ChevronRight, RotateCcw, UserSearch } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips } from "@/components/shared/filter-chips";
 import { matchesSearch, SearchInput } from "@/components/shared/search-input";
@@ -49,6 +50,7 @@ export function CustomerList({ customers }: { customers: CustomerRow[] }) {
       if (sort === "recent") return (b.lastPurchaseAt ? +new Date(b.lastPurchaseAt) : 0) - (a.lastPurchaseAt ? +new Date(a.lastPurchaseAt) : 0);
       return a.name.localeCompare(b.name, "fr");
     });
+  const { setTop, ...pager } = usePaged(rows, `${q}|${filter}|${sort}`);
 
   const active = q !== "" || filter !== defaults.filter || sort !== defaults.sort;
 
@@ -107,33 +109,37 @@ export function CustomerList({ customers }: { customers: CustomerRow[] }) {
           description={filter === "debt" && !q ? "Tous vos clients sont à jour. Bravo !" : "Essayez un autre mot ou un autre filtre."}
         />
       ) : (
-        <ul className="divide-y overflow-hidden rounded-xl border bg-card">
-          {rows.map((c) => (
-            <li key={c.id}>
-              <Link href={`/clients/${c.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
-                <Avatar className="size-11">
-                  <AvatarFallback className="bg-accent font-semibold text-accent-foreground">{initials(c.name)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{c.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {c.phone ? formatPhone(c.phone) : "Pas de téléphone"}
-                    {c.lastPurchaseAt && <> · dernier achat le {formatDate(c.lastPurchaseAt)}</>}
-                  </p>
-                </div>
-                {c.debt > 0 ? (
-                  <div className="text-right">
-                    <p className="num font-semibold text-destructive">{formatFCFA(c.debt)}</p>
-                    <p className="text-xs text-muted-foreground">à payer</p>
+        <>
+          <div ref={setTop} className="scroll-mt-20" />
+          <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+            {pager.items.map((c) => (
+              <li key={c.id}>
+                <Link href={`/clients/${c.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+                  <Avatar className="size-11">
+                    <AvatarFallback className="bg-accent font-semibold text-accent-foreground">{initials(c.name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{c.name}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {c.phone ? formatPhone(c.phone) : "Pas de téléphone"}
+                      {c.lastPurchaseAt && <> · dernier achat le {formatDate(c.lastPurchaseAt)}</>}
+                    </p>
                   </div>
-                ) : (
-                  <span className="num hidden text-sm text-muted-foreground sm:inline">{formatFCFA(c.spent)} achetés</span>
-                )}
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  {c.debt > 0 ? (
+                    <div className="text-right">
+                      <p className="num font-semibold text-destructive">{formatFCFA(c.debt)}</p>
+                      <p className="text-xs text-muted-foreground">à payer</p>
+                    </div>
+                  ) : (
+                    <span className="num hidden text-sm text-muted-foreground sm:inline">{formatFCFA(c.spent)} achetés</span>
+                  )}
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <ClientPagination pager={pager} />
+        </>
       )}
     </div>
   );

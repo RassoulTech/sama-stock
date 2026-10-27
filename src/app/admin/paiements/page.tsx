@@ -3,12 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminStat } from "@/components/admin/admin-stat";
 import { PageHeader } from "@/components/shared/page-header";
+import { Pagination } from "@/components/shared/pagination";
 import { PaymentLogo } from "@/components/shared/payment-logo";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PLANS } from "@/lib/domain/plans";
 import { formatDate, formatDateTime, formatFCFA } from "@/lib/format";
+import { pageSlice, readPage } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { listPayments, SUBSCRIPTION_METHOD_LABELS } from "@/server/queries/admin";
 
@@ -32,7 +34,10 @@ const planLabel = (p: string) => PLANS[p as keyof typeof PLANS]?.label ?? p;
 export default async function AdminPaymentsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const [{ events, checkouts, totals }, params] = await Promise.all([listPayments(), searchParams]);
   const methode = FILTERS.some((f) => f.value === params.methode) ? (params.methode as string) : "tous";
-  const shown = methode === "tous" ? events : events.filter((e) => e.method === methode);
+  const matching = methode === "tous" ? events : events.filter((e) => e.method === methode);
+  const page = readPage(params);
+  const { limit, offset } = pageSlice(page);
+  const shown = matching.slice(offset, offset + limit);
   const sum = (method: string, key: "month" | "total") => totals.find((t) => t.method === method)?.[key] ?? 0;
   const month = sum("saspay", "month") + sum("especes", "month");
   const total = sum("saspay", "total") + sum("especes", "total");
@@ -112,6 +117,7 @@ export default async function AdminPaymentsPage({ searchParams }: { searchParams
               ))}
             </ul>
           )}
+          <Pagination path="/admin/paiements" params={params} page={page} total={matching.length} />
         </CardContent>
       </Card>
 

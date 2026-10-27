@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { businesses, customers, documentItems, documents, saleItems, sales, user, type DocumentParty } from "@/db/schema";
@@ -7,15 +7,14 @@ import type { PublicDocKind } from "@/lib/domain/document-token";
 import type { DocumentType } from "@/lib/domain/documents";
 import type { BusinessContext } from "../context";
 
-/** Nombre maximum de documents affichés en une fois. */
-export const DOCUMENTS_LIMIT = 300;
-
 const linkedSale = alias(sales, "linked_sale");
 
-export async function listDocuments(ctx: BusinessContext, type: DocumentType) {
+/** Une page de factures ou de devis, et leur nombre total. */
+export async function listDocuments(ctx: BusinessContext, type: DocumentType, page: { limit: number; offset: number }) {
   const conditions: SQL[] = [eq(documents.businessId, ctx.business.id), eq(documents.type, type)];
   // Un vendeur ne voit que les documents qu'il a faits
   if (!ctx.can("dashboard.full")) conditions.push(eq(documents.createdBy, ctx.user.id));
+  const [count] = await db.select({ total: sql<number>`count(*)::int` }).from(documents).where(and(...conditions));
   const rows = await db
     .select({
       id: documents.id,
@@ -34,12 +33,13 @@ export async function listDocuments(ctx: BusinessContext, type: DocumentType) {
     .from(documents)
     .leftJoin(linkedSale, eq(documents.saleId, linkedSale.id))
     .where(and(...conditions))
-    .orderBy(desc(documents.createdAt))
-    .limit(DOCUMENTS_LIMIT);
-  return rows;
+    .orderBy(desc(documents.createdAt), desc(documents.id))
+    .limit(page.limit)
+    .offset(page.offset);
+  return { rows, total: count?.total ?? 0 };
 }
 
-export type DocumentListRow = Awaited<ReturnType<typeof listDocuments>>[number];
+export type DocumentListRow = Awaited<ReturnType<typeof listDocuments>>["rows"][number];
 
 export async function getDocument(ctx: BusinessContext, id: string) {
   const [row] = await db

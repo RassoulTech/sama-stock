@@ -14,7 +14,11 @@ import { ActionError, parse, runAction } from "../action";
 import { assertNotDemo, BUSINESS_COOKIE, getContext, isSuperAdminEmail, LOCATION_COOKIE, requireActionContext } from "../context";
 import { employeeCount } from "../queries/team";
 import { ensureBusinessSlug } from "../services/business-slug";
-import { createDevice, DEVICE_COOKIE, DEVICE_COOKIE_OPTIONS, readDevice, revokeDevice } from "../services/devices";
+import { randomBytes } from "node:crypto";
+import QRCode from "qrcode";
+import { DEVICE_INVITE_MINUTES, signDeviceInvite } from "@/lib/domain/device-invite";
+import { SHOP_COOKIE } from "@/lib/shop-app";
+import { createDevice, DEVICE_COOKIE, DEVICE_COOKIE_OPTIONS, readDevice, revokeDevice, SHOP_COOKIE_OPTIONS } from "../services/devices";
 import { setCredentialPassword, temporaryPassword } from "../services/passwords";
 
 const INVITATION_DAYS = 7;
@@ -291,9 +295,34 @@ export async function activateThisDevice(name: string) {
     const label = parse(z.string().trim().min(2, "Donnez un nom à cet appareil (ex. : Tablette caisse).").max(60), name);
     const slug = await ensureBusinessSlug(db, ctx.business.id);
     const { cookie } = await createDevice({ businessId: ctx.business.id, name: label, createdBy: ctx.user.id });
-    (await cookies()).set(DEVICE_COOKIE, cookie, DEVICE_COOKIE_OPTIONS);
+    const jar = await cookies();
+    jar.set(DEVICE_COOKIE, cookie, DEVICE_COOKIE_OPTIONS);
+    if (slug) jar.set(SHOP_COOKIE, slug, SHOP_COOKIE_OPTIONS);
     revalidatePath("/equipe");
     return { slug };
+  });
+}
+
+/**
+ * QR code pour activer un autre appareil (téléphone d'un employé, tablette) sans s'y connecter :
+ * valable 15 minutes (DEVICE_INVITE_MINUTES), pour un seul appareil.
+ */
+export async function createDeviceInvite() {
+  return runAction(async () => {
+    const ctx = await requireActionContext("team.manage", { write: false });
+    assertNotDemo(ctx, "La gestion de l'équipe");
+    const slug = await ensureBusinessSlug(db, ctx.business.id);
+    if (!slug) throw new ActionError("Commerce introuvable.");
+    const expiresAt = new Date(Date.now() + DEVICE_INVITE_MINUTES * 60_000);
+    const token = signDeviceInvite(process.env.BETTER_AUTH_SECRET ?? "", {
+      businessId: ctx.business.id,
+      userId: ctx.user.id,
+      expiresAt,
+      nonce: randomBytes(12).toString("base64url"),
+    });
+    const url = `${await appOrigin()}/b/${slug}/activer/${token}`;
+    const qr = await QRCode.toDataURL(url, { margin: 1, width: 360, errorCorrectionLevel: "M" });
+    return { url, qr, expiresAt: expiresAt.toISOString() };
   });
 }
 

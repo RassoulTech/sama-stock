@@ -267,7 +267,7 @@ export async function listPayments() {
       select e.id, e.created_at, e.plan, e.amount, e.method, e.note, e.period_end, b.id as business_id, b.name as business
       from subscription_events e join businesses b on b.id = e.business_id
       where not b.is_demo
-      order by e.created_at desc limit 500`),
+      order by e.created_at desc limit 5000`),
     db.execute<{
       id: string;
       created_at: Date;

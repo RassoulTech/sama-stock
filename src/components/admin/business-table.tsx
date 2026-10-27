@@ -4,6 +4,7 @@ import { ArrowDownUp, ChevronRight, RotateCcw, Store } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips } from "@/components/shared/filter-chips";
 import { matchesSearch, SearchInput } from "@/components/shared/search-input";
@@ -80,6 +81,7 @@ export function BusinessTable({
       if (sort === "end") return (time(a.endsAt) || Infinity) - (time(b.endsAt) || Infinity);
       return time(b.createdAt) - time(a.createdAt);
     });
+  const { setTop, ...pager } = usePaged(filtered, `${q}|${status}|${plan}|${health}|${sort}`);
 
   return (
     <div className="space-y-4">
@@ -166,9 +168,10 @@ export function BusinessTable({
         <EmptyState icon={Store} title="Aucun commerce" description="Essayez un autre mot ou retirez les filtres." />
       ) : (
         <>
+          <div ref={setTop} className="scroll-mt-20" />
           {/* Téléphone : cartes */}
           <ul className="space-y-2 md:hidden">
-            {filtered.map((r) => (
+            {pager.items.map((r) => (
               <li key={r.id}>
                 <Link href={`/admin/commerces/${r.id}`} className="block rounded-xl border bg-card p-3.5 active:bg-muted">
                   <div className="flex items-start justify-between gap-2">
@@ -222,7 +225,7 @@ export function BusinessTable({
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {filtered.map((r) => (
+                {pager.items.map((r) => (
                   <tr
                     key={r.id}
                     className="group cursor-pointer transition-colors hover:bg-muted/40"
@@ -273,6 +276,7 @@ export function BusinessTable({
               </tbody>
             </table>
           </div>
+          <ClientPagination pager={pager} />
         </>
       )}
     </div>

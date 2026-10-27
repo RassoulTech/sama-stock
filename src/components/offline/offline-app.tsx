@@ -3,12 +3,14 @@
 import { ArrowLeft, Clock, PackageSearch, RotateCw, ShoppingCart, Store, Trash2 } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { LogoMark } from "@/components/brand/logo";
+import { ShopAppSync } from "@/components/pwa/shop-app-sync";
 import { PosScreen } from "@/components/pos/pos-screen";
 import { EmptyState } from "@/components/shared/empty-state";
 import { matchesSearch, SearchInput } from "@/components/shared/search-input";
 import { StockBadge } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { brandCss } from "@/lib/domain/brand";
+import { shopColors } from "@/lib/domain/shop-brand";
 import { stockStatus } from "@/lib/domain/stock";
 import { formatDateTime, formatFCFA, formatQty } from "@/lib/format";
 import { canSellOffline, offlineLabel, saleTotals } from "@/lib/offline/sale";
@@ -57,6 +59,12 @@ function Shell({ snapshot, children }: { snapshot: OfflineSnapshot | null; child
   return (
     <div className="min-h-dvh bg-white dark:bg-background">
       {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
+      {/* Même sans internet, la barre du téléphone garde la couleur de la boutique */}
+      <ShopAppSync
+        light={snapshot?.business.licensed ? shopColors(snapshot.business.brandColor).sidebar : "#0b6e4f"}
+        dark="#0b1210"
+        rememberSlug={null}
+      />
       <header className="sticky top-0 z-30 border-b bg-white/90 backdrop-blur-md dark:bg-background/90 print:hidden">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
           {snapshot?.business.licensed && snapshot.business.logo ? (

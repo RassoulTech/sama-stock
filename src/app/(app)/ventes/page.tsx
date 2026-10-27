@@ -4,16 +4,18 @@ import Link from "next/link";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterBar, type FilterSelect } from "@/components/shared/filter-bar";
+import { Pagination } from "@/components/shared/pagination";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
 import { param, pickParam, resolvePeriod, type PeriodPreset, type SearchParams } from "@/lib/filters";
 import { formatDateTime, formatFCFA } from "@/lib/format";
+import { pageSlice, readPage } from "@/lib/pagination";
 import { PAYMENT_METHODS, SALE_METHODS, type PaymentMethod } from "@/lib/domain/sales";
 import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/context";
 import { listCategories } from "@/server/queries/products";
-import { listSales, listSellers, SALE_STATES, SALES_LIMIT, type SaleState } from "@/server/queries/sales";
+import { listSales, listSellers, SALE_STATES, salesSummary, type SaleState } from "@/server/queries/sales";
 
 export const metadata: Metadata = { title: "Ventes" };
 
@@ -33,12 +35,10 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
   const categoryId = pickParam(params, "categorie", categories.map((c) => c.id));
   const sellerId = pickParam(params, "vendeur", sellers.map((s) => s.id));
 
-  const rows = await listSales(ctx, { from: period.from, to: period.to, method, state, categoryId, sellerId, q });
-  const truncated = rows.length > SALES_LIMIT;
-  const sales = truncated ? rows.slice(0, SALES_LIMIT) : rows;
-  const valid = sales.filter((s) => s.status === "completed");
-  const revenue = valid.reduce((s, x) => s + x.total, 0);
-  const cashed = valid.reduce((s, x) => s + x.amountPaid, 0);
+  const filters = { from: period.from, to: period.to, method, state, categoryId, sellerId, q };
+  const page = readPage(params);
+  const [sales, summary] = await Promise.all([listSales(ctx, filters, pageSlice(page)), salesSummary(ctx, filters)]);
+  const { revenue, cashed } = summary;
 
   const selects: FilterSelect[] = [
     {
@@ -99,12 +99,12 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
           au: period.au,
           customLabel: period.label,
         }}
-        resultLabel={`${sales.length}${truncated ? "+" : ""} vente${sales.length > 1 ? "s" : ""} · ${period.label.toLowerCase()}`}
+        resultLabel={`${summary.count} vente${summary.count > 1 ? "s" : ""} · ${period.label.toLowerCase()}`}
       />
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard label="Chiffre d'affaires" value={formatFCFA(revenue)} icon={Wallet} />
-        <StatCard label="Ventes validées" value={valid.length} icon={ShoppingBag} tone="neutral" />
+        <StatCard label="Ventes validées" value={summary.valid} icon={ShoppingBag} tone="neutral" />
         <StatCard
           label="Encaissé"
           value={formatFCFA(cashed)}
@@ -164,11 +164,7 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
               </li>
             ))}
           </ul>
-          {truncated && (
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Seules les {SALES_LIMIT} ventes les plus récentes sont affichées. Réduisez la période pour voir les autres.
-            </p>
-          )}
+          <Pagination path="/ventes" params={params} page={page} total={summary.count} />
         </>
       )}
     </>

@@ -15,12 +15,15 @@ export function ShopLoginPanel({
   staff,
   defaultEmail,
   notice,
+  googleEnabled = false,
 }: {
   slug: string;
   shopName: string;
   staff: StaffEntry[] | null;
   defaultEmail: string;
   notice: string | null;
+  /** Boutique sans licence : son propriétaire a pu créer son compte avec Google. */
+  googleEnabled?: boolean;
 }) {
   const [useEmail, setUseEmail] = useState(staff === null || Boolean(defaultEmail) || Boolean(notice));
 
@@ -33,7 +36,7 @@ export function ShopLoginPanel({
           <ArrowLeft className="size-4" /> Employés : code PIN
         </button>
       )}
-      <SignInForm redirectTo="/tableau-de-bord" googleEnabled={false} defaultEmail={defaultEmail} brand={{ name: shopName, slug }} notice={notice} />
+      <SignInForm redirectTo="/tableau-de-bord" googleEnabled={googleEnabled} defaultEmail={defaultEmail} brand={{ name: shopName, slug }} notice={notice} />
       {!staff && (
         <p className="flex gap-2 rounded-xl border bg-muted/40 p-3 text-xs text-muted-foreground">
           <KeySquare className="mt-0.5 size-4 shrink-0 text-primary" />

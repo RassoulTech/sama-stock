@@ -209,7 +209,7 @@ export async function submitInventory(input: z.input<typeof inventorySchema>) {
         checkUnit(product, c.counted);
         const expected = physical.get(c.productId) ?? 0;
         const difference = roundQty(c.counted - expected);
-        if (difference === 0) continue;
+        // Un produit conforme est aussi gardé (écart 0) : l'inventaire garde la trace de tout ce qui a été compté
         await applyStockMovement(tx, {
           businessId: ctx.business.id,
           locationId: ctx.location.id,
@@ -223,6 +223,7 @@ export async function submitInventory(input: z.input<typeof inventorySchema>) {
           unitCost: product.costPrice,
           userId: ctx.user.id,
         });
+        if (difference === 0) continue;
         result.push({
           productId: c.productId,
           name: product.name,
@@ -233,11 +234,11 @@ export async function submitInventory(input: z.input<typeof inventorySchema>) {
           value: showCost ? Math.round(difference * product.costPrice) : 0,
         });
       }
-      return result;
+      return { inventoryId, result };
     });
 
     revalidatePath("/", "layout");
-    return { lines, checked: data.counts.length };
+    return { inventoryId: lines.inventoryId, lines: lines.result, checked: data.counts.length };
   });
 }
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { PlanUsage } from "@/components/shared/plan-usage";
 import { StatusPill } from "@/components/shared/stock-badge";
-import { ActivateDeviceButton, AddEmployeeDialog, PinButton, RevokeDeviceButton } from "@/components/team/staff-components";
+import { ActivateDeviceButton, AddEmployeeDialog, DeviceInviteButton, PinButton, RevokeDeviceButton } from "@/components/team/staff-components";
 import { InvitationActions, MemberRoleSelect, RemoveMemberButton, ResetMemberPasswordButton } from "@/components/team/team-components";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,7 +146,12 @@ export default async function EquipePage() {
                   ))}
                 </ul>
               )}
-              {!thisDevice && !ctx.plan.readOnly && <ActivateDeviceButton shopPath={shopPath} />}
+              {!ctx.plan.readOnly && !ctx.business.isDemo && (
+                <div className="flex flex-wrap gap-2">
+                  {!thisDevice && <ActivateDeviceButton shopPath={shopPath} appName={ctx.business.name} />}
+                  <DeviceInviteButton />
+                </div>
+              )}
             </CardContent>
           </Card>
 

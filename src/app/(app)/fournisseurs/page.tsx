@@ -8,12 +8,19 @@ import { Button } from "@/components/ui/button";
 import { formatDate, formatFCFA, formatPhone } from "@/lib/format";
 import { requireContext } from "@/server/context";
 import { listSuppliers } from "@/server/queries/stock";
+import { Pagination } from "@/components/shared/pagination";
+import type { SearchParams } from "@/lib/filters";
+import { pageSlice, readPage } from "@/lib/pagination";
 
 export const metadata: Metadata = { title: "Fournisseurs" };
 
-export default async function FournisseursPage() {
+export default async function FournisseursPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const ctx = await requireContext("suppliers.view");
-  const suppliers = await listSuppliers(ctx.business.id);
+  const params = await searchParams;
+  const page = readPage(params);
+  const all = await listSuppliers(ctx.business.id);
+  const { limit, offset } = pageSlice(page);
+  const suppliers = all.slice(offset, offset + limit);
   const canManage = ctx.can("suppliers.manage") && !ctx.plan.readOnly;
   const showCost = ctx.can("costs.view");
 
@@ -29,8 +36,8 @@ export default async function FournisseursPage() {
 
   return (
     <>
-      <PageHeader title="Fournisseurs" description={`${suppliers.length} fournisseur(s)`} actions={addButton} />
-      {suppliers.length === 0 ? (
+      <PageHeader title="Fournisseurs" description={`${all.length} fournisseur(s)`} actions={addButton} />
+      {all.length === 0 ? (
         <EmptyState
           icon={Truck}
           title="Aucun fournisseur"
@@ -67,6 +74,7 @@ export default async function FournisseursPage() {
           ))}
         </ul>
       )}
+      <Pagination path="/fournisseurs" params={params} page={page} total={all.length} />
     </>
   );
 }

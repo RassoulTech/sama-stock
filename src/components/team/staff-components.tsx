@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Copy, KeySquare, Loader2, Smartphone, UserPlus } from "lucide-react";
+import { Check, Copy, KeySquare, Loader2, QrCode, Smartphone, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { InstallAppButton } from "@/components/pwa/install-app";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { FormError, FormField } from "@/components/shared/form-field";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { INVITABLE_ROLES, ROLE_DESCRIPTIONS, ROLE_LABELS } from "@/lib/domain/permissions";
 import { cn } from "@/lib/utils";
-import { activateThisDevice, addEmployee, resetMemberPin, revokeShopDevice } from "@/server/actions/team";
+import { activateThisDevice, addEmployee, createDeviceInvite, resetMemberPin, revokeShopDevice } from "@/server/actions/team";
 
 type EmployeeRole = (typeof INVITABLE_ROLES)[number];
 
@@ -31,7 +32,7 @@ export function PinDisplay({ pin }: { pin: string }) {
 function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="flex items-center gap-2 rounded-xl border bg-muted/40 px-3 py-2">
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border bg-muted/40 px-3 py-2">
       <span className="min-w-0 flex-1">
         <span className="block text-xs text-muted-foreground">{label}</span>
         <span className="block truncate font-mono text-sm font-semibold">{value}</span>
@@ -273,7 +274,7 @@ export function PinButton({ memberId, name, hasPin, self = false }: { memberId: 
 }
 
 /** Active cet appareil pour la boutique (les employés y taperont leur code). */
-export function ActivateDeviceButton({ shopPath }: { shopPath: string | null }) {
+export function ActivateDeviceButton({ shopPath, appName }: { shopPath: string | null; appName: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("Tablette caisse");
@@ -310,6 +311,11 @@ export function ActivateDeviceButton({ shopPath }: { shopPath: string | null }) 
               </DialogDescription>
             </DialogHeader>
             <CopyField label="Page de connexion des employés" value={`${window.location.origin}${done}`} />
+            <p className="text-sm text-muted-foreground">
+              Installez l&apos;application sur cet appareil : son icône porte le logo de la boutique et elle s&apos;ouvre
+              directement sur le choix du nom et le code PIN.
+            </p>
+            <InstallAppButton appName={appName} className="w-full" />
             <DialogFooter>
               <Button
                 onClick={() => {
@@ -372,5 +378,81 @@ export function RevokeDeviceButton({ deviceId, name }: { deviceId: string; name:
       successMessage="Appareil retiré"
       action={() => revokeShopDevice(deviceId)}
     />
+  );
+}
+
+/**
+ * QR code pour activer un autre appareil (téléphone d'un employé, tablette du dépôt) sans s'y connecter :
+ * on le scanne avec l'appareil à activer. Valable 15 minutes, pour un seul appareil.
+ */
+export function DeviceInviteButton() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [invite, setInvite] = useState<{ url: string; qr: string; expiresAt: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function create() {
+    setError(null);
+    startTransition(async () => {
+      const res = await createDeviceInvite();
+      if (!res.ok) return setError(res.error);
+      setInvite(res.data);
+    });
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o && !invite) create();
+        if (!o) {
+          setInvite(null);
+          router.refresh();
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <QrCode /> Activer un autre appareil
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Activer un autre appareil</DialogTitle>
+          <DialogDescription>
+            Scannez ce QR code avec l&apos;appareil à activer (appareil photo du téléphone). Vous n&apos;avez pas besoin de
+            vous y connecter.
+          </DialogDescription>
+        </DialogHeader>
+        {invite ? (
+          // min-w-0 : le long lien est tronqué au lieu d'élargir la fenêtre sur téléphone
+          <div className="min-w-0 space-y-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- QR code en data URL */}
+            <img src={invite.qr} alt="QR code d'activation" width={240} height={240} className="mx-auto size-60 rounded-xl border bg-white p-2" />
+            <p className="text-center text-xs text-muted-foreground">
+              Valable jusqu&apos;à {new Date(invite.expiresAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}, pour un
+              seul appareil.
+            </p>
+            <CopyField label="Ou envoyez ce lien à l'appareil" value={invite.url} />
+          </div>
+        ) : (
+          <div className="grid h-60 place-items-center">
+            {pending ? <Loader2 className="size-6 animate-spin text-muted-foreground" /> : <FormError message={error} />}
+          </div>
+        )}
+        <DialogFooter>
+          {invite && (
+            <Button type="button" variant="outline" onClick={create} disabled={pending}>
+              Nouveau QR code
+            </Button>
+          )}
+          <Button type="button" onClick={() => setOpen(false)}>
+            Terminé
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

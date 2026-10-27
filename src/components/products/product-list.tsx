@@ -3,6 +3,7 @@
 import { ChevronRight, PackageSearch, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterChips } from "@/components/shared/filter-chips";
 import { matchesSearch, SearchInput } from "@/components/shared/search-input";
@@ -68,6 +69,7 @@ export function ProductList({
       if (sort === "price-desc") return b.salePrice - a.salePrice;
       return a.name.localeCompare(b.name, "fr");
     });
+  const { setTop, ...pager } = usePaged(filtered, `${q}|${category}|${state}|${sort}`);
 
   return (
     <div className="space-y-4">
@@ -142,9 +144,10 @@ export function ProductList({
         />
       ) : (
         <>
+          <div ref={setTop} className="scroll-mt-20" />
           {/* Mobile : cartes */}
           <ul className="space-y-2 md:hidden">
-            {filtered.map((p) => (
+            {pager.items.map((p) => (
               <li key={p.id}>
                 <Link
                   href={`/produits/${p.id}`}
@@ -181,7 +184,7 @@ export function ProductList({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p) => {
+                {pager.items.map((p) => {
                   const margin = p.costPrice !== null ? p.salePrice - p.costPrice : null;
                   return (
                     <TableRow key={p.id} className="group relative">
@@ -223,6 +226,7 @@ export function ProductList({
               </TableBody>
             </Table>
           </div>
+          <ClientPagination pager={pager} />
         </>
       )}
     </div>

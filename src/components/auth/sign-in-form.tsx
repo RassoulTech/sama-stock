@@ -22,7 +22,7 @@ export function SignInForm({
   googleEnabled: boolean;
   /** E-mail déjà rempli (lien d'accès envoyé au client par WhatsApp). */
   defaultEmail?: string;
-  /** Page de connexion d'une boutique sous licence : à son nom, sans Google ni inscription. */
+  /** Page de connexion d'une boutique : à son nom, sans inscription (Google seulement hors licence, décidé par la page). */
   brand?: { name: string; slug: string } | null;
   /** Message affiché au-dessus du formulaire (par exemple : compte sans accès à cette boutique). */
   notice?: string | null;
@@ -32,7 +32,7 @@ export function SignInForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const withGoogle = googleEnabled && !brand;
+  const withGoogle = googleEnabled;
 
   async function signIn(credentials: { email: string; password: string }) {
     setPending(true);
@@ -78,7 +78,7 @@ export function SignInForm({
 
       {withGoogle && (
         <>
-          <GoogleButton callbackURL={redirectTo} newUserCallbackURL="/demarrage" />
+          <GoogleButton callbackURL={brand ? `/b/${brand.slug}/entrer` : redirectTo} newUserCallbackURL="/demarrage" />
           <OrSeparator />
         </>
       )}

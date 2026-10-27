@@ -4,7 +4,9 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { members } from "@/db/schema";
 import { BUSINESS_COOKIE, CONTEXT_COOKIE_OPTIONS, getSession, LOCATION_COOKIE } from "@/server/context";
+import { SHOP_COOKIE } from "@/lib/shop-app";
 import { shopBySlug } from "@/server/queries/shop-login";
+import { SHOP_COOKIE_OPTIONS } from "@/server/services/devices";
 
 /** Après la connexion sur la page d'une boutique : ouvre son application (même si le compte a plusieurs commerces). */
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -22,6 +24,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   if (!member) return NextResponse.redirect(new URL(`/b/${shop.slug}?acces=refuse`, request.url));
 
   const res = NextResponse.redirect(new URL("/tableau-de-bord", request.url));
+  // Cet appareil retiendra la boutique : après une déconnexion, on revient sur sa page de connexion
+  res.cookies.set(SHOP_COOKIE, shop.slug!, SHOP_COOKIE_OPTIONS);
   const jar = await cookies();
   if (jar.get(BUSINESS_COOKIE)?.value !== shop.id) {
     res.cookies.set(BUSINESS_COOKIE, shop.id, CONTEXT_COOKIE_OPTIONS);

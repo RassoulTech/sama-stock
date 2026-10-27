@@ -9,7 +9,7 @@ const SIZES = new Set([180, 192, 512]);
  * Icône de l'application d'une boutique : son logo sur un carré blanc, posé sur sa couleur (les initiales à défaut
  * de logo). Le fond couvre toute l'icône : elle reste belle quand le téléphone l'arrondit.
  */
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string; taille: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string; taille: string }> }) {
   const { slug, taille } = await params;
   const size = SIZES.has(Number(taille)) ? Number(taille) : 192;
   const shop = await shopBySlug(slug);
@@ -43,6 +43,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
         </div>
       </div>
     ),
-    { width: size, height: size, headers: { "Cache-Control": "public, max-age=86400" } },
+    {
+      width: size,
+      height: size,
+      // Adresse versionnée (?v=…) : elle change avec le logo ou la couleur, on peut donc la garder longtemps
+      headers: { "Cache-Control": new URL(request.url).searchParams.get("v") === shop.version ? "public, max-age=31536000, immutable" : "public, max-age=300" },
+    },
   );
 }

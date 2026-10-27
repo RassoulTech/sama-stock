@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { shopColors, shortAppName } from "@/lib/domain/shop-brand";
-import { shopBySlug } from "@/server/queries/shop-login";
+import { shopBySlug, shopIcon } from "@/server/queries/shop-login";
 
 /** Fiche d'installation de l'application d'une boutique : son nom et son icône sur l'écran d'accueil. */
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -19,15 +19,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#ffffff",
+    background_color: shopColors(shop.brandColor).sidebar,
     theme_color: shopColors(shop.brandColor).sidebar,
     icons: [
-      { src: `${base}/icone/192`, sizes: "192x192", type: "image/png" },
-      { src: `${base}/icone/512`, sizes: "512x512", type: "image/png" },
-      { src: `${base}/icone/512`, sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: shopIcon(shop, 192), sizes: "192x192", type: "image/png" },
+      { src: shopIcon(shop, 512), sizes: "512x512", type: "image/png" },
+      { src: shopIcon(shop, 512), sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
   return Response.json(manifest, {
-    headers: { "Content-Type": "application/manifest+json; charset=utf-8", "Cache-Control": "public, max-age=600" },
+    headers: { "Content-Type": "application/manifest+json; charset=utf-8", "Cache-Control": "public, max-age=300" },
   });
 }
