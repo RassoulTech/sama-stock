@@ -107,7 +107,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Application d'un client sous licence : sa couleur, son logo et son nom à la place de Sama Stock
   const licensed = Boolean(ctx.plan.license);
   const css = licensed ? brandCss(ctx.business.brandColor) : null;
-  const menu = licensed ? nav.map((i) => (i.href === "/abonnement" ? { ...i, label: "Mon application" } : i)) : nav;
+  const menu = licensed ? nav.map((i) => (i.href === "/licence" ? { ...i, label: "Mon application" } : i)) : nav;
 
   return (
     <AppProvider value={info}>

@@ -25,8 +25,8 @@ export function PlanUsage({
       </p>
       <Progress value={pct} className={`h-2 min-w-24 flex-1 ${full ? "[&>*]:bg-destructive" : ""}`} />
       {showUpgrade && full && (
-        <Link href="/abonnement" className="text-sm font-semibold text-primary hover:underline">
-          Augmenter la limite
+        <Link href="/licence" className="text-sm font-semibold text-primary hover:underline">
+          Voir les licences
         </Link>
       )}
     </div>

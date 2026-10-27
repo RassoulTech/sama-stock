@@ -272,7 +272,7 @@ export function TeamVisual() {
     ["Voir le stock", true, true],
     ["Voir les prix d'achat", true, false],
     ["Voir les bénéfices", true, false],
-    ["Gérer l'abonnement", true, false],
+    ["Gérer l'équipe", true, false],
   ];
   return (
     <div className="overflow-hidden rounded-xl border bg-white text-[#0b1310]">

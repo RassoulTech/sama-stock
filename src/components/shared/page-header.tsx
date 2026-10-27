@@ -21,7 +21,7 @@ export function PageHeader({
         {backHref && (
           <Link
             href={backHref}
-            className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+            className="mb-3 inline-flex h-9 items-center gap-1.5 rounded-full border bg-card pr-3.5 pl-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground lg:mb-2 lg:h-auto lg:border-0 lg:bg-transparent lg:p-0"
           >
             <ArrowLeft className="size-4" /> Retour
           </Link>

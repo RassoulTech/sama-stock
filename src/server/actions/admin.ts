@@ -4,13 +4,12 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { businesses, businessNotes, session, subscriptionEvents, user } from "@/db/schema";
-import { computePlanState, PERIOD_DAYS, PLANS } from "@/lib/domain/plans";
-import { formatDate, formatFCFA } from "@/lib/format";
+import { businesses, businessNotes, session, user } from "@/db/schema";
+import { computePlanState } from "@/lib/domain/plans";
+import { formatDate } from "@/lib/format";
 import { ActionError, parse, runAction } from "../action";
 import { getSession, requireSuperAdminAction } from "../context";
 import { logAdmin } from "../services/admin-audit";
-import { grantPeriod } from "../services/subscription";
 
 async function load(id: string) {
   const [b] = await db.select().from(businesses).where(eq(businesses.id, id));
@@ -21,58 +20,22 @@ async function load(id: string) {
 const DAY = 86_400_000;
 const days = (n: number) => `${n} jour${n > 1 ? "s" : ""}`;
 
-export async function adminSetPlan(businessId: string, input: { plan: string; days: number }) {
-  return runAction(async () => {
-    const ctx = await requireSuperAdminAction();
-    const data = parse(
-      z.object({ plan: z.enum(["trial", "pro", "business"]), days: z.coerce.number().int().min(1).max(366) }),
-      input,
-    );
-    await load(businessId);
-    const end = new Date(Date.now() + data.days * DAY);
-    await db.transaction(async (tx) => {
-      await tx
-        .update(businesses)
-        .set(data.plan === "trial" ? { plan: "trial", trialEndsAt: end } : { plan: data.plan, periodEndsAt: end })
-        .where(eq(businesses.id, businessId));
-      await tx.insert(subscriptionEvents).values({
-        businessId,
-        plan: data.plan,
-        amount: 0,
-        periodStart: new Date(),
-        periodEnd: end,
-        method: "admin",
-        note: `Modifié par ${ctx.user.email}`,
-        userId: ctx.user.id,
-      });
-      await logAdmin(tx, ctx, {
-        action: "plan",
-        businessId,
-        summary: `Formule ${PLANS[data.plan].label} pour ${days(data.days)}, jusqu'au ${formatDate(end)} (sans paiement)`,
-      });
-    });
-    revalidatePath("/admin", "layout");
-    return null;
-  });
-}
-
+/** Prolonge (ou relance) l'essai gratuit d'un commerce sans licence. */
 export async function adminExtend(businessId: string, extra: number) {
   return runAction(async () => {
     const ctx = await requireSuperAdminAction();
     const d = parse(z.coerce.number().int().min(1).max(366), extra);
     const b = await load(businessId);
     const state = computePlanState(b);
+    if (state.license) throw new ActionError("Ce commerce a sa licence : elle n'expire jamais.");
     const base = state.endsAt && state.endsAt > new Date() ? state.endsAt : new Date();
     const end = new Date(base.getTime() + d * DAY);
     await db.transaction(async (tx) => {
-      await tx
-        .update(businesses)
-        .set(state.plan === "trial" ? { trialEndsAt: end } : { periodEndsAt: end })
-        .where(eq(businesses.id, businessId));
+      await tx.update(businesses).set({ plan: "trial", trialEndsAt: end }).where(eq(businesses.id, businessId));
       await logAdmin(tx, ctx, {
         action: "extend",
         businessId,
-        summary: `${state.plan === "trial" ? "Essai" : `Formule ${state.label}`} prolongé(e) de ${days(d)}, jusqu'au ${formatDate(end)}`,
+        summary: `Essai gratuit prolongé de ${days(d)}, jusqu'au ${formatDate(end)}`,
       });
     });
     revalidatePath("/admin", "layout");
@@ -80,52 +43,16 @@ export async function adminExtend(businessId: string, extra: number) {
   });
 }
 
-/** Fait expirer immédiatement l'essai ou l'abonnement (utile pour tester le mode consultation seule). */
+/** Termine immédiatement l'essai gratuit (utile pour tester le mode consultation seule). */
 export async function adminExpireNow(businessId: string) {
   return runAction(async () => {
     const ctx = await requireSuperAdminAction();
     const b = await load(businessId);
+    if (computePlanState(b).license) throw new ActionError("Ce commerce a sa licence : elle n'expire jamais.");
     const past = new Date(Date.now() - 60_000);
     await db.transaction(async (tx) => {
-      await tx
-        .update(businesses)
-        .set(b.plan === "trial" ? { trialEndsAt: past } : { periodEndsAt: past })
-        .where(eq(businesses.id, businessId));
-      await logAdmin(tx, ctx, { action: "expire", businessId, summary: "Essai ou abonnement arrêté immédiatement" });
-    });
-    revalidatePath("/admin", "layout");
-    return null;
-  });
-}
-
-/** Paiement reçu en espèces : active la formule pour N mois et compte l'argent dans les revenus. */
-export async function adminRecordCashPayment(businessId: string, input: { plan: string; months: number }) {
-  return runAction(async () => {
-    const ctx = await requireSuperAdminAction();
-    const data = parse(
-      z.object({
-        plan: z.enum(["pro", "business"], { message: "Choisissez Pro ou Business." }),
-        months: z.coerce.number().int().min(1, "Au moins 1 mois.").max(12, "12 mois maximum."),
-      }),
-      input,
-    );
-    await load(businessId);
-    const amount = PLANS[data.plan].price * data.months;
-    await db.transaction(async (tx) => {
-      await grantPeriod(tx, {
-        businessId,
-        plan: data.plan,
-        amount,
-        method: "especes",
-        userId: ctx.user.id,
-        days: PERIOD_DAYS * data.months,
-        note: `${data.months} mois · encaissé par ${ctx.user.email}`,
-      });
-      await logAdmin(tx, ctx, {
-        action: "cash",
-        businessId,
-        summary: `${formatFCFA(amount)} encaissés en espèces : formule ${PLANS[data.plan].label} pour ${data.months} mois`,
-      });
+      await tx.update(businesses).set({ plan: "trial", trialEndsAt: past }).where(eq(businesses.id, businessId));
+      await logAdmin(tx, ctx, { action: "expire", businessId, summary: "Essai gratuit arrêté immédiatement" });
     });
     revalidatePath("/admin", "layout");
     return null;

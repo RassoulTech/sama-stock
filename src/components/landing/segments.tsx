@@ -80,7 +80,7 @@ const SEGMENTS: Segment[] = [
     title: "Plusieurs boutiques et dépôts, un stock clair",
     text: "Suivez le stock de chaque lieu et transférez la marchandise d'un dépôt à une boutique en un instant.",
     points: [
-      "Jusqu'à 3 boutiques ou dépôts avec la formule Business",
+      "Jusqu'à 5 boutiques ou dépôts avec la licence Business",
       "Transferts de stock entre lieux",
       "Une équipe avec des droits selon le rôle",
     ],

@@ -136,7 +136,7 @@ export async function requireActionContext(
   if (permission && !bctx.can(permission)) throw new ActionError("Vous n'avez pas les droits pour faire cela.");
   if (write && bctx.plan.readOnly) {
     throw new ActionError(
-      "Votre abonnement a expiré : le compte est en consultation seule. Choisissez une formule pour continuer.",
+      "Votre essai gratuit est terminé : le compte est en consultation seule. Achetez la licence pour continuer.",
     );
   }
   return bctx;

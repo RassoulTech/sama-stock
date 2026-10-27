@@ -89,7 +89,7 @@
   --chart-3: #3ba57f;
   --chart-4: #8aa89a;
   --chart-5: #b45309;
-  --radius: 0.5rem;
+  --radius: 0.625rem;
   /* Menu latéral vert de la marque en mode clair (le contenu reste blanc) */
   --sidebar: #0a5c42;
   --sidebar-foreground: #ffffff;

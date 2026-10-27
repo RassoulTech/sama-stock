@@ -29,7 +29,7 @@ export interface OfflineSnapshot {
   };
   location: { id: string; name: string };
   can: { sell: boolean; viewStock: boolean };
-  /** sellUntil : fin de l'essai ou de l'abonnement ; null pour une licence, qui n'expire jamais. */
+  /** sellUntil : fin de l'essai gratuit ; null pour une licence, qui n'expire jamais. */
   plan: { readOnly: boolean; sellUntil: string | null; label: string };
   modulePos: boolean;
   products: OfflineProduct[];

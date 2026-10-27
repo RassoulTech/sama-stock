@@ -22,7 +22,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
     <>
       <PageHeader
         title="Commerces"
-        description={`${stats.total} commerce${stats.total > 1 ? "s" : ""} · ${stats.active} payant${stats.active > 1 ? "s" : ""} · ${stats.trialing} en essai · ${stats.alive7} en activité cette semaine`}
+        description={`${stats.total} commerce${stats.total > 1 ? "s" : ""} · ${stats.licensed} avec licence · ${stats.trialing} en essai · ${stats.alive7} en activité cette semaine`}
         actions={
           <Button asChild variant="outline" size="sm">
             <a href="/api/admin/export/commerces" download>
@@ -36,7 +36,7 @@ export default async function AdminBusinessesPage({ searchParams }: { searchPara
           q: one(params.q),
           status: statut && statut in PLAN_STATUS_LABELS ? (statut as PlanStatus) : undefined,
           health: activite && activite in HEALTH_LABELS ? (activite as BusinessHealth) : undefined,
-          plan: one(params.formule) === "licence" ? "licence" : undefined,
+          plan: one(params.formule) === "licence" ? "licence" : one(params.formule) === "trial" ? "trial" : undefined,
         }}
         rows={rows.map((r) => ({
           id: r.id,

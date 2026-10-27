@@ -17,6 +17,7 @@ import {
   stockMovements,
   suppliers,
 } from "@/db/schema";
+import { DEMO_LICENCE } from "@/lib/domain/plans";
 import type { DemoProduct, DemoSpec } from "./specs";
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -64,8 +65,11 @@ export async function seedDemoBusiness(tx: Tx, spec: DemoSpec, ownerId: string, 
     id: businessId,
     ...spec.business,
     plan: spec.plan,
-    trialEndsAt: spec.plan === "trial" ? new Date(NOW + (14 - spec.createdDaysAgo) * DAY) : new Date(+createdAt + 14 * DAY),
-    periodEndsAt: spec.plan === "trial" ? null : new Date(NOW + 20 * DAY),
+    trialEndsAt: new Date(+createdAt + 14 * DAY),
+    // La démo montre une licence : achetée à l'ouverture de la boutique, maintenance d'un an
+    licensePack: DEMO_LICENCE[spec.plan],
+    licenseActivatedAt: createdAt,
+    maintenanceEndsAt: new Date(+createdAt + 365 * DAY),
     ownerId,
     isDemo: true,
     demoResetAt: new Date(NOW),

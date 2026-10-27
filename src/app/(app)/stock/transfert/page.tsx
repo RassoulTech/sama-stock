@@ -24,7 +24,7 @@ export default async function TransfertPage() {
         <EmptyState
           icon={ArrowLeftRight}
           title="Une seule boutique pour l'instant"
-          description="Les transferts servent à déplacer du stock entre plusieurs boutiques ou dépôts (formule Business)."
+          description="Les transferts servent à déplacer du stock entre plusieurs boutiques ou dépôts (licence Business)."
           action={
             ctx.can("settings.manage") && (
               <Button asChild variant="outline">

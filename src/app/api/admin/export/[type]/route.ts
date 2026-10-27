@@ -1,10 +1,10 @@
 import { HEALTH_LABELS } from "@/lib/domain/admin";
 import { isRole, ROLE_LABELS } from "@/lib/domain/permissions";
-import { PLAN_STATUS_LABELS, PLANS } from "@/lib/domain/plans";
+import { PLAN_STATUS_LABELS } from "@/lib/domain/plans";
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
 import { getContext } from "@/server/context";
 import { FORMATS, newWorkbook, startSheet, workbookResponse, writeTable, type Column } from "@/server/excel";
-import { listAllBusinesses, listAllUsers, listPayments, SUBSCRIPTION_METHOD_LABELS } from "@/server/queries/admin";
+import { listAllBusinesses, listAllUsers } from "@/server/queries/admin";
 
 const META = (title: string) => ({
   business: "Sama Stock · Administration",
@@ -69,37 +69,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ typ
       { totalLabel: "Total", freeze: true, filter: true },
     );
     return workbookResponse(wb, `commerces-sama-stock-${stamp()}.xlsx`);
-  }
-
-  if (type === "paiements") {
-    const { events } = await listPayments();
-    const columns: Column[] = [
-      { header: "Date", width: 16, format: FORMATS.dateTime, align: "left" },
-      { header: "Commerce", width: 28 },
-      { header: "Formule", width: 10 },
-      { header: "Moyen", width: 20 },
-      { header: "Montant", width: 14, format: FORMATS.money, sum: true },
-      { header: "Jusqu'au", width: 12, format: FORMATS.day },
-      { header: "Remarque", width: 40 },
-    ];
-    const wb = newWorkbook("Paiements · Sama Stock");
-    const { ws, row } = startSheet(wb, { name: "Paiements", title: "Paiements d'abonnement", meta: META(`${events.length} opérations`), widths: columns.map((c) => c.width) });
-    writeTable(
-      ws,
-      row,
-      columns,
-      events.map((e) => [
-        new Date(e.created_at),
-        e.business,
-        PLANS[e.plan as keyof typeof PLANS]?.label ?? e.plan,
-        SUBSCRIPTION_METHOD_LABELS[e.method] ?? e.method,
-        e.amount,
-        e.period_end ? new Date(e.period_end) : null,
-        e.note ?? "",
-      ]),
-      { totalLabel: "Total", freeze: true, filter: true },
-    );
-    return workbookResponse(wb, `paiements-sama-stock-${stamp()}.xlsx`);
   }
 
   if (type === "utilisateurs") {

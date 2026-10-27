@@ -268,7 +268,7 @@ export function BrandForm({ businessId, color, logo }: { businessId: string; col
   );
 }
 
-/** Vendre une licence à un commerce déjà inscrit (essai ou abonnement en ligne). */
+/** Vendre une licence à un commerce déjà inscrit (en essai gratuit). */
 export function SellLicenseForm({ businessId }: { businessId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);

@@ -7,10 +7,10 @@ import { ActionError, runAction } from "../action";
 import { BUSINESS_COOKIE, LOCATION_COOKIE } from "../context";
 import { demoPassword, ensureDemo, isDemoPlan, resetDemoPassword } from "../demo";
 
-/** Ouvre la boutique de démonstration d'une formule (Essai, Pro ou Business) et y connecte le visiteur. */
+/** Ouvre la boutique de démonstration d'une licence (Boutique, Pro ou Business) et y connecte le visiteur. */
 export async function enterDemo(plan: string) {
   const res = await runAction(async () => {
-    if (!isDemoPlan(plan)) throw new ActionError("Formule inconnue.");
+    if (!isDemoPlan(plan)) throw new ActionError("Démo inconnue.");
     const { email, businessId } = await ensureDemo(plan);
     const signIn = async () =>
       auth.api.signInEmail({ body: { email, password: demoPassword(plan), rememberMe: false }, headers: await headers() });

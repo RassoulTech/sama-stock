@@ -71,9 +71,9 @@ async function resolveCategory(ctx: BusinessContext, categoryId: string | null |
 
 function limitMessage(ctx: BusinessContext) {
   const max = ctx.plan.limits.maxProducts;
-  return ctx.plan.plan === "trial"
-    ? `L'essai est limité à ${max} produits. Passez à la formule Pro pour en ajouter davantage.`
-    : `Votre formule ${ctx.plan.label} est limitée à ${max} produits. Passez à Business pour des produits illimités.`;
+  return !ctx.plan.license
+    ? `L'essai gratuit est limité à ${max} produits. Avec la licence, vos produits sont illimités.`
+    : `Votre ${ctx.plan.label} est limitée à ${max} produits.`;
 }
 
 export async function createProduct(input: ProductInput) {

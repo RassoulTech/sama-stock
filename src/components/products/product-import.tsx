@@ -649,7 +649,7 @@ export function ProductImport({
             {fresh > room && (
               <p className="flex items-start gap-2 rounded-xl bg-saffron/12 px-3 py-2 text-sm">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning dark:text-saffron" />
-                La formule {planLabel} est limitée à {maxProducts} produits : seuls les {room} premiers nouveaux produits seront
+                L&apos;{planLabel.toLowerCase()} est limité à {maxProducts} produits : seuls les {room} premiers nouveaux produits seront
                 importés. Passez à Business pour des produits illimités.
               </p>
             )}

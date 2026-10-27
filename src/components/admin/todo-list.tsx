@@ -1,4 +1,4 @@
-import { CalendarClock, CheckCircle2, ChevronRight, HandCoins, Moon, PackageOpen, PhoneCall, RotateCcw, TimerOff, Wrench } from "lucide-react";
+import { CheckCircle2, ChevronRight, HandCoins, Moon, PackageOpen, PhoneCall, RotateCcw, TimerOff, Wrench } from "lucide-react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { adminCheckInMessage, adminReminderMessage } from "@/lib/domain/admin";
@@ -103,20 +103,11 @@ const SECTIONS: Section[] = [
     href: "/admin/commerces?statut=trialing",
   },
   {
-    key: "renewalsEnding",
-    title: "Abonnements à renouveler",
-    icon: CalendarClock,
-    tone: "bg-accent text-primary",
-    detail: (r) => `${r.state.label} · fin le ${formatDate(r.state.endsAt!)}`,
-    message: reminder,
-    href: "/admin/abonnements",
-  },
-  {
     key: "recentlyExpired",
-    title: "Expirés, à relancer",
+    title: "Essais terminés, à relancer",
     icon: RotateCcw,
     tone: "bg-saffron/15 text-warning dark:text-saffron",
-    detail: (r) => `${r.state.label} expiré le ${formatDate(r.state.endsAt!)}`,
+    detail: (r) => `Essai terminé le ${formatDate(r.state.endsAt!)} · ${r.productCount} produits · ${r.sales30} ventes`,
     message: reminder,
     href: "/admin/commerces?statut=expired",
   },
@@ -149,7 +140,7 @@ export function TodoList({ todo, licences, limit = 3 }: { todo: Todo; licences?:
       <div className="flex flex-col items-center gap-2 py-8 text-center">
         <CheckCircle2 className="size-8 text-primary" />
         <p className="font-semibold">Rien d&apos;urgent aujourd&apos;hui</p>
-        <p className="text-sm text-muted-foreground">Aucun essai ni abonnement à relancer, aucun commerçant bloqué.</p>
+        <p className="text-sm text-muted-foreground">Aucun essai à relancer, aucun commerçant bloqué.</p>
       </div>
     );
   }

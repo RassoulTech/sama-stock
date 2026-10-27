@@ -9,8 +9,8 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  owner: "Voit et fait tout, y compris l'abonnement et l'équipe.",
-  manager: "Tout, sauf l'abonnement, l'équipe et les paramètres du commerce.",
+  owner: "Voit et fait tout, y compris la licence et l'équipe.",
+  manager: "Tout, sauf la licence, l'équipe et les paramètres du commerce.",
   seller: "Vend, gère les commandes et les clients. Ne voit ni les prix d'achat ni les bénéfices.",
   storekeeper: "Entrées, sorties, inventaire et transferts de stock, en quantités seulement.",
 };

@@ -169,7 +169,7 @@ export async function adminCreateLicenseClient(input: { client: z.input<typeof c
   });
 }
 
-/** Vend une licence à un commerce déjà inscrit (essai ou abonnement en ligne). */
+/** Vend une licence à un commerce déjà inscrit (en essai gratuit). */
 export async function adminSellLicense(businessId: string, input: z.input<typeof saleSchema>) {
   return runAction(async () => {
     const ctx = await requireSuperAdminAction();

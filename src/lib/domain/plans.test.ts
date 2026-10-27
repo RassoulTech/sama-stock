@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { brandCss } from "./brand";
-import { addMonths, canAdd, computePlanState, LICENSE_PACKS, limitLabel, PLANS } from "./plans";
+import { addMonths, canAdd, computePlanState, LICENSE_PACKS, limitLabel, TRIAL } from "./plans";
 
 const now = new Date("2026-10-19T12:00:00Z");
 const days = (n: number) => new Date(now.getTime() + n * 86_400_000);
 
-describe("PLANS", () => {
-  it("matches the validated pricing grid", () => {
-    expect(PLANS.trial).toMatchObject({ price: 0, maxProducts: 20, maxEmployees: 0, maxLocations: 1, advancedReports: false, excel: false });
-    expect(PLANS.pro).toMatchObject({ price: 6500, maxProducts: 50, maxEmployees: 3, maxLocations: 1, advancedReports: true, excel: true });
-    expect(PLANS.business).toMatchObject({ price: 11500, maxProducts: null, maxEmployees: null, maxLocations: 3, advancedReports: true, excel: true });
+describe("TRIAL", () => {
+  it("garde les limites de l'essai gratuit", () => {
+    expect(TRIAL.limits).toEqual({ maxProducts: 20, maxEmployees: 0, maxLocations: 1, advancedReports: false, excel: false });
   });
 });
 
@@ -19,6 +17,7 @@ describe("computePlanState", () => {
     expect(s.status).toBe("trialing");
     expect(s.readOnly).toBe(false);
     expect(s.daysLeft).toBe(4);
+    expect(s.label).toBe("Essai gratuit");
   });
   it("trial ended is read-only", () => {
     const s = computePlanState({ plan: "trial", trialEndsAt: days(-1), periodEndsAt: null, suspendedAt: null }, now);
@@ -26,19 +25,14 @@ describe("computePlanState", () => {
     expect(s.readOnly).toBe(true);
     expect(s.daysLeft).toBe(0);
   });
-  it("paid plan within its period is active", () => {
+  it("sans licence, un ancien abonnement redevient l'essai (plus de formule mensuelle)", () => {
     const s = computePlanState({ plan: "pro", trialEndsAt: days(-20), periodEndsAt: days(10), suspendedAt: null }, now);
-    expect(s.status).toBe("active");
-    expect(s.readOnly).toBe(false);
-    expect(s.limits.maxProducts).toBe(50);
-  });
-  it("paid plan past its period is expired", () => {
-    const s = computePlanState({ plan: "business", trialEndsAt: days(-40), periodEndsAt: days(-1), suspendedAt: null }, now);
+    expect(s.plan).toBe("trial");
     expect(s.status).toBe("expired");
-    expect(s.readOnly).toBe(true);
+    expect(s.license).toBeNull();
   });
   it("suspension wins over everything", () => {
-    const s = computePlanState({ plan: "business", trialEndsAt: days(-40), periodEndsAt: days(20), suspendedAt: days(-1) }, now);
+    const s = computePlanState({ plan: "trial", trialEndsAt: days(20), periodEndsAt: null, suspendedAt: days(-1) }, now);
     expect(s.status).toBe("suspended");
     expect(s.readOnly).toBe(true);
   });
@@ -91,7 +85,7 @@ describe("licences", () => {
     expect(s).toMatchObject({ status: "suspended", readOnly: true });
   });
 
-  it("ignore un forfait inconnu (abonnement normal)", () => {
+  it("ignore un forfait inconnu (reste l'essai gratuit)", () => {
     const s = computePlanState({ ...base, licensePack: "inconnu" }, now);
     expect(s.license).toBeNull();
     expect(s.status).toBe("expired");

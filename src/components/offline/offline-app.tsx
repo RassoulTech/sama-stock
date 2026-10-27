@@ -155,7 +155,7 @@ function OfflineScreen() {
         )}
         {!sell && (
           <p className="mb-4 rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
-            La caisse n&apos;est pas disponible hors ligne pour votre compte ou votre formule.
+            La caisse n&apos;est pas disponible hors ligne pour votre compte, ou l&apos;essai gratuit est terminé.
           </p>
         )}
         <div role="tablist" aria-label="Caisse hors ligne" className="mb-5 flex gap-2 overflow-x-auto print:hidden">

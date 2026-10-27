@@ -94,7 +94,7 @@ describe("canSellOffline", () => {
   it("autorise la caisse pendant la formule", () => {
     expect(canSellOffline(snapshot(), NOW)).toBe(true);
   });
-  it("bloque après la fin de l'essai ou de l'abonnement, même sans réseau", () => {
+  it("bloque après la fin de l'essai gratuit, même sans réseau", () => {
     expect(canSellOffline(snapshot({ plan: { readOnly: false, sellUntil: "2026-10-20T00:00:00.000Z", label: "Essai" } }), NOW)).toBe(false);
   });
   it("ne bloque jamais une licence (pas de date limite)", () => {

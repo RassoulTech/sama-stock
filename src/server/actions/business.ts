@@ -180,9 +180,9 @@ export async function createLocation(input: z.input<typeof locationSchema>) {
     const data = parse(locationSchema, input);
     if (!canAdd(ctx.plan.limits.maxLocations, ctx.locations.length)) {
       throw new ActionError(
-        ctx.plan.plan === "business"
-          ? `Votre formule permet ${ctx.plan.limits.maxLocations} boutiques ou dépôts au maximum.`
-          : "Plusieurs boutiques ou dépôts sont disponibles avec la formule Business.",
+        ctx.plan.license === "business"
+          ? `Votre licence permet ${ctx.plan.limits.maxLocations} boutiques ou dépôts au maximum.`
+          : "Plusieurs boutiques ou dépôts sont disponibles avec la licence Business.",
       );
     }
     await db.insert(locations).values({ businessId: ctx.business.id, ...data });

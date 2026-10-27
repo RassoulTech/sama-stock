@@ -34,7 +34,7 @@ export interface ImportBatchResult {
 
 /**
  * Enregistre un lot de produits dans un commerce : création (avec catégories et stock de départ
- * dans la boutique indiquée) ou mise à jour des produits déjà présents, dans la limite de la formule.
+ * dans la boutique indiquée) ou mise à jour des produits déjà présents, dans la limite de l'essai gratuit (les licences n'en ont pas).
  */
 export async function importProductRows(
   target: { businessId: string; locationId: string; userId: string; maxProducts: number | null; planLabel: string; note?: string },
@@ -94,7 +94,7 @@ export async function importProductRows(
         continue;
       }
       if (room <= 0) {
-        out.skipped.push({ line: r.line, name: r.name, reason: `Limite de ${max} produits de la formule ${target.planLabel}` });
+        out.skipped.push({ line: r.line, name: r.name, reason: `Limite de ${max} produits (${target.planLabel.toLowerCase()})` });
         continue;
       }
       const decimals = unitAllowsDecimals(r.unit);

@@ -4,7 +4,7 @@ import { cache } from "react";
 import { db } from "@/db";
 import { businesses, businessNotes, subscriptionEvents, user } from "@/db/schema";
 import { businessHealth } from "@/lib/domain/admin";
-import { computePlanState, PLANS, type PlanStatus } from "@/lib/domain/plans";
+import { computePlanState, type PlanStatus } from "@/lib/domain/plans";
 import { licenseSummary, listLicenseSales } from "./licences";
 
 /** Ventes comptées : ventes validées en caisse et commandes livrées. */
@@ -40,9 +40,8 @@ export const listAllBusinesses = cache(async () => {
         (select max(s.created_at) from sales s where s.business_id = ${businesses.id}),
         (select max(m.created_at) from stock_movements m where m.business_id = ${businesses.id})
       )`,
-      // Tout l'argent reçu de ce commerce : abonnements et licence (avec maintenance)
-      paidTotal: sql<number>`((select coalesce(sum(e.amount), 0) from subscription_events e where e.business_id = ${businesses.id} and e.method in ('saspay', 'especes'))
-        + (select coalesce(sum(p.amount), 0) from license_payments p where p.business_id = ${businesses.id}))::int`,
+      // Tout l'argent reçu de ce commerce : licence et maintenance
+      paidTotal: sql<number>`(select coalesce(sum(p.amount), 0) from license_payments p where p.business_id = ${businesses.id})::int`,
     })
     .from(businesses)
     .leftJoin(user, eq(businesses.ownerId, user.id))
@@ -64,22 +63,16 @@ export const listAllBusinesses = cache(async () => {
   });
 });
 
-/** Compteurs du menu : commerces, échéances à traiter, paiements en attente. */
+/** Compteurs du menu : commerces (alerte s'il y a des essais à relancer) et licences à suivre. */
 export async function adminNavBadges() {
-  const [rows, pending] = await Promise.all([
-    listAllBusinesses(),
-    db.execute<{ n: number }>(sql`select count(*)::int as n from subscription_checkouts where status = 'pending' and created_at > now() - interval '48 hours'`),
-  ]);
+  const rows = await listAllBusinesses();
   const todo = todoLists(rows);
-  const due = todo.trialsEnding.length + todo.renewalsEnding.length + todo.recentlyExpired.length;
-  const waiting = pending.rows[0]?.n ?? 0;
+  const due = todo.trialsEnding.length + todo.recentlyExpired.length;
   const lic = licenseSummary(await listLicenseSales());
   const licenseTodo = lic.toCollect.length + lic.maintenanceSoon.length + lic.maintenanceOver.length;
   return {
     ...(licenseTodo > 0 ? { "/admin/licences": { value: licenseTodo, tone: "alert" as const } } : lic.count > 0 ? { "/admin/licences": { value: lic.count, tone: "muted" as const } } : {}),
-    "/admin/commerces": { value: rows.length, tone: "muted" as const },
-    ...(due > 0 ? { "/admin/abonnements": { value: due, tone: "alert" as const } } : {}),
-    ...(waiting > 0 ? { "/admin/paiements": { value: waiting, tone: "alert" as const } } : {}),
+    "/admin/commerces": due > 0 ? { value: due, tone: "alert" as const } : { value: rows.length, tone: "muted" as const },
   };
 }
 
@@ -87,36 +80,32 @@ export type AdminBusinessRow = Awaited<ReturnType<typeof listAllBusinesses>>[num
 
 export function adminStats(rows: AdminBusinessRow[]) {
   const by = (s: PlanStatus) => rows.filter((r) => r.state.status === s).length;
-  // Abonnés payants (les licences sont achetées une fois : elles ne font pas partie du revenu mensuel)
-  const paying = rows.filter((r) => !r.state.license && r.state.status === "active" && r.state.plan !== "trial");
   return {
     total: rows.length,
     trialing: by("trialing"),
-    active: paying.length,
     expired: by("expired"),
     suspended: by("suspended"),
-    mrr: paying.reduce((s, r) => s + PLANS[r.state.plan].price, 0),
     /** Commerces avec une vente ou un mouvement de stock ces 7 derniers jours. */
     alive7: rows.filter((r) => r.health === "active").length,
     licensed: rows.filter((r) => r.state.license).length,
   };
 }
 
-/** Parcours d'un commerce : inscrit → premier produit → première vente → client payant. */
+/** Parcours d'un commerce : inscrit → premier produit → première vente → licence achetée. */
 export function activationFunnel(rows: AdminBusinessRow[]) {
   return [
     { key: "signup", label: "Inscrits", count: rows.length },
     { key: "product", label: "Ont ajouté un produit", count: rows.filter((r) => r.productCount > 0).length },
     { key: "sale", label: "Ont fait une vente", count: rows.filter((r) => r.saleCount > 0).length },
-    { key: "paid", label: "Sont devenus payants", count: rows.filter((r) => r.paidTotal > 0).length },
+    { key: "paid", label: "Ont acheté leur licence", count: rows.filter((r) => r.state.license || r.paidTotal > 0).length },
   ];
 }
 
-/** Essais et abonnements en cours qui se terminent dans les `days` prochains jours, du plus proche au plus lointain. */
+/** Essais gratuits qui se terminent dans les `days` prochains jours, du plus proche au plus lointain. */
 export function endingSoon(rows: AdminBusinessRow[], days: number) {
   const limit = Date.now() + days * 86_400_000;
   return rows
-    .filter((r) => !r.state.license && (r.state.status === "active" || r.state.status === "trialing") && r.state.endsAt && r.state.endsAt.getTime() <= limit)
+    .filter((r) => !r.state.license && r.state.status === "trialing" && r.state.endsAt && r.state.endsAt.getTime() <= limit)
     .sort((a, b) => a.state.endsAt!.getTime() - b.state.endsAt!.getTime());
 }
 
@@ -125,15 +114,14 @@ export function todoLists(rows: AdminBusinessRow[]) {
   const now = Date.now();
   const DAY = 86_400_000;
   return {
-    trialsEnding: endingSoon(rows, 3).filter((r) => r.state.status === "trialing"),
-    renewalsEnding: endingSoon(rows, 5).filter((r) => r.state.status === "active"),
+    trialsEnding: endingSoon(rows, 3),
     recentlyExpired: rows.filter((r) => r.state.status === "expired" && r.state.endsAt && now - r.state.endsAt.getTime() <= 30 * DAY),
     notStarted: rows.filter((r) => r.productCount === 0 && now - r.createdAt.getTime() >= 2 * DAY && r.state.status !== "suspended"),
     goneQuiet: rows.filter((r) => r.health === "inactive" && r.state.status !== "suspended"),
   };
 }
 
-/** Méthodes de paiement d'abonnement, telles qu'affichées à l'administrateur. */
+/** Méthodes des anciens mouvements d'essai (prolongations faites par l'équipe). */
 export const SUBSCRIPTION_METHOD_LABELS: Record<string, string> = {
   saspay: "Wave / Orange Money",
   especes: "Espèces",
@@ -146,8 +134,6 @@ export const DEMO_EMAIL_DOMAIN = "@sama-stock.invalid";
 const REAL_USER = sql`email not like ${"%" + DEMO_EMAIL_DOMAIN}`;
 const REAL_BUSINESS = sql`business_id not in (select id from businesses where is_demo)`;
 
-/** Seuls les vrais encaissements comptent dans les revenus (ni simulation, ni ajustement). */
-const REAL_PAYMENT = sql`method in ('saspay', 'especes')`;
 
 export async function platformOverview() {
   const [counts, signups, revenue] = await Promise.all([
@@ -163,7 +149,6 @@ export async function platformOverview() {
       revenue_prev: number;
       signups_month: number;
       signups_prev: number;
-      pending_checkouts: number;
       google_users: number;
     }>(sql`select
       (select count(*)::int from "user" where ${REAL_USER}) as users,
@@ -175,19 +160,12 @@ export async function platformOverview() {
         and user_id in (select id from "user" where ${REAL_USER})) as active_sessions,
       (select count(distinct user_id)::int from session where updated_at > now() - interval '7 days'
         and user_id in (select id from "user" where ${REAL_USER})) as active_users7,
-      ((select coalesce(sum(amount), 0) from subscription_events
-        where ${REAL_PAYMENT} and created_at >= date_trunc('month', now()))
-        + (select coalesce(sum(amount), 0) from license_payments where paid_at >= date_trunc('month', now())))::int as revenue_month,
-      ((select coalesce(sum(amount), 0) from subscription_events
-        where ${REAL_PAYMENT} and created_at >= date_trunc('month', now()) - interval '1 month'
-        and created_at < date_trunc('month', now()))
-        + (select coalesce(sum(amount), 0) from license_payments
-        where paid_at >= date_trunc('month', now()) - interval '1 month' and paid_at < date_trunc('month', now())))::int as revenue_prev,
+      (select coalesce(sum(amount), 0) from license_payments where paid_at >= date_trunc('month', now()))::int as revenue_month,
+      (select coalesce(sum(amount), 0) from license_payments
+        where paid_at >= date_trunc('month', now()) - interval '1 month' and paid_at < date_trunc('month', now()))::int as revenue_prev,
       (select count(*)::int from businesses where not is_demo and created_at >= date_trunc('month', now())) as signups_month,
       (select count(*)::int from businesses where not is_demo and created_at >= date_trunc('month', now()) - interval '1 month'
         and created_at < date_trunc('month', now())) as signups_prev,
-      (select count(*)::int from subscription_checkouts
-        where status = 'pending' and created_at > now() - interval '48 hours') as pending_checkouts,
       (select count(distinct user_id)::int from account where provider_id = 'google') as google_users`),
     db.execute<{ day: string; n: number }>(sql`
       select to_char(d, 'YYYY-MM-DD') as day, count(b.id)::int as n
@@ -196,9 +174,7 @@ export async function platformOverview() {
       group by d order by d`),
     db.execute<{ month: string; total: number }>(sql`
       select to_char(m, 'YYYY-MM') as month,
-        ((select coalesce(sum(e.amount), 0) from subscription_events e
-          where date_trunc('month', e.created_at) = m and e.method in ('saspay', 'especes'))
-        + (select coalesce(sum(p.amount), 0) from license_payments p where date_trunc('month', p.paid_at) = m))::int as total
+        (select coalesce(sum(p.amount), 0) from license_payments p where date_trunc('month', p.paid_at) = m)::int as total
       from generate_series(date_trunc('month', now()) - interval '5 months', date_trunc('month', now()), interval '1 month') m
       order by m`),
   ]);
@@ -249,48 +225,6 @@ export async function listSessions() {
     order by coalesce(s.updated_at, s.created_at) desc
     limit 300`);
   return res.rows;
-}
-
-export async function listPayments() {
-  const [events, checkouts, totals] = await Promise.all([
-    db.execute<{
-      id: string;
-      created_at: Date;
-      plan: string;
-      amount: number;
-      method: string;
-      note: string | null;
-      period_end: Date | null;
-      business_id: string;
-      business: string;
-    }>(sql`
-      select e.id, e.created_at, e.plan, e.amount, e.method, e.note, e.period_end, b.id as business_id, b.name as business
-      from subscription_events e join businesses b on b.id = e.business_id
-      where not b.is_demo
-      order by e.created_at desc limit 5000`),
-    db.execute<{
-      id: string;
-      created_at: Date;
-      plan: string;
-      amount: number;
-      status: string;
-      paid_at: Date | null;
-      business_id: string;
-      business: string;
-    }>(sql`
-      select c.id, c.created_at, c.plan, c.amount, c.status, c.paid_at, b.id as business_id, b.name as business
-      from subscription_checkouts c join businesses b on b.id = c.business_id
-      where not b.is_demo
-      order by c.created_at desc limit 100`),
-    db.execute<{ method: string; month: number; total: number; count: number }>(sql`
-      select method,
-        coalesce(sum(amount) filter (where created_at >= date_trunc('month', now())), 0)::int as month,
-        coalesce(sum(amount), 0)::int as total,
-        count(*)::int as count
-      from subscription_events where ${REAL_PAYMENT}
-      group by method`),
-  ]);
-  return { events: events.rows, checkouts: checkouts.rows, totals: totals.rows };
 }
 
 export async function getBusinessForAdmin(id: string) {

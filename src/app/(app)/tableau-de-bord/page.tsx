@@ -17,6 +17,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { WeekRevenueBars } from "@/components/charts/revenue-charts";
+import { MobileHome, type MobileAction } from "@/components/dashboard/mobile-home";
 import { ProductThumb } from "@/components/products/product-thumb";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
 import { PageHeader } from "@/components/shared/page-header";
@@ -80,13 +81,36 @@ export default async function DashboardPage() {
       ? ctx.plan.limits.maxEmployees !== 0
         ? [{ done: (teamCount ?? 0) > 0, label: "Ajouter un employé", href: "/equipe" }]
         : []
-      : [{ done: (teamCount ?? 0) > 0, label: "Ajouter un employé (formules Pro et Business)", href: "/equipe" }]),
+      : [{ done: (teamCount ?? 0) > 0, label: "Ajouter un employé (licences Pro et Business)", href: "/equipe" }]),
   ];
   const showChecklist = !ctx.business.isDemo && checklist && checklist.some((c) => !c.done) && products.length < 5;
 
+  // Téléphone : raccourcis ronds, le plus utile d'abord (4 au plus)
+  const mobileActions: MobileAction[] = [
+    ...(writable && showPos ? [{ href: "/vendre", label: "Vendre", icon: "pos" as const, primary: true }] : []),
+    ...(writable && showOrders ? [{ href: "/commandes/nouvelle", label: "Commande", icon: "order" as const, primary: !showPos }] : []),
+    ...(writable && ctx.can("stock.in") ? [{ href: "/stock/entree", label: "Entrée", icon: "stock" as const }] : []),
+    ...(writable && ctx.can("sales.create") ? [{ href: "/factures/devis/nouveau", label: "Devis", icon: "quote" as const }] : []),
+    ...(ctx.can("customers.manage") ? [{ href: "/clients", label: "Clients", icon: "customers" as const }] : []),
+  ].slice(0, 4);
+
   return (
     <>
+      <MobileHome
+        greeting={now.getUTCHours() < 18 ? "Bonjour" : "Bonsoir"}
+        firstName={firstName}
+        subtitle={`${ctx.business.name}${ctx.locations.length > 1 ? ` · ${ctx.location.name}` : ""}`}
+        logo={ctx.plan.license && ctx.business.logo ? ctx.business.logo : null}
+        alerts={alerts.length}
+        searchable={ctx.can("products.view")}
+        actions={mobileActions}
+        today={today ? { label: seller ? "Mes ventes du jour" : "Aujourd'hui", revenue: today.revenue, count: today.count } : null}
+        week={series}
+        salesHref={showPos ? "/ventes" : null}
+      />
+
       <PageHeader
+        className="max-lg:hidden"
         title={`Bonjour ${firstName} !`}
         description={
           <span className="inline-flex items-center gap-1.5">
@@ -173,6 +197,7 @@ export default async function DashboardPage() {
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {today && (
           <StatCard
+            className="max-lg:hidden"
             label={seller ? "Mes ventes du jour" : "Aujourd'hui"}
             value={formatFCFA(today.revenue)}
             hint={`${today.count} vente${today.count > 1 ? "s" : ""}`}
@@ -225,7 +250,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         {series && (
-          <Card className="lg:col-span-2">
+          <Card className="max-lg:hidden lg:col-span-2">
             <CardHeader>
               <CardTitle className="font-semibold">Ventes des 7 derniers jours</CardTitle>
               <p className="text-sm text-muted-foreground">Chiffre d&apos;affaires par jour, en FCFA</p>

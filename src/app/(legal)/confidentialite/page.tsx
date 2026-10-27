@@ -31,8 +31,8 @@ export default function ConfidentialitePage() {
           <strong>Votre commerce</strong> : nom, activité, téléphone, adresse, ville, logo, boutiques et dépôts.
         </li>
         <li>
-          <strong>Votre activité</strong> : produits, stocks, ventes, commandes, fournisseurs, dépenses et historique
-          d&apos;abonnement.
+          <strong>Votre activité</strong> : produits, stocks, ventes, commandes, fournisseurs, dépenses, et votre
+          licence avec ses paiements.
         </li>
         <li>
           <strong>Les données de vos clients</strong> que vous saisissez (nom, téléphone, crédits). Pour ces données, c&apos;est
@@ -44,15 +44,15 @@ export default function ConfidentialitePage() {
           l&apos;hébergeur pour la sécurité du service.
         </li>
         <li>
-          <strong>Paiements</strong> : le paiement est traité par SasPay. Nous conservons seulement la formule, le montant,
-          la date, le statut et la référence du paiement. Jamais votre code secret mobile money.
+          <strong>Paiements</strong> : pour votre licence, nous conservons seulement le montant, la date, le moyen de
+          paiement et sa référence. Jamais votre code secret mobile money.
         </li>
       </ul>
 
       <h2>3. Pourquoi nous les utilisons</h2>
       <ul>
         <li>Fournir le service : gérer votre stock, vos ventes, vos commandes et vos crédits clients.</li>
-        <li>Gérer votre abonnement et ses paiements, et respecter nos obligations comptables.</li>
+        <li>Gérer votre licence et ses paiements, et respecter nos obligations comptables.</li>
         <li>Sécuriser les comptes, prévenir la fraude et corriger les pannes.</li>
         <li>Vous répondre quand vous nous contactez.</li>
       </ul>
@@ -65,8 +65,8 @@ export default function ConfidentialitePage() {
         <li>Vous, et les membres de votre équipe selon les droits que vous leur donnez.</li>
         <li>L&apos;éditeur de Sama Stock, uniquement pour le support et la sécurité.</li>
         <li>
-          Nos prestataires techniques, chacun pour sa seule mission : Vercel (hébergement de l&apos;application), Neon (base
-          de données) et SasPay (paiement des abonnements).
+          Nos prestataires techniques, chacun pour sa seule mission : Vercel (hébergement de l&apos;application) et Neon
+          (base de données).
         </li>
       </ul>
 
@@ -82,7 +82,7 @@ export default function ConfidentialitePage() {
         <li>Tant que votre compte existe, vos données sont conservées pour vous rendre le service.</li>
         <li>Après une demande de suppression de compte, elles sont effacées dans un délai de 90 jours.</li>
         <li>
-          Les justificatifs de paiement d&apos;abonnement sont conservés 10 ans, comme l&apos;exige le droit comptable OHADA.
+          Les justificatifs de paiement des licences sont conservés 10 ans, comme l&apos;exige le droit comptable OHADA.
         </li>
         <li>Les journaux techniques sont conservés pour une durée limitée, au plus 12 mois.</li>
       </ul>
@@ -92,7 +92,6 @@ export default function ConfidentialitePage() {
         <li>Connexion chiffrée (HTTPS) sur tout le site.</li>
         <li>Mots de passe chiffrés : personne, pas même l&apos;éditeur, ne peut les lire.</li>
         <li>Chaque commerce ne voit que ses propres données ; chaque employé n&apos;a que les droits donnés par le patron.</li>
-        <li>Paiement vérifié directement auprès de SasPay avant toute activation d&apos;abonnement.</li>
       </ul>
 
       <h2>8. Vos droits</h2>

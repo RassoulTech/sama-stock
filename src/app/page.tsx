@@ -19,14 +19,12 @@ import {
   Scale,
   ShieldCheck,
   Smartphone,
-  X,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { BrandShowcase } from "@/components/landing/brand-showcase";
 import { LossCalculator } from "@/components/landing/loss-calculator";
-import { PricingTabs } from "@/components/landing/pricing-tabs";
 import { ProductVideo } from "@/components/landing/product-video";
 import { PaymentLogo } from "@/components/shared/payment-logo";
 import { MobileMenu } from "@/components/landing/mobile-menu";
@@ -48,10 +46,8 @@ import {
 import {
   LICENSE_ORDER,
   LICENSE_PACKS,
-  limitLabel,
+  licenceFeatures,
   MAINTENANCE_INCLUDED_MONTHS,
-  PAID_PLANS,
-  PLANS,
   type LicensePackId,
 } from "@/lib/domain/plans";
 import { formatFCFA } from "@/lib/format";
@@ -213,7 +209,7 @@ const FAQ = [
   },
   {
     q: "Puis-je essayer avant d'acheter ?",
-    a: "Oui : la démo en ligne vous montre tout, sans inscription. Vous pouvez aussi commencer seul avec 14 jours d'essai gratuit, puis un abonnement mensuel sans engagement si vous préférez payer au mois.",
+    a: "Oui : la démo en ligne vous montre tout, sans inscription. Vous pouvez aussi créer votre compte et l'essayer 14 jours gratuitement avec vos propres produits : tout ce que vous saisissez est gardé quand vous achetez votre licence.",
   },
 ];
 
@@ -289,13 +285,6 @@ function structuredData() {
             "@type": "Offer",
             name: `Licence ${LICENSE_PACKS[id].label} (paiement unique)`,
             price: LICENSE_PACKS[id].price,
-            priceCurrency: "XOF",
-            url: `${SITE_URL}/#tarifs`,
-          })),
-          ...[PLANS.trial, ...PAID_PLANS].map((p) => ({
-            "@type": "Offer",
-            name: `Abonnement ${p.label}`,
-            price: p.price,
             priceCurrency: "XOF",
             url: `${SITE_URL}/#tarifs`,
           })),
@@ -731,126 +720,70 @@ export default async function HomePage() {
               }
               text="Le prix comprend l'installation, votre logo, l'import de vos produits, la formation et un an d'assistance. Il peut se payer en deux fois."
             />
-            <PricingTabs
-              licence={
-                <>
-                  <div className="mt-10 grid gap-4 md:grid-cols-3">
-                    {LICENSE_ORDER.map((id) => {
-                      const p = LICENSE_PACKS[id];
-                      const featured = id === "pro";
-                      return (
-                        <div
-                          key={id}
-                          className={cn(
-                            "relative flex flex-col rounded-2xl border bg-card p-7",
-                            featured && "border-primary shadow-[0_0_0_1px_var(--primary),0_24px_48px_-24px_rgb(11_110_79/0.45)]",
-                          )}
-                        >
-                          {featured && (
-                            <span className="absolute -top-3 left-7 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-                              Recommandé
-                            </span>
-                          )}
-                          <h3 className="text-[1.0625rem] font-semibold">Licence {p.label}</h3>
-                          <p className="mt-1 min-h-10 text-sm text-muted-foreground">{p.tagline}</p>
-                          <p className="mt-6 flex items-baseline gap-1.5">
-                            <span className="num text-[2.5rem] leading-none font-semibold tracking-[-0.04em]">{p.price.toLocaleString("fr-FR")}</span>
-                            <span className="text-sm text-muted-foreground">FCFA</span>
-                          </p>
-                          <p className="mt-2.5 text-sm">
-                            <span className="font-medium">Une seule fois.</span>{" "}
-                            <span className="text-muted-foreground">Ensuite, maintenance facultative : {formatFCFA(p.maintenancePrice)} par an.</span>
-                          </p>
-                          <ul className="mt-7 space-y-3 text-sm">
-                            {[
-                              limitLabel(p.limits.maxProducts, "produits"),
-                              p.limits.maxEmployees === 0 ? "Propriétaire seul" : limitLabel(p.limits.maxEmployees, "employés"),
-                              `${p.limits.maxLocations} boutique${p.limits.maxLocations > 1 ? "s ou dépôts" : ""}`,
-                              "Caisse, commandes, crédits, inventaire",
-                              "Rapports avancés, import et export Excel",
-                              "Installation, logo et couleurs compris",
-                              "Import de vos produits et formation",
-                              `${MAINTENANCE_INCLUDED_MONTHS} mois d'assistance compris`,
-                            ].map((f) => (
-                              <li key={f} className="flex gap-2.5">
-                                <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                                {f}
-                              </li>
-                            ))}
-                          </ul>
-                          <a
-                            href={packHref(id)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cn(
-                              "mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors",
-                              featured ? "bg-primary text-primary-foreground hover:bg-[#095f44]" : "border bg-card hover:bg-muted",
-                            )}
-                          >
-                            <MessageCircle className="size-4" /> Demander ce forfait
-                          </a>
-                          <DemoButton plan={id === "business" ? "business" : "pro"} variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-foreground">
-                            Voir la démo
-                          </DemoButton>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-8 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-muted-foreground">
-                    <ShieldCheck className="size-4 text-primary" /> Acompte à la commande, solde à l&apos;installation · Wave, Orange Money ou
-                    espèces · facture à votre nom
-                  </p>
-                </>
-              }
-              subscription={
-                <>
-                  <p className="mx-auto mt-8 max-w-xl text-center text-sm text-muted-foreground">
-                    Vous préférez commencer seul, depuis votre téléphone ? Créez votre compte en ligne : 14 jours gratuits, puis un
-                    abonnement mensuel sans engagement.
-                  </p>
-                  <div className="mt-8 grid gap-4 md:grid-cols-3">
-                    {[PLANS.trial, ...PAID_PLANS].map((p) => (
-                      <div key={p.id} className="relative flex flex-col rounded-2xl border bg-card p-7">
-                        <h3 className="text-[1.0625rem] font-semibold">{p.label}</h3>
-                        <p className="mt-1 min-h-10 text-sm text-muted-foreground">{p.tagline}</p>
-                        <p className="mt-6 flex items-baseline gap-1.5">
-                          <span className="num text-[2.5rem] leading-none font-semibold tracking-[-0.04em]">{p.price.toLocaleString("fr-FR")}</span>
-                          <span className="text-sm text-muted-foreground">{p.id === "trial" ? "FCFA · 14 jours" : "FCFA / mois"}</span>
-                        </p>
-                        <ul className="mt-7 space-y-3 text-sm">
-                          {[
-                            limitLabel(p.maxProducts, "produits"),
-                            p.maxEmployees === 0 ? "Propriétaire seul" : limitLabel(p.maxEmployees, "employés"),
-                            `${p.maxLocations} boutique${p.maxLocations > 1 ? "s ou dépôts" : ""}`,
-                            "Caisse, commandes, crédits, inventaire",
-                            p.advancedReports ? "Rapports avancés" : "Rapports avancés non inclus",
-                            p.excel ? "Import et export Excel" : "Import et export Excel non inclus",
-                          ].map((f) => (
-                            <li key={f} className={cn("flex gap-2.5", f.endsWith("non inclus") && "text-muted-foreground")}>
-                              {f.endsWith("non inclus") ? (
-                                <X className="mt-0.5 size-4 shrink-0 text-muted-foreground/60" />
-                              ) : (
-                                <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                              )}
-                              {f}
-                            </li>
-                          ))}
-                        </ul>
-                        <Link
-                          href={signupHref}
-                          className="mt-8 inline-flex h-11 items-center justify-center rounded-lg border bg-card text-sm font-medium transition-colors hover:bg-muted"
-                        >
-                          {p.id === "trial" ? "Commencer l'essai gratuit" : `Essayer ${p.label} gratuitement`}
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                    <ShieldCheck className="size-4 text-primary" /> Aucun prélèvement automatique : vous renouvelez quand vous le décidez.
-                  </p>
-                </>
-              }
-            />
+              <div className="mt-10 grid gap-4 md:grid-cols-3">
+                {LICENSE_ORDER.map((id) => {
+                  const p = LICENSE_PACKS[id];
+                  const featured = id === "pro";
+                  return (
+                    <div
+                      key={id}
+                      className={cn(
+                        "relative flex flex-col rounded-2xl border bg-card p-7",
+                        featured && "border-primary shadow-[0_0_0_1px_var(--primary),0_24px_48px_-24px_rgb(11_110_79/0.45)]",
+                      )}
+                    >
+                      {featured && (
+                        <span className="absolute -top-3 left-7 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                          Recommandé
+                        </span>
+                      )}
+                      <h3 className="text-[1.0625rem] font-semibold">Licence {p.label}</h3>
+                      <p className="mt-1 min-h-10 text-sm text-muted-foreground">{p.tagline}</p>
+                      <p className="mt-6 flex items-baseline gap-1.5">
+                        <span className="num text-[2.5rem] leading-none font-semibold tracking-[-0.04em]">{p.price.toLocaleString("fr-FR")}</span>
+                        <span className="text-sm text-muted-foreground">FCFA</span>
+                      </p>
+                      <p className="mt-2.5 text-sm">
+                        <span className="font-medium">Une seule fois.</span>{" "}
+                        <span className="text-muted-foreground">Ensuite, maintenance facultative : {formatFCFA(p.maintenancePrice)} par an.</span>
+                      </p>
+                      <ul className="mt-7 space-y-3 text-sm">
+                        {licenceFeatures(p).map((f) => (
+                          <li key={f} className="flex gap-2.5">
+                            <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <a
+                        href={packHref(id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          "mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors",
+                          featured ? "bg-primary text-primary-foreground hover:bg-[#095f44]" : "border bg-card hover:bg-muted",
+                        )}
+                      >
+                        <MessageCircle className="size-4" /> Demander ce forfait
+                      </a>
+                      <DemoButton plan={id === "business" ? "business" : "pro"} variant="ghost" className="mt-2 w-full text-muted-foreground hover:text-foreground">
+                        Voir la démo
+                      </DemoButton>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-8 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+                <ShieldCheck className="size-4 text-primary" /> Acompte à la commande, solde à l&apos;installation · Wave, Orange Money ou
+                espèces · facture à votre nom
+              </p>
+            <p className="mx-auto mt-6 max-w-xl text-center text-sm text-muted-foreground">
+              Envie d&apos;essayer d&apos;abord ?{" "}
+              <Link href={signupHref} className="font-medium text-primary hover:underline">
+                Créez votre compte
+              </Link>{" "}
+              : 14 jours gratuits avec vos propres produits. Tout ce que vous saisissez est gardé quand vous achetez votre licence.
+            </p>
           </div>
         </section>
 

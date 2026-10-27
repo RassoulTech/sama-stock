@@ -17,14 +17,14 @@ function periodText(from: Date, lastDay: Date) {
   return `du ${sameYear ? from.toLocaleDateString("fr-FR", opts) : full(from)} au ${full(lastDay)}`;
 }
 
-/** Export Excel des rapports sur la période choisie (formules Pro et Business). */
+/** Export Excel des rapports sur la période choisie (licences). */
 export async function GET(request: Request) {
   const ctx = await getContext();
   if (!ctx?.business) return new Response("Connectez-vous pour exporter vos rapports.", { status: 401 });
   const bctx = ctx as BusinessContext;
   if (bctx.plan.status === "suspended" || !bctx.can("reports.view")) return new Response("Accès refusé.", { status: 403 });
   if (!bctx.plan.limits.excel) {
-    return new Response("L'export Excel est inclus dans les formules Pro et Business.", { status: 403 });
+    return new Response("L'export Excel est inclus dans toutes les licences.", { status: 403 });
   }
 
   const params = Object.fromEntries(new URL(request.url).searchParams);

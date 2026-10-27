@@ -16,7 +16,7 @@ export const PROTECTED_PREFIXES = [
   "/fournisseurs",
   "/rapports",
   "/equipe",
-  "/abonnement",
+  "/licence",
   "/parametres",
   "/mon-compte",
   "/admin",

@@ -71,8 +71,8 @@ export async function inviteMember(input: z.input<typeof inviteSchema>) {
       if (!canAdd(max, await employeeCount(ctx.business.id))) {
         throw new ActionError(
           max === 0
-            ? "L'essai gratuit ne permet pas d'inviter d'employés. Passez à la formule Pro (3 employés) ou Business (illimité)."
-            : `Votre formule ${ctx.plan.label} permet ${max} employés au maximum. Passez à Business pour une équipe illimitée.`,
+            ? "L'essai gratuit est réservé au propriétaire. Les licences Pro (5 employés) et Business (illimité) permettent d'ajouter des employés."
+            : `Votre ${ctx.plan.label} permet ${max} employés au maximum. La licence Business n'a pas de limite.`,
         );
       }
       token = crypto.randomUUID().replaceAll("-", "");
@@ -227,7 +227,7 @@ export async function addEmployee(input: z.input<typeof employeeSchema>) {
     assertNotDemo(ctx, "La gestion de l'équipe");
     const data = parse(employeeSchema, input);
     const max = ctx.plan.limits.maxEmployees;
-    if (max === 0) throw new ActionError("Votre formule ne comprend pas d'employés.");
+    if (max === 0) throw new ActionError("Votre licence ne comprend pas d'employés.");
     if (!canAdd(max, await employeeCount(ctx.business.id))) throw new ActionError(`Limite de ${max} employés atteinte.`);
 
     const pin = generatePin();

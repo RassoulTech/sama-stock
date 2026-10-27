@@ -3,7 +3,7 @@ import { and, asc, desc, eq, gt, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { invitations, members, user } from "@/db/schema";
 
-/** Employés (hors propriétaire) + invitations en attente encore valides : ce qui compte dans la limite de la formule. */
+/** Employés (hors propriétaire) + invitations en attente encore valides : ce qui compte dans la limite de la licence. */
 export async function employeeCount(businessId: string): Promise<number> {
   const [m] = await db
     .select({ n: sql<number>`count(*)::int` })

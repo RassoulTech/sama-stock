@@ -74,7 +74,7 @@ export function offlineLabel(localNumber: number): string {
   return `Hors ligne n° ${localNumber}`;
 }
 
-/** La copie permet-elle de vendre (droit de vente, caisse activée, formule encore valable) ? */
+/** La copie permet-elle de vendre (droit de vente, caisse activée, essai en cours ou licence) ? */
 export function canSellOffline(snapshot: OfflineSnapshot, now: Date): boolean {
   if (!snapshot.modulePos || !snapshot.can.sell || snapshot.plan.readOnly) return false;
   return snapshot.plan.sellUntil === null || now.getTime() < new Date(snapshot.plan.sellUntil).getTime();

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { enterDemo } from "@/server/actions/demo";
 
-/** Ouvre la démo d'une formule. La première visite du jour prépare la boutique (quelques secondes). */
+/** Ouvre la démo d'une licence. La première visite du jour prépare la boutique (quelques secondes). */
 export function DemoButton({
   plan,
   children,

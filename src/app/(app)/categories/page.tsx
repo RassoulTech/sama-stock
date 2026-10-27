@@ -56,10 +56,10 @@ export default async function CategoriesPage() {
       {!showSales && ctx.can("reports.view") && (
         <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border bg-accent/50 px-4 py-3 text-sm">
           <Lock className="size-4 shrink-0 text-primary" />
-          <span className="flex-1">Les ventes par catégorie sont incluses dans les formules Pro et Business.</span>
+          <span className="flex-1">Les ventes par catégorie sont incluses dans toutes les licences.</span>
           {ctx.can("billing.manage") && (
             <Button asChild size="sm" variant="outline">
-              <Link href="/abonnement">Voir les formules</Link>
+              <Link href="/licence">Voir les licences</Link>
             </Button>
           )}
         </div>

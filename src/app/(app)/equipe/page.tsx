@@ -33,7 +33,7 @@ export default async function EquipePage() {
 
   let disabledReason: string | undefined;
   if (ctx.plan.readOnly) disabledReason = "Votre compte est en consultation seule.";
-  else if (max === 0) disabledReason = "Votre formule ne comprend pas d'employés : passez à une formule avec équipe.";
+  else if (max === 0) disabledReason = "Votre licence est pour le propriétaire seul : les licences Pro et Business permettent d'ajouter des employés.";
   else if (!canAdd(max, used)) disabledReason = `Limite de ${max} employés atteinte.`;
 
   return (
@@ -46,9 +46,9 @@ export default async function EquipePage() {
 
       {max === 0 ? (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-accent/70 p-4 text-sm text-accent-foreground">
-          <span>Votre formule est réservée au propriétaire. Les formules avec équipe permettent d&apos;ajouter des employés.</span>
-          <Link href="/abonnement" className="font-semibold text-primary hover:underline">
-            Voir les formules
+          <span>{ctx.plan.license ? "Votre licence est pour le propriétaire seul." : "L'essai gratuit est réservé au propriétaire."} Les licences Pro et Business permettent d&apos;ajouter des employés.</span>
+          <Link href="/licence" className="font-semibold text-primary hover:underline">
+            Voir les licences
           </Link>
         </div>
       ) : (

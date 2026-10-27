@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { PlanUsage } from "@/components/shared/plan-usage";
 import { Button } from "@/components/ui/button";
-import { NO_CATEGORY, pickParam } from "@/lib/filters";
+import { NO_CATEGORY, param, pickParam } from "@/lib/filters";
 import { requireContext } from "@/server/context";
 import { listCategories, listProducts } from "@/server/queries/products";
 
@@ -21,7 +21,7 @@ export default async function ProduitsPage({
   const params = await searchParams;
   const [products, categories] = await Promise.all([listProducts(ctx), listCategories(ctx.business.id)]);
   const canManage = ctx.can("products.manage") && !ctx.plan.readOnly;
-  // L'import Excel n'existe pas dans l'essai gratuit (formules Pro et Business seulement)
+  // L'import Excel n'existe pas dans l'essai gratuit (toutes les licences l'ont)
   const canImport = canManage && ctx.plan.limits.excel;
   const initialState = params.etat === "bas" ? "low" : params.etat === "rupture" ? "out" : "all";
   const initialCategory = pickParam(params, "categorie", [...categories.map((c) => c.id), NO_CATEGORY]) ?? "all";
@@ -93,6 +93,7 @@ export default async function ProduitsPage({
             categories={categories}
             showCost={ctx.can("costs.view")}
             initialState={initialState}
+            initialQuery={param(params, "q")?.slice(0, 60) ?? ""}
             initialCategory={initialCategory}
           />
         )}

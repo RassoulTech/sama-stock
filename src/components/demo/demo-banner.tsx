@@ -1,5 +1,5 @@
 import { FlaskConical } from "lucide-react";
-import { PLANS, type PlanId } from "@/lib/domain/plans";
+import { DEMO_LICENCE, LICENSE_PACKS, type PlanId } from "@/lib/domain/plans";
 import { DemoButton } from "./demo-button";
 import { DemoSignupButton } from "./demo-signup-button";
 
@@ -13,7 +13,7 @@ export function DemoBanner({ plan }: { plan: PlanId }) {
         <p className="flex min-w-0 items-center gap-2">
           <FlaskConical className="size-4 shrink-0 text-warning dark:text-saffron" />
           <span>
-            <strong className="font-semibold">Démo · formule {PLANS[plan].label}</strong>
+            <strong className="font-semibold">Démo · licence {LICENSE_PACKS[DEMO_LICENCE[plan]].label}</strong>
             <span className="text-muted-foreground"> — boutique fictive, remise à zéro chaque jour.</span>
           </span>
         </p>
@@ -21,7 +21,7 @@ export function DemoBanner({ plan }: { plan: PlanId }) {
           <span className="hidden text-xs text-muted-foreground md:inline">Comparer :</span>
           {ORDER.filter((p) => p !== plan).map((p) => (
             <DemoButton key={p} plan={p} size="sm" variant="outline" className="h-8 bg-card">
-              {PLANS[p].label}
+              {LICENSE_PACKS[DEMO_LICENCE[p]].label}
             </DemoButton>
           ))}
           <DemoSignupButton size="sm" className="h-8">

@@ -28,10 +28,11 @@ export function BottomNav({ items }: { items: NavItem[] }) {
               <li key={item.href} className="flex justify-center">
                 <Link
                   href={item.href}
-                  className="-mt-5 flex flex-col items-center gap-1 text-[11px] font-semibold"
+                  className={cn("-mt-6 flex flex-col items-center gap-1 text-[11px] font-semibold", active ? "text-primary" : "text-foreground")}
                   aria-current={active ? "page" : undefined}
                 >
-                  <span className="grid size-14 place-items-center rounded-xl bg-saffron text-saffron-foreground shadow-lg shadow-saffron/30 ring-4 ring-background">
+                  {/* Bouton central rond, aux couleurs de la boutique */}
+                  <span className="grid size-[3.75rem] place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-8px_var(--primary)] ring-[5px] ring-card transition-transform active:scale-95">
                     <NavIconView icon={item.icon} className="size-6" />
                   </span>
                   {item.short ?? item.label}
@@ -49,7 +50,9 @@ export function BottomNav({ items }: { items: NavItem[] }) {
                   active && "font-semibold text-primary",
                 )}
               >
-                <NavIconView icon={item.icon} className="size-[22px]" />
+                <span className={cn("grid h-7 w-12 place-items-center rounded-full transition-colors", active && "bg-accent")}>
+                  <NavIconView icon={item.icon} className="size-[22px]" />
+                </span>
                 {item.short ?? item.label}
               </Link>
             </li>

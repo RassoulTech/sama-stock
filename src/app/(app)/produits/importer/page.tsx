@@ -26,7 +26,7 @@ export default async function ImporterPage() {
               <Lock className="size-7" />
             </span>
             <h2 className="text-xl font-semibold">
-              {ctx.plan.readOnly ? "Votre abonnement a expiré" : "L'import depuis Excel est inclus dans Pro et Business"}
+              {ctx.plan.readOnly ? "Votre essai gratuit est terminé" : "L'import depuis Excel est inclus dans toutes les licences"}
             </h2>
             <p className="max-w-md text-sm text-muted-foreground">
               Ajoutez tout votre catalogue d&apos;un coup depuis un fichier Excel ou CSV, même s&apos;il ne suit aucun modèle :
@@ -34,7 +34,7 @@ export default async function ImporterPage() {
             </p>
             {ctx.can("billing.manage") && (
               <Button asChild size="lg">
-                <Link href="/abonnement">Voir les formules</Link>
+                <Link href="/licence">Voir les licences</Link>
               </Button>
             )}
           </CardContent>

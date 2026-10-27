@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["exceljs", "@react-pdf/renderer"],
   // Version de l'application : le service worker remet en cache la caisse hors ligne quand elle change
   env: { NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || `local-${Date.now()}` },
+  // Plus d'abonnement mensuel : les anciennes adresses mènent à la licence
+  async redirects() {
+    return [
+      { source: "/abonnement/:path*", destination: "/licence", permanent: true },
+      { source: "/admin/abonnements", destination: "/admin/commerces?formule=trial", permanent: true },
+      { source: "/admin/paiements", destination: "/admin/licences", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

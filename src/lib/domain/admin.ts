@@ -49,7 +49,7 @@ export const HEALTH_LABELS: Record<BusinessHealth, string> = {
   jamais: "Jamais utilisé",
 };
 
-/** Libellé court de la formule et de son état : « Essai en cours », « Pro · Actif », « Business · Expiré ». */
+/** Libellé court de l'état : « Essai en cours », « Essai gratuit · Expiré », « Licence Pro ». */
 export function planBadgeText(planLabel: string, status: "trialing" | "active" | "expired" | "suspended", statusLabel: string): string {
   if (status === "trialing") return "Essai en cours";
   // Licence achetée : elle ne s'arrête pas, seul le nom compte (sauf suspension)
@@ -86,8 +86,8 @@ export function adminReminderMessage(input: {
   if (input.status === "expired") {
     return [
       hello,
-      `L'abonnement de *${input.businessName}* sur Sama Stock est arrivé à son terme : vos données sont gardées, mais elles sont en consultation seule.`,
-      "Vous pouvez le renouveler en 1 minute depuis la page Abonnement (Wave ou Orange Money). Besoin d'aide ? Répondez simplement à ce message.",
+      `L'essai gratuit de *${input.businessName}* sur Sama Stock est terminé : vos données sont gardées, en consultation seule.`,
+      "Pour continuer, choisissez votre licence : payée une seule fois, l'application est à vous pour toujours, installée chez vous avec votre logo. Répondez à ce message et nous passons vous l'installer.",
       sign,
     ].join("\n");
   }

@@ -10,7 +10,7 @@ import { AuditList, type AuditEntry } from "./audit-list";
 /** Groupes de filtres du journal (plusieurs actions proches par groupe). */
 const GROUPS: Record<string, { label: string; actions: AdminAction[] }> = {
   licence: { label: "Licences", actions: ["license", "license_payment", "maintenance", "license_cancel", "brand", "import", "reset_password"] },
-  abonnement: { label: "Abonnements", actions: ["plan", "extend", "expire"] },
+  essai: { label: "Essais", actions: ["plan", "extend", "expire"] },
   paiement: { label: "Paiements", actions: ["cash", "license_payment", "maintenance"] },
   acces: { label: "Suspensions", actions: ["suspend", "resume"] },
   securite: { label: "Connexions", actions: ["revoke_session", "revoke_user"] },

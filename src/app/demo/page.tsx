@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { DemoButton } from "@/components/demo/demo-button";
-import { limitLabel, PLANS, type PlanId } from "@/lib/domain/plans";
+import { DEMO_LICENCE, LICENSE_PACKS, limitLabel, type PlanId } from "@/lib/domain/plans";
 import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { getSession } from "@/server/context";
@@ -12,7 +12,7 @@ import { DEMO_SPECS } from "@/server/demo/specs";
 export const metadata: Metadata = pageMetadata({
   title: "Démo gratuite",
   description:
-    "Essayez Sama Stock sans créer de compte : entrez dans une boutique fictive (Essai, Pro ou Business) avec des ventes, du stock, des commandes et des crédits réalistes.",
+    "Essayez Sama Stock sans créer de compte : entrez dans une boutique fictive (licence Boutique, Pro ou Business) avec des ventes, du stock, des commandes et des crédits réalistes.",
   path: "/demo",
 });
 
@@ -47,7 +47,7 @@ export default async function DemoPage() {
             Essayez Sama Stock dans une vraie boutique
           </h1>
           <p className="mt-4 text-[1.0625rem] leading-relaxed text-muted-foreground">
-            Choisissez une formule : vous entrez dans une boutique fictive déjà remplie (ventes, stock, commandes, crédits
+            Choisissez une licence : vous entrez dans une boutique fictive déjà remplie (ventes, stock, commandes, crédits
             clients). Vendez, encaissez, relancez, explorez les rapports : rien n&apos;est réel et tout est remis à zéro chaque
             jour.
           </p>
@@ -62,16 +62,16 @@ export default async function DemoPage() {
 
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {ORDER.map((id) => {
-            const plan = PLANS[id];
+            const plan = LICENSE_PACKS[DEMO_LICENCE[id]];
             const spec = DEMO_SPECS[id];
             const featured = id === "pro";
             const features = [
-              { label: limitLabel(plan.maxProducts, "produits"), ok: true },
-              { label: plan.maxEmployees === 0 ? "Propriétaire seul" : limitLabel(plan.maxEmployees, "employés"), ok: plan.maxEmployees !== 0 },
-              { label: `${plan.maxLocations} boutique${plan.maxLocations > 1 ? "s ou dépôts" : ""}`, ok: true },
+              { label: limitLabel(plan.limits.maxProducts, "produits"), ok: true },
+              { label: plan.limits.maxEmployees === 0 ? "Propriétaire seul" : limitLabel(plan.limits.maxEmployees, "employés"), ok: plan.limits.maxEmployees !== 0 },
+              { label: `${plan.limits.maxLocations} boutique${plan.limits.maxLocations > 1 ? "s ou dépôts" : ""}`, ok: true },
               { label: "Caisse, commandes, crédits, inventaire", ok: true },
-              { label: "Rapports et ventes par catégorie", ok: plan.advancedReports },
-              { label: "Import et export Excel", ok: plan.excel },
+              { label: "Rapports et ventes par catégorie", ok: plan.limits.advancedReports },
+              { label: "Import et export Excel", ok: plan.limits.excel },
             ];
             return (
               <section
@@ -84,13 +84,13 @@ export default async function DemoPage() {
               >
                 {featured && (
                   <span className="absolute -top-3 left-6 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-                    La plus choisie
+                    Recommandé
                   </span>
                 )}
-                <h2 className="text-[1.0625rem] font-semibold">Formule {plan.label}</h2>
+                <h2 className="text-[1.0625rem] font-semibold">Licence {plan.label}</h2>
                 <p className="mt-1 flex items-baseline gap-1.5">
                   <span className="num text-3xl font-semibold tracking-[-0.04em]">{plan.price.toLocaleString("fr-FR")}</span>
-                  <span className="text-sm text-muted-foreground">{id === "trial" ? "FCFA · 14 jours" : "FCFA / mois"}</span>
+                  <span className="text-sm text-muted-foreground">FCFA, une seule fois</span>
                 </p>
 
                 <div className="mt-5 rounded-xl bg-muted/50 p-4">

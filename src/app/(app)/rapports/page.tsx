@@ -44,7 +44,7 @@ export default async function RapportsPage({ searchParams }: { searchParams: Pro
             </p>
             {ctx.can("billing.manage") && (
               <Button asChild size="lg">
-                <Link href="/abonnement">Voir les formules</Link>
+                <Link href="/licence">Voir les licences</Link>
               </Button>
             )}
           </CardContent>

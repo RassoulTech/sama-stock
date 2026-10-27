@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactLine, LegalPage } from "@/components/legal/legal-page";
 import { pageMetadata } from "@/lib/seo";
-import { formatLimit, LICENSE_ORDER, LICENSE_PACKS, limitLabel, MAINTENANCE_INCLUDED_MONTHS, PAID_PLANS, PERIOD_DAYS, PLANS, TRIAL_DAYS } from "@/lib/domain/plans";
+import { formatLimit, LICENSE_ORDER, LICENSE_PACKS, limitLabel, MAINTENANCE_INCLUDED_MONTHS, TRIAL, TRIAL_DAYS } from "@/lib/domain/plans";
 import { formatFCFA } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 
 export const metadata: Metadata = pageMetadata({
   title: "Conditions d'utilisation et de vente",
-  description: "Règles d'utilisation de Sama Stock : essai gratuit de 14 jours, formules et prix, paiement Wave, Orange Money ou espèces, résiliation.",
+  description: "Règles d'utilisation de Sama Stock : essai gratuit de 14 jours, licences achetées une fois, paiement Wave, Orange Money ou espèces, maintenance.",
   path: "/conditions",
 });
 
@@ -16,7 +16,7 @@ export default function ConditionsPage() {
   return (
     <LegalPage
       title="Conditions d'utilisation et de vente"
-      intro="Ces conditions encadrent l'utilisation de Sama Stock, la souscription aux formules payantes et l'achat d'une licence. En créant un compte, vous les acceptez."
+      intro="Ces conditions encadrent l'utilisation de Sama Stock, l'essai gratuit et l'achat d'une licence. En créant un compte, vous les acceptez."
     >
       <h2>1. Le service</h2>
       <p>
@@ -40,51 +40,14 @@ export default function ConditionsPage() {
 
       <h2>3. Essai gratuit</h2>
       <p>
-        Chaque nouveau commerce bénéficie de {TRIAL_DAYS} jours d&apos;essai gratuit, sans moyen de paiement, dans les limites
-        de la formule Essai ({formatLimit(PLANS.trial.maxProducts)} produits, propriétaire seul). À la fin de
-        l&apos;essai, rien n&apos;est débité : le compte passe simplement en consultation seule.
+        Chaque nouveau commerce peut essayer Sama Stock {TRIAL_DAYS} jours gratuitement, sans moyen de paiement, dans les
+        limites de l&apos;essai ({formatLimit(TRIAL.limits.maxProducts)} produits, propriétaire seul). À la fin de l&apos;essai,
+        rien n&apos;est débité : le compte passe simplement en consultation seule, et tout redevient modifiable dès que votre
+        licence est activée.
       </p>
 
-      <h2>4. Formules et prix</h2>
-      <ul>
-        {PAID_PLANS.map((p) => (
-          <li key={p.id}>
-            <strong>
-              {p.label} : {formatFCFA(p.price)} pour {PERIOD_DAYS} jours
-            </strong>{" "}
-            — {limitLabel(p.maxProducts, "produits", { lowercase: true })}, {p.maxEmployees === 0 ? "propriétaire seul" : limitLabel(p.maxEmployees, "employés", { lowercase: true })},{" "}
-            {p.maxLocations} boutique{p.maxLocations > 1 ? "s ou dépôts" : ""}.
-          </li>
-        ))}
-      </ul>
-      <p>Les prix sont indiqués en francs CFA (FCFA). Ils peuvent évoluer ; un changement ne s&apos;applique qu&apos;à la période suivante.</p>
-
-      <h2>5. Paiement</h2>
-      <ul>
-        <li>
-          <strong>En ligne</strong>, par Wave ou Orange Money, sur la page de paiement sécurisée de SasPay. La formule
-          s&apos;active dès que le paiement est confirmé par SasPay.
-        </li>
-        <li>
-          <strong>En espèces</strong>, auprès de l&apos;équipe Sama Stock, qui active la formule et l&apos;enregistre dans
-          votre historique.
-        </li>
-        <li>
-          Chaque paiement ouvre une période de {PERIOD_DAYS} jours. Il n&apos;y a <strong>aucun prélèvement automatique</strong> :
-          vous renouvelez quand vous le décidez. Un renouvellement de la même formule s&apos;ajoute à la fin de la période en
-          cours.
-        </li>
-      </ul>
-
-      <h2>6. Fin de période et remboursement</h2>
-      <p>
-        Sans renouvellement, le compte passe en consultation seule : vos données restent conservées et accessibles, et tout
-        redevient modifiable dès le paiement suivant. Toute période commencée est due. En cas de double paiement ou
-        d&apos;erreur technique, écrivez-nous : le montant concerné vous est remboursé.
-      </p>
-
-      <h2>7. Achat d&apos;une licence (application à vie)</h2>
-      <p>Vous pouvez aussi acheter Sama Stock une fois pour toutes, installé et personnalisé pour votre commerce :</p>
+      <h2>4. Licences et prix</h2>
+      <p>Sama Stock se vend une seule fois, sous forme de licence, installée et personnalisée pour votre commerce :</p>
       <ul>
         {LICENSE_ORDER.map((id) => {
           const p = LICENSE_PACKS[id];
@@ -105,15 +68,35 @@ export default function ConditionsPage() {
           et <strong>{MAINTENANCE_INCLUDED_MONTHS} mois de maintenance</strong>.
         </li>
         <li>
-          Le prix peut être convenu avec vous : il figure sur votre devis. Il peut se payer en plusieurs fois (par exemple un
-          acompte à la commande et le solde à l&apos;installation), par Wave, Orange Money, espèces ou virement.
+          Les prix sont indiqués en francs CFA (FCFA). Le prix peut être convenu avec vous : il figure sur votre devis.
         </li>
         <li>
-          <strong>L&apos;application ne s&apos;arrête jamais</strong>, même sans maintenance. Après la première année, la
-          maintenance (assistance, nouveautés, sauvegardes) est facultative et se renouvelle par année.
+          <strong>L&apos;application ne s&apos;arrête jamais</strong>, même sans maintenance. Il n&apos;y a pas d&apos;abonnement
+          ni de prélèvement automatique.
+        </li>
+      </ul>
+
+      <h2>5. Paiement</h2>
+      <ul>
+        <li>
+          Par Wave, Orange Money, espèces ou virement, à l&apos;équipe Sama Stock. Vous recevez une facture à votre nom.
+        </li>
+        <li>
+          Le paiement peut se faire en plusieurs fois, par exemple un acompte à la commande et le solde à l&apos;installation.
         </li>
         <li>Si le solde convenu n&apos;est pas payé, l&apos;accès peut être suspendu jusqu&apos;au paiement ; vos données sont conservées.</li>
       </ul>
+
+      <h2>6. Maintenance et remboursement</h2>
+      <p>
+        Après la première année, la maintenance (assistance, nouveautés, sauvegardes) est facultative et se renouvelle par
+        année. En cas de double paiement ou d&apos;erreur, écrivez-nous : le montant concerné vous est remboursé.
+      </p>
+
+      <h2>7. Données de l&apos;essai</h2>
+      <p>
+        Tout ce que vous saisissez pendant l&apos;essai (produits, ventes, clients) est gardé quand votre licence est activée.
+      </p>
 
       <h2>8. Vos engagements</h2>
       <ul>

@@ -33,14 +33,17 @@ export function ProductList({
   showCost,
   initialState = "all",
   initialCategory = "all",
+  initialQuery = "",
 }: {
   products: ProductRow[];
   categories: { id: string; name: string }[];
   showCost: boolean;
   initialState?: StateFilter;
   initialCategory?: string;
+  /** Recherche venue de l'accueil (?q=…). */
+  initialQuery?: string;
 }) {
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory);
   const [state, setState] = useState<StateFilter>(initialState);
   const [sort, setSort] = useState<Sort>("name");

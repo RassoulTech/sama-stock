@@ -67,12 +67,12 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <AdminStat
           index={0}
-          label="Revenu mensuel récurrent"
-          value={stats.mrr}
-          unit="FCFA"
-          hint={`${stats.active} abonné${stats.active > 1 ? "s" : ""} payant${stats.active > 1 ? "s" : ""}`}
-          icon={TrendingUp}
-          href="/admin/abonnements"
+          label="Licences vendues"
+          value={lic.count}
+          hint={lic.due > 0 ? `${formatFCFA(lic.due)} à encaisser` : `${formatFCFA(lic.collected)} encaissés`}
+          icon={BadgeCheck}
+          tone={lic.due > 0 ? "saffron" : "green"}
+          href="/admin/licences"
         />
         <AdminStat
           index={1}
@@ -81,7 +81,7 @@ export default async function AdminDashboardPage() {
           unit="FCFA"
           trend={compareTrend(c.revenue_month, c.revenue_prev, "vs mois dernier", { format: (n) => formatNumber(n) })}
           icon={Coins}
-          href="/admin/paiements"
+          href="/admin/licences"
         />
         <AdminStat
           index={2}
@@ -92,7 +92,7 @@ export default async function AdminDashboardPage() {
           icon={Store}
           href="/admin/commerces"
         />
-        <AdminStat index={3} label="Taux de conversion" value={conversion} unit="%" hint="Inscrits devenus payants" icon={Percent} tone="blue" />
+        <AdminStat index={3} label="Taux de conversion" value={conversion} unit="%" hint="Inscrits qui ont acheté leur licence" icon={Percent} tone="blue" />
         <AdminStat
           index={4}
           label="En activité (7 j)"
@@ -122,12 +122,12 @@ export default async function AdminDashboardPage() {
         />
         <AdminStat
           index={7}
-          label="Licences vendues"
-          value={lic.count}
-          hint={lic.due > 0 ? `${formatFCFA(lic.due)} à encaisser` : `${formatFCFA(lic.collected)} encaissés`}
-          icon={BadgeCheck}
-          tone={lic.due > 0 ? "saffron" : "green"}
-          href="/admin/licences"
+          label="Essais en cours"
+          value={stats.trialing}
+          hint={`${todo.trialsEnding.length} se termine${todo.trialsEnding.length > 1 ? "nt" : ""} dans 3 jours · ${stats.expired} terminé${stats.expired > 1 ? "s" : ""}`}
+          icon={TrendingUp}
+          tone={todo.trialsEnding.length > 0 ? "saffron" : "blue"}
+          href="/admin/commerces?statut=trialing"
         />
       </div>
 
@@ -182,7 +182,7 @@ export default async function AdminDashboardPage() {
             <CardTitle className="font-semibold">Argent encaissé (6 derniers mois)</CardTitle>
           </CardHeader>
           <CardContent>
-            <BarChart data={revenue} format={formatFCFA} label="Abonnements encaissés par mois (Wave, Orange Money, espèces)" />
+            <BarChart data={revenue} format={formatFCFA} label="Licences et maintenance encaissées par mois (Wave, Orange Money, espèces)" />
           </CardContent>
         </Card>
       </div>

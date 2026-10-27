@@ -13,11 +13,11 @@ import { StatusPill } from "@/components/shared/stock-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminReminderMessage, planBadgeText } from "@/lib/domain/admin";
 import { isRole, ROLE_LABELS } from "@/lib/domain/permissions";
-import { PERIOD_DAYS, PLAN_STATUS_LABELS, PLAN_STATUS_TONES, PLANS, TRIAL_DAYS } from "@/lib/domain/plans";
+import { PLAN_STATUS_LABELS, PLAN_STATUS_TONES, TRIAL_DAYS } from "@/lib/domain/plans";
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
 import { formatDate, formatFCFA, formatPhone } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { getBusinessForAdmin, SUBSCRIPTION_METHOD_LABELS } from "@/server/queries/admin";
+import { getBusinessForAdmin } from "@/server/queries/admin";
 import { activeSaleFor, balanceOf, getLicenseSale } from "@/server/queries/licences";
 
 export const metadata: Metadata = { title: "Fiche commerce" };
@@ -32,13 +32,12 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const data = await getBusinessForAdmin(id);
   if (!data) notFound();
-  const { business: b, history, members, notes, audit, locations, daily, brand } = data;
+  const { business: b, members, notes, audit, locations, daily, brand } = data;
   const s = b.state;
   const activeSale = s.license ? await activeSaleFor(id) : null;
   const licence = activeSale ? await getLicenseSale(activeSale.id) : null;
 
-  const span = s.plan === "trial" ? TRIAL_DAYS : PERIOD_DAYS;
-  const remaining = s.status === "active" || s.status === "trialing" ? Math.min(100, Math.round((s.daysLeft / span) * 100)) : 0;
+  const remaining = s.status === "trialing" ? Math.min(100, Math.round((s.daysLeft / TRIAL_DAYS) * 100)) : 0;
   const steps = [
     { label: "Compte créé", done: true },
     { label: "Premier produit ajouté", done: b.productCount > 0 },
@@ -49,7 +48,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
           label: "Licence soldée",
           done: licence ? balanceOf(licence.sale) === 0 : false,
         }
-      : { label: "Abonnement payé", done: b.paidTotal > 0 },
+      : { label: "Licence achetée", done: false },
   ];
   const done = steps.filter((x) => x.done).length;
   const chart = daily.map((d, i) => ({
@@ -117,42 +116,33 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
           </Card>
 
           {licence ? (
-            <LicenseCard detail={licence} />
+            <>
+              <LicenseCard detail={licence} />
+              <AdminActions businessId={b.id} licensed suspended={s.status === "suspended"} />
+            </>
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle className="font-semibold">Abonnement</CardTitle>
+                <CardTitle className="font-semibold">Essai gratuit</CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
-                <div className="grid gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-3">
+                <div className="grid gap-3 rounded-xl bg-muted/40 p-4 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">Formule</p>
-                    <p className="font-semibold">
-                      {s.label}
-                      {s.plan !== "trial" && <span className="text-muted-foreground"> · {formatFCFA(PLANS[s.plan].price)} / mois</span>}
-                    </p>
+                    <p className="text-xs text-muted-foreground">État</p>
+                    <p className="font-semibold">{PLAN_STATUS_LABELS[s.status]}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Fin de période</p>
+                    <p className="text-xs text-muted-foreground">Fin de l&apos;essai</p>
                     <p className="font-semibold">
                       {s.endsAt ? formatDate(s.endsAt) : "—"}
-                      {(s.status === "active" || s.status === "trialing") && (
-                        <span className="text-muted-foreground"> · {s.daysLeft} j</span>
-                      )}
+                      {s.status === "trialing" && <span className="text-muted-foreground"> · {s.daysLeft} j</span>}
                     </p>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={cn("h-full rounded-full", s.daysLeft <= 3 ? "bg-saffron" : "bg-primary")}
-                        style={{ width: `${remaining}%` }}
-                      />
+                      <div className={cn("h-full rounded-full", s.daysLeft <= 3 ? "bg-saffron" : "bg-primary")} style={{ width: `${remaining}%` }} />
                     </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total payé</p>
-                    <p className="num font-semibold">{formatFCFA(b.paidTotal)}</p>
-                  </div>
                 </div>
-                <AdminActions businessId={b.id} plan={s.plan} suspended={s.status === "suspended"} />
+                <AdminActions businessId={b.id} licensed={false} suspended={s.status === "suspended"} />
               </CardContent>
             </Card>
           )}
@@ -167,34 +157,6 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
               </CardContent>
             </Card>
           )}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-semibold">Historique d&apos;abonnement</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucun paiement ni changement de formule pour l&apos;instant.</p>
-              ) : (
-                <ul className="divide-y text-sm">
-                  {history.map((h) => (
-                    <li key={h.id} className="flex justify-between gap-3 py-2.5">
-                      <span className="min-w-0">
-                        <span className="font-medium">
-                          {PLANS[h.plan as keyof typeof PLANS]?.label ?? h.plan} · {SUBSCRIPTION_METHOD_LABELS[h.method] ?? h.method}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {formatDate(h.createdAt)} → fin le {h.periodEnd ? formatDate(h.periodEnd) : "—"}
-                          {h.note && <> · {h.note}</>}
-                        </span>
-                      </span>
-                      <span className="num shrink-0 font-semibold">{formatFCFA(h.amount)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         <div className="space-y-5">

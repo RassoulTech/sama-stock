@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { account, businesses, user } from "@/db/schema";
 import { dayStart } from "@/lib/filters";
@@ -48,7 +48,7 @@ async function ensureUser(tx: Tx, name: string, email: string, password?: string
 }
 
 /**
- * Prépare la boutique de démonstration d'une formule et renvoie l'e-mail du compte à connecter.
+ * Prépare la boutique de démonstration d'une licence et renvoie l'e-mail du compte à connecter.
  * Les données sont recréées une fois par jour (à la première visite du jour, heure de Dakar).
  */
 export async function ensureDemo(plan: DemoPlan): Promise<{ email: string; businessId: string }> {
@@ -63,7 +63,8 @@ export async function ensureDemo(plan: DemoPlan): Promise<{ email: string; busin
     const [fresh] = await tx
       .select({ id: businesses.id })
       .from(businesses)
-      .where(and(eq(businesses.ownerId, ownerId), eq(businesses.isDemo, true), gte(businesses.demoResetAt, validSince)));
+      // Une démo d'avant les licences (sans licence) est recréée
+      .where(and(eq(businesses.ownerId, ownerId), eq(businesses.isDemo, true), gte(businesses.demoResetAt, validSince), isNotNull(businesses.licensePack)));
     if (fresh) return { email: spec.owner.email, businessId: fresh.id };
 
     // Remise à zéro : tout ce que les visiteurs ont modifié disparaît (suppression en cascade)

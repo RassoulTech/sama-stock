@@ -4,7 +4,7 @@ import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
-import { isLicensePack, LICENSE_PACKS, limitLabel } from "@/lib/domain/plans";
+import { isLicensePack, LICENSE_PACKS, limitLabel, type LicensePackId } from "@/lib/domain/plans";
 import { formatDate, formatFCFA } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 import { waLink } from "@/lib/whatsapp";
@@ -16,10 +16,21 @@ type Detail = NonNullable<Awaited<ReturnType<typeof getLicenseSale>>>;
 const daysUntil = (date: Date) => Math.ceil((date.getTime() - Date.now()) / 86_400_000);
 
 /** Page « Votre application » d'un commerce qui a acheté sa licence. */
-export function LicenseView({ detail, businessName, support }: { detail: Detail | null; businessName: string; support: string | null }) {
+export function LicenseView({
+  detail,
+  businessName,
+  support,
+  current,
+}: {
+  detail: Detail | null;
+  businessName: string;
+  support: string | null;
+  /** Licence et maintenance du commerce : servent quand aucune fiche de vente n'est rattachée. */
+  current: { pack: LicensePackId; maintenanceEndsAt: Date | null };
+}) {
   const sale = detail?.sale ?? null;
-  const pack = sale && isLicensePack(sale.pack) ? LICENSE_PACKS[sale.pack] : null;
-  const end = sale?.maintenance_ends_at ? new Date(sale.maintenance_ends_at) : null;
+  const pack = LICENSE_PACKS[sale && isLicensePack(sale.pack) ? sale.pack : current.pack];
+  const end = sale?.maintenance_ends_at ? new Date(sale.maintenance_ends_at) : current.maintenanceEndsAt;
   const days = end ? daysUntil(end) : 0;
   const rest = sale ? balanceOf(sale) : 0;
   const message = `Bonjour Sama Stock, je souhaite renouveler la maintenance de mon application *${businessName}*${sale ? ` (licence ${sale.number})` : ""}.`;
@@ -35,11 +46,11 @@ export function LicenseView({ detail, businessName, support }: { detail: Detail 
           </span>
           <div className="min-w-0 flex-1">
             <p className="flex flex-wrap items-center gap-2 text-lg font-semibold">
-              Licence {pack?.label ?? ""} <StatusPill tone="green">À vie</StatusPill>
+              Licence {pack.label} <StatusPill tone="green">À vie</StatusPill>
             </p>
             <p className="text-sm text-muted-foreground">
               {sale ? `${sale.number} · activée le ${formatDate(sale.activated_at ?? sale.created_at)}` : "Licence active"}
-              {pack && ` · ${limitLabel(pack.limits.maxProducts, "produits", { lowercase: true })}`}
+              {` · ${limitLabel(pack.limits.maxProducts, "produits", { lowercase: true })}`}
             </p>
           </div>
           {rest > 0 && (
@@ -69,8 +80,8 @@ export function LicenseView({ detail, businessName, support }: { detail: Detail 
               ))}
             </ul>
             <p className="text-sm text-muted-foreground">
-              Votre application continue de fonctionner même sans maintenance.
-              {sale && <> Pour la prolonger d&apos;un an : {formatFCFA(sale.maintenance_price)}.</>}
+              Votre application continue de fonctionner même sans maintenance. Pour la prolonger d&apos;un an :{" "}
+              {formatFCFA(sale?.maintenance_price ?? pack.maintenancePrice)}.
             </p>
             {support ? (
               <Button asChild>

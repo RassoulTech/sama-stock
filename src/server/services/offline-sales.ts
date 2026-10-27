@@ -43,7 +43,7 @@ export async function recordOfflineSale(user: SessionUser, input: OfflineSaleInp
 
   const createdAt = clampSaleDate(new Date(input.createdAt), now, ctx.business.createdAt);
   if (ctx.plan.readOnly && !(ctx.plan.endsAt && createdAt.getTime() <= ctx.plan.endsAt.getTime())) {
-    return refused("La formule était expirée au moment de la vente. Renouvelez-la pour envoyer cette vente.");
+    return refused("L'essai gratuit était terminé au moment de la vente. Activez la licence pour envoyer cette vente.");
   }
   const businessId = ctx.business.id;
   const locationId = ctx.location.id;

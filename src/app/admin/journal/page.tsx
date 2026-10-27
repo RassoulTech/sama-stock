@@ -11,7 +11,7 @@ export default async function AdminAuditPage() {
     <>
       <PageHeader
         title="Journal des actions"
-        description="Tout ce que les administrateurs ont fait : changements de formule, paiements en espèces, suspensions, déconnexions, notes."
+        description="Tout ce que les administrateurs ont fait : licences vendues, essais prolongés, suspensions, déconnexions, notes."
       />
       <AuditFeed entries={entries.map((e) => ({ ...e, created_at: new Date(e.created_at).toISOString() }))} />
     </>

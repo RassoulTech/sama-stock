@@ -1,3 +1,7 @@
+/**
+ * Valeurs de la colonne `businesses.plan`. Sama Stock se vend uniquement en licence (achetée une fois, installée chez
+ * le client) : « pro » et « business » ne servent plus qu'à reconnaître les boutiques de démonstration.
+ */
 export type PlanId = "trial" | "pro" | "business";
 
 export interface PlanLimits {
@@ -10,53 +14,14 @@ export interface PlanLimits {
   excel: boolean;
 }
 
-export interface PlanDefinition extends PlanLimits {
-  id: PlanId;
-  label: string;
-  price: number;
-  tagline: string;
-}
-
 export const TRIAL_DAYS = 14;
-export const PERIOD_DAYS = 30;
 
-export const PLANS: Record<PlanId, PlanDefinition> = {
-  trial: {
-    id: "trial",
-    label: "Essai",
-    price: 0,
-    tagline: "14 jours pour découvrir Sama Stock",
-    maxProducts: 20,
-    maxEmployees: 0,
-    maxLocations: 1,
-    advancedReports: false,
-    excel: false,
-  },
-  pro: {
-    id: "pro",
-    label: "Pro",
-    price: 6500,
-    tagline: "Pour le commerçant qui travaille avec une petite équipe",
-    maxProducts: 50,
-    maxEmployees: 3,
-    maxLocations: 1,
-    advancedReports: true,
-    excel: true,
-  },
-  business: {
-    id: "business",
-    label: "Business",
-    price: 11500,
-    tagline: "Pour les commerces qui grandissent, sur plusieurs boutiques",
-    maxProducts: null,
-    maxEmployees: null,
-    maxLocations: 3,
-    advancedReports: true,
-    excel: true,
-  },
+/** Essai gratuit : découvrir Sama Stock pendant 14 jours avant d'acheter sa licence. */
+export const TRIAL: { label: string; tagline: string; limits: PlanLimits } = {
+  label: "Essai gratuit",
+  tagline: "14 jours pour découvrir Sama Stock",
+  limits: { maxProducts: 20, maxEmployees: 0, maxLocations: 1, advancedReports: false, excel: false },
 };
-
-export const PAID_PLANS = [PLANS.pro, PLANS.business];
 
 /**
  * Licences : l'application est achetée une fois (installation et personnalisation comprises)
@@ -140,12 +105,12 @@ export interface PlanState {
   label: string;
   status: PlanStatus;
   readOnly: boolean;
-  /** Abonnement ou essai : jours restants. Licence : jours de maintenance restants. */
+  /** Essai : jours restants. Licence : jours de maintenance restants. */
   daysLeft: number;
-  /** Abonnement ou essai : fin de période. Licence : fin de la maintenance. */
+  /** Essai : fin de l'essai. Licence : fin de la maintenance. */
   endsAt: Date | null;
   limits: PlanLimits;
-  /** Licence achetée (l'application n'expire jamais), ou null pour un abonnement. */
+  /** Licence achetée (l'application n'expire jamais), ou null pendant l'essai gratuit. */
   license: LicensePackId | null;
 }
 
@@ -157,7 +122,7 @@ export function computePlanState(
   b: {
     plan: string;
     trialEndsAt: Date | null;
-    periodEndsAt: Date | null;
+    periodEndsAt?: Date | null;
     suspendedAt: Date | null;
     licensePack?: string | null;
     maintenanceEndsAt?: Date | null;
@@ -184,30 +149,18 @@ export function computePlanState(
     };
   }
 
-  const def = PLANS[plan];
-  const endsAt = plan === "trial" ? b.trialEndsAt : b.periodEndsAt;
+  // Sans licence : l'essai gratuit (fini à sa date de fin)
+  const endsAt = b.trialEndsAt;
   const msLeft = endsAt ? endsAt.getTime() - now.getTime() : 0;
-
-  let status: PlanStatus;
-  if (b.suspendedAt) status = "suspended";
-  else if (msLeft > 0) status = plan === "trial" ? "trialing" : "active";
-  else status = "expired";
-
-  const limits: PlanLimits = {
-    maxProducts: def.maxProducts,
-    maxEmployees: def.maxEmployees,
-    maxLocations: def.maxLocations,
-    advancedReports: def.advancedReports,
-    excel: def.excel,
-  };
+  const status: PlanStatus = b.suspendedAt ? "suspended" : msLeft > 0 ? "trialing" : "expired";
   return {
-    plan,
-    label: def.label,
+    plan: "trial",
+    label: TRIAL.label,
     status,
     readOnly: status === "expired" || status === "suspended",
     daysLeft: Math.max(0, Math.ceil(msLeft / 86_400_000)),
     endsAt,
-    limits,
+    limits: { ...TRIAL.limits },
     license: null,
   };
 }
@@ -227,3 +180,21 @@ export function limitLabel(limit: number | null, noun: string, opts: { lowercase
   const text = `${noun} illimités`;
   return opts.lowercase ? text : text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+/** Ce que comprend une licence, dans l'ordre affiché (site, page « Licence », démo). */
+export function licenceFeatures(pack: LicensePack): string[] {
+  const l = pack.limits;
+  return [
+    limitLabel(l.maxProducts, "produits"),
+    l.maxEmployees === 0 ? "Propriétaire seul" : limitLabel(l.maxEmployees, "employés"),
+    `${l.maxLocations} boutique${l.maxLocations > 1 ? "s ou dépôts" : ""}`,
+    "Caisse, commandes, crédits, inventaire",
+    "Rapports avancés, import et export Excel",
+    "Installation, logo et couleurs compris",
+    "Import de vos produits et formation",
+    `${MAINTENANCE_INCLUDED_MONTHS} mois d'assistance compris`,
+  ];
+}
+
+/** Démonstration publique : chaque boutique fictive montre une licence (la colonne `plan` sert de clé de démo). */
+export const DEMO_LICENCE: Record<PlanId, LicensePackId> = { trial: "boutique", pro: "pro", business: "business" };

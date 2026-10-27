@@ -65,7 +65,7 @@ const RULES: NavRule[] = [
   { href: "/fournisseurs", label: "Fournisseurs", icon: "suppliers", group: "contacts", permission: "suppliers.view" },
   { href: "/rapports", label: "Rapports", icon: "reports", group: "insights", permission: "reports.view" },
   { href: "/equipe", label: "Équipe", icon: "team", group: "manage", permission: "team.manage" },
-  { href: "/abonnement", label: "Abonnement", icon: "billing", group: "manage", permission: "billing.manage" },
+  { href: "/licence", label: "Ma licence", icon: "license", group: "manage", permission: "billing.manage" },
   { href: "/parametres", label: "Paramètres", icon: "settings", group: "manage", permission: "settings.manage" },
 ];
 
@@ -85,10 +85,22 @@ export function buildNav(opts: {
 }
 
 /** Les 4 raccourcis de la barre du bas sur mobile (le reste est dans « Plus »). */
+/**
+ * Les 4 rubriques de la barre du bas sur téléphone (le reste est dans « Plus »), avec « Vendre » au centre :
+ * Accueil · Commandes (ou Ventes) · Vendre · Produits (ou Stock).
+ */
 export function bottomNavItems(items: NavItem[]): NavItem[] {
-  const order = ["/tableau-de-bord", "/vendre", "/commandes", "/produits", "/stock", "/clients"];
-  return order
-    .map((href) => items.find((i) => i.href === href))
-    .filter((i): i is NavItem => Boolean(i))
-    .slice(0, 4);
+  const find = (...hrefs: string[]) => hrefs.map((h) => items.find((i) => i.href === h)).find(Boolean);
+  const home = find("/tableau-de-bord");
+  const left = find("/commandes", "/ventes", "/factures");
+  const right = find("/produits", "/stock", "/clients");
+  const center = find("/vendre");
+  const picked = [home, left, center, right].filter((i): i is NavItem => Boolean(i));
+  // Sans caisse : on complète avec la rubrique suivante disponible
+  for (const extra of ["/clients", "/factures", "/stock", "/ventes"]) {
+    if (picked.length >= 4) break;
+    const item = items.find((i) => i.href === extra);
+    if (item && !picked.includes(item)) picked.push(item);
+  }
+  return picked;
 }

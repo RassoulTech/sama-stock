@@ -23,8 +23,8 @@ export default async function ParametresPage() {
     ? ctx.plan.license !== "business"
       ? "Plusieurs boutiques ou dépôts sont inclus dans la licence Business : contactez Sama Stock."
       : null
-    : ctx.plan.plan !== "business"
-      ? "Plusieurs boutiques ou dépôts (jusqu'à 3), avec transferts de stock, sont disponibles avec la formule Business."
+    : ctx.plan.license !== "business"
+      ? "Plusieurs boutiques ou dépôts (jusqu'à 5), avec transferts de stock, sont disponibles avec la licence Business."
       : null;
 
   return (

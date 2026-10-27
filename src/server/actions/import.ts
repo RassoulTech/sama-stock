@@ -11,7 +11,7 @@ export async function importProductsBatch(input: ImportBatchInput) {
   return runAction<ImportBatchResult>(async () => {
     const ctx = await requireActionContext("products.manage");
     if (!ctx.plan.limits.excel) {
-      throw new ActionError("L'import depuis Excel est inclus dans les formules Pro et Business.");
+      throw new ActionError("L'import depuis Excel est inclus dans toutes les licences.");
     }
     const result = await importProductRows(
       {

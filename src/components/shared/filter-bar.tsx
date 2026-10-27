@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Loader2, RotateCcw } from "lucide-react";
+import { CalendarDays, Loader2, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
@@ -94,30 +94,53 @@ export function FilterBar({
 
   const keys = ["q", "periode", "du", "au", ...selects.map((s) => s.name), ...extraKeys];
   const active = keys.some((k) => searchParams.has(k));
+  // Téléphone : les listes déroulantes sont rangées derrière « Filtres » pour laisser la place aux résultats
+  const [showFilters, setShowFilters] = useState(false);
+  const activeSelects = selects.filter((s) => s.value).length;
 
   return (
     <div className={cn("mb-5 space-y-3", className)}>
       {(search || selects.length > 0) && (
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          {search && <SearchInput value={q} onChange={setQ} placeholder={search.placeholder} className="sm:min-w-64 sm:flex-1" />}
-          {selects.map((s) => (
-            <Select key={s.name} value={s.value ?? ALL} onValueChange={(v) => apply({ [s.name]: v === ALL ? null : v })}>
-              <SelectTrigger
-                aria-label={s.allLabel}
-                className={cn("h-11 w-full bg-card sm:w-auto sm:min-w-44", s.value && "border-primary/40 text-accent-foreground")}
+          <div className="flex gap-2 sm:contents">
+            {search && <SearchInput value={q} onChange={setQ} placeholder={search.placeholder} className="min-w-0 flex-1 sm:min-w-64" />}
+            {selects.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 shrink-0 bg-card sm:hidden"
+                aria-expanded={showFilters}
+                onClick={() => setShowFilters((v) => !v)}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{s.allLabel}</SelectItem>
-                {s.options.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ))}
+                <SlidersHorizontal /> Filtres
+                {activeSelects > 0 && (
+                  <span className="num grid size-5 place-items-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+                    {activeSelects}
+                  </span>
+                )}
+              </Button>
+            )}
+          </div>
+          <div className={cn("grid grid-cols-2 gap-2 sm:contents", !showFilters && "max-sm:hidden")}>
+            {selects.map((s) => (
+              <Select key={s.name} value={s.value ?? ALL} onValueChange={(v) => apply({ [s.name]: v === ALL ? null : v })}>
+                <SelectTrigger
+                  aria-label={s.allLabel}
+                  className={cn("h-11 w-full min-w-0 bg-card sm:w-auto sm:min-w-44", s.value && "border-primary/40 text-accent-foreground")}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>{s.allLabel}</SelectItem>
+                  {s.options.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ))}
+          </div>
         </div>
       )}
 

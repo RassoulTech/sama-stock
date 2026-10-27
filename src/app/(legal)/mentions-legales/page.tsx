@@ -55,8 +55,8 @@ export default function MentionsLegalesPage() {
 
       <h2>Paiements</h2>
       <p>
-        Les paiements en ligne des abonnements sont traités par SasPay (saspay.me), prestataire de paiement par mobile
-        money (Wave, Orange Money). Sama Stock ne reçoit ni ne conserve votre code secret ou vos identifiants mobile money.
+        Les licences se paient à l&apos;équipe Sama Stock par Wave, Orange Money, espèces ou virement, contre une facture à
+        votre nom. Sama Stock ne reçoit ni ne conserve votre code secret ou vos identifiants mobile money.
       </p>
 
       <h2>Propriété intellectuelle</h2>
@@ -70,7 +70,7 @@ export default function MentionsLegalesPage() {
       <p>
         La manière dont vos données sont collectées et protégées est décrite dans la{" "}
         <Link href="/confidentialite">politique de confidentialité</Link>. Les règles d&apos;utilisation du service et
-        d&apos;abonnement figurent dans les <Link href="/conditions">conditions d&apos;utilisation et de vente</Link>.
+        de vente des licences figurent dans les <Link href="/conditions">conditions d&apos;utilisation et de vente</Link>.
       </p>
 
       <h2>Droit applicable</h2>
