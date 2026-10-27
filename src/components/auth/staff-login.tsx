@@ -16,7 +16,7 @@ export interface StaffEntry {
  * Appareil de la boutique : l'employé touche son nom puis tape son code PIN sur un grand clavier.
  * Le code est vérifié par le serveur (5 codes faux = 15 minutes de blocage).
  */
-export function StaffLogin({ slug, staff, onUseEmail }: { slug: string; staff: StaffEntry[]; onUseEmail: () => void }) {
+export function StaffLogin({ slug, staff, onUseEmail }: { slug: string; staff: StaffEntry[]; onUseEmail?: () => void }) {
   const [who, setWho] = useState<StaffEntry | null>(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -85,9 +85,11 @@ export function StaffLogin({ slug, staff, onUseEmail }: { slug: string; staff: S
             ))}
           </ul>
         )}
-        <button type="button" onClick={onUseEmail} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-          <Mail className="size-4" /> Propriétaire ou gérant : se connecter avec l&apos;e-mail
-        </button>
+        {onUseEmail && (
+          <button type="button" onClick={onUseEmail} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+            <Mail className="size-4" /> Propriétaire ou gérant : se connecter avec l&apos;e-mail
+          </button>
+        )}
       </div>
     );
   }
