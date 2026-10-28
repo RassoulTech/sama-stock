@@ -211,3 +211,17 @@ retrouver la panne. `global-error.tsx` a ses propres `<html>` et `<body>` et des
 - Restauration testée **sur une branche Neon temporaire** (copie de la base, supprimée après), jamais sur la vraie
   base : passe → modification de « Boutique Test » → restauration → comparaison ligne à ligne.
 - Navigateur (scratchpad) : page Admin › Sauvegardes, page d'erreur, page Pannes, alerte d'essai.
+
+## Décision du 2026-10-28 : copie GitHub chiffrée
+
+Choix de l'utilisateur après l'alerte de sécurité de Claude Code (données clients lisibles dans GitHub) :
+- les fichiers donnés à GitHub sont **chiffrés** : clé AES-256-GCM tirée au hasard pour chaque fichier, elle-même
+  chiffrée avec la clé publique RSA-4096 de secours (RSA-OAEP, SHA-256). Format : `SSENC1` + longueur de la clé
+  chiffrée (2 octets) + clé chiffrée + IV (12) + tag (16) + contenu ;
+- la clé publique est dans le code (`src/lib/backup/recovery-key.ts`) ; la **clé privée** reste chez l'utilisateur
+  (dossier hors du projet, copie sur clé USB ou Google Drive), jamais sur Vercel ni GitHub ;
+- `/api/sauvegardes/derniere` ne donne plus que le nom de la passe et la liste des chemins ; le sommaire lui-même est
+  téléchargé chiffré comme les autres fichiers ;
+- le bouton « Restaurer depuis un fichier » de la page admin est **retiré** (il faudrait envoyer la clé privée au
+  serveur) : une copie GitHub se restaure avec `scripts/restaurer-tout.ts` et la clé privée, sur l'ordinateur ;
+- les téléchargements depuis la page admin (session super admin) restent en clair (fichier `.json.gz`).

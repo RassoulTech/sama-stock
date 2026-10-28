@@ -1,0 +1,41 @@
+# Copie de secours des sauvegardes de Sama Stock, chaque nuit, gardée 30 jours dans GitHub.
+# Les fichiers arrivent CHIFFRÉS (clé de secours gardée par le propriétaire, hors du site) : illisibles ici.
+# Réglages (Settings › Secrets and variables › Actions) : secret SAUVEGARDE_CLE (= CRON_SECRET de Vercel),
+# variable SITE_URL facultative (adresse du site, par défaut https://sama-stock-one.vercel.app).
+name: Sauvegarde de secours
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  copie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITE: ${{ vars.SITE_URL || 'https://sama-stock-one.vercel.app' }}
+      CLE: ${{ secrets.SAUVEGARDE_CLE }}
+    steps:
+      - name: Télécharger la dernière sauvegarde (chiffrée)
+        run: |
+          set -euo pipefail
+          mkdir -p sauvegarde
+          curl -fsS -H "Authorization: Bearer $CLE" "$SITE/api/sauvegardes/derniere" -o liste.json
+          PASSE=$(jq -r .runId liste.json)
+          echo "PASSE=$PASSE" >> "$GITHUB_ENV"
+          jq -r '.paths[]' liste.json | while read -r CHEMIN; do
+            curl -fsS -G -H "Authorization: Bearer $CLE" --data-urlencode "chemin=$CHEMIN" "$SITE/api/sauvegardes/fichier" -o "sauvegarde/$(basename "$CHEMIN").enc"
+          done
+          ls -l sauvegarde
+      - name: Garder la copie 30 jours
+        uses: actions/upload-artifact@v4
+        with:
+          name: sauvegarde-${{ env.PASSE }}
+          path: sauvegarde/
+          retention-days: 30
+      - name: Prévenir le site que la copie est faite
+        run: curl -fsS -X POST -H "Authorization: Bearer $CLE" "$SITE/api/sauvegardes/github-ok?passe=$PASSE"
