@@ -76,7 +76,7 @@ export function LicenseCard({ detail }: { detail: Detail }) {
             <p className={cn("font-semibold", daysLeft <= 0 ? "text-destructive" : daysLeft <= 30 && "text-warning dark:text-saffron")}>
               {end ? (daysLeft <= 0 ? `Terminée le ${formatDate(end)}` : `Jusqu'au ${formatDate(end)}`) : "—"}
             </p>
-            <p className="text-[11px] text-muted-foreground">puis {formatFCFA(sale.maintenance_price)} / an</p>
+            <p className="text-[11px] text-muted-foreground">puis {formatFCFA(sale.maintenance_price)} / 6 mois</p>
           </div>
         </div>
 
@@ -97,7 +97,7 @@ export function LicenseCard({ detail }: { detail: Detail }) {
                 <li key={p.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
                   <span className="min-w-0">
                     <span className="block font-medium">
-                      {p.kind === "maintenance" ? "Maintenance (1 an)" : p.note || "Licence"} · {LICENSE_PAYMENT_METHODS[p.method as LicensePaymentMethod] ?? p.method}
+                      {p.kind === "maintenance" ? "Maintenance (6 mois)" : p.note || "Licence"} · {LICENSE_PAYMENT_METHODS[p.method as LicensePaymentMethod] ?? p.method}
                     </span>
                     <span className="block text-xs text-muted-foreground">{formatDate(p.paid_at)}</span>
                   </span>

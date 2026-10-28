@@ -52,7 +52,7 @@ const domain = "sama-stock.invalid";
  * Date des dernières modifications des données de démonstration : une démo préparée avant
  * est recréée à la visite suivante (à avancer quand ce fichier ou le générateur change).
  */
-export const DEMO_DATA_SINCE = new Date("2026-10-20T12:55:00Z");
+export const DEMO_DATA_SINCE = new Date("2026-10-28T21:12:00Z");
 
 /** Essai : quincaillerie qui découvre l'application depuis 5 jours. */
 const trial: DemoSpec = {

@@ -80,7 +80,7 @@ export function LicenseView({
               ))}
             </ul>
             <p className="text-sm text-muted-foreground">
-              Votre application continue de fonctionner même sans maintenance. Pour la prolonger d&apos;un an :{" "}
+              Votre application continue de fonctionner même sans maintenance. Pour la prolonger de 6 mois :{" "}
               {formatFCFA(sale?.maintenance_price ?? pack.maintenancePrice)}.
             </p>
             {support ? (
@@ -111,7 +111,7 @@ export function LicenseView({
                 {detail.payments.map((p) => (
                   <li key={p.id} className="flex items-center justify-between gap-3 py-2.5">
                     <span>
-                      <span className="block font-medium">{p.kind === "maintenance" ? "Maintenance (1 an)" : "Licence"}</span>
+                      <span className="block font-medium">{p.kind === "maintenance" ? "Maintenance (6 mois)" : "Licence"}</span>
                       <span className="block text-xs text-muted-foreground">
                         {formatDate(p.paid_at)} · {LICENSE_PAYMENT_METHODS[p.method as LicensePaymentMethod] ?? p.method}
                       </span>

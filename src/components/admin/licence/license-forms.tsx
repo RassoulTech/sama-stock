@@ -19,7 +19,7 @@ import { AccessShare } from "./access-share";
 import { LogoPicker, PalettePicker } from "./brand-picker";
 import { newSaleDraft, SaleFields, saleInput } from "./sale-fields";
 
-/** Argent reçu : solde de la licence, ou maintenance annuelle (prolonge d'un an). */
+/** Argent reçu : solde de la licence, ou maintenance (prolonge de 6 mois). */
 export function LicensePaymentForm({ saleId, balance, maintenancePrice }: { saleId: string; balance: number; maintenancePrice: number }) {
   const router = useRouter();
   const [kind, setKind] = useState<"licence" | "maintenance">(balance > 0 ? "licence" : "maintenance");
@@ -42,7 +42,7 @@ export function LicensePaymentForm({ saleId, balance, maintenancePrice }: { sale
       toast.error(res.error);
       return;
     }
-    toast.success(kind === "maintenance" ? "Maintenance renouvelée pour un an" : "Paiement enregistré");
+    toast.success(kind === "maintenance" ? "Maintenance renouvelée pour 6 mois" : "Paiement enregistré");
     setNote("");
     router.refresh();
   }
@@ -53,7 +53,7 @@ export function LicensePaymentForm({ saleId, balance, maintenancePrice }: { sale
         {(
           [
             ["licence", "Paiement de la licence", balance > 0 ? `Reste ${formatFCFA(balance)}` : "Déjà soldée"],
-            ["maintenance", "Maintenance d'un an", `${formatFCFA(maintenancePrice)} par an`],
+            ["maintenance", "Maintenance de 6 mois", `${formatFCFA(maintenancePrice)} tous les 6 mois`],
           ] as const
         ).map(([k, title, hint]) => (
           <button
@@ -93,7 +93,7 @@ export function LicensePaymentForm({ saleId, balance, maintenancePrice }: { sale
       </FormField>
       <Button type="submit" disabled={pending} className="w-full sm:w-auto">
         {pending && <Loader2 className="animate-spin" />}
-        {kind === "maintenance" ? "Enregistrer et prolonger d'un an" : "Enregistrer le paiement"}
+        {kind === "maintenance" ? "Enregistrer et prolonger de 6 mois" : "Enregistrer le paiement"}
       </Button>
     </form>
   );

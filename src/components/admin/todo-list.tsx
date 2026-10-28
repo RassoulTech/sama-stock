@@ -44,11 +44,11 @@ const LICENCE_SECTIONS: LicenceSection[] = [
     title: "Maintenances à renouveler",
     icon: Wrench,
     tone: "bg-accent text-primary",
-    detail: (s) => `Fin le ${formatDate(s.maintenance_ends_at!)} · ${formatFCFA(s.maintenance_price)} / an`,
+    detail: (s) => `Fin le ${formatDate(s.maintenance_ends_at!)} · ${formatFCFA(s.maintenance_price)} / 6 mois`,
     message: (s) =>
       [
         hello(s),
-        `La maintenance de votre application *${s.business}* (assistance, nouveautés, sauvegardes) se termine le ${formatDate(s.maintenance_ends_at!)}. Pour la prolonger d'un an : ${formatFCFA(s.maintenance_price)}.`,
+        `La maintenance de votre application *${s.business}* (assistance, nouveautés, sauvegardes) se termine le ${formatDate(s.maintenance_ends_at!)}. Pour la prolonger de 6 mois : ${formatFCFA(s.maintenance_price)}.`,
         SIGN,
       ].join("\n"),
     href: "/admin/licences?vue=maintenance",
@@ -62,7 +62,7 @@ const LICENCE_SECTIONS: LicenceSection[] = [
     message: (s) =>
       [
         hello(s),
-        `Votre application *${s.business}* continue de fonctionner, mais sa maintenance est terminée. Pour retrouver l'assistance et les nouveautés : ${formatFCFA(s.maintenance_price)} par an.`,
+        `Votre application *${s.business}* continue de fonctionner, mais sa maintenance est terminée. Pour retrouver l'assistance et les nouveautés : ${formatFCFA(s.maintenance_price)} tous les 6 mois.`,
         SIGN,
       ].join("\n"),
     href: "/admin/licences?vue=maintenance",

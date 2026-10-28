@@ -57,7 +57,7 @@ export default function ConditionsPage() {
                 Licence {p.label} : {formatFCFA(p.price)}
               </strong>{" "}
               — {p.limits.maxEmployees === 0 ? "propriétaire seul" : limitLabel(p.limits.maxEmployees, "employés", { lowercase: true })},{" "}
-              {p.limits.maxLocations} boutique{p.limits.maxLocations > 1 ? "s ou dépôts" : ""} ; maintenance ensuite {formatFCFA(p.maintenancePrice)} par an.
+              {p.limits.maxLocations} boutique{p.limits.maxLocations > 1 ? "s ou dépôts" : ""} ; maintenance ensuite {formatFCFA(p.maintenancePrice)} tous les 6 mois.
             </li>
           );
         })}
@@ -89,8 +89,8 @@ export default function ConditionsPage() {
 
       <h2>6. Maintenance et remboursement</h2>
       <p>
-        Après la première année, la maintenance (assistance, nouveautés, sauvegardes) est facultative et se renouvelle par
-        année. En cas de double paiement ou d&apos;erreur, écrivez-nous : le montant concerné vous est remboursé.
+        Après les {MAINTENANCE_INCLUDED_MONTHS} premiers mois, la maintenance (assistance, nouveautés, sauvegardes) est facultative et se
+        renouvelle tous les 6 mois. En cas de double paiement ou d&apos;erreur, écrivez-nous : le montant concerné vous est remboursé.
       </p>
 
       <h2>7. Données de l&apos;essai</h2>

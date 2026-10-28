@@ -574,7 +574,7 @@ export const licenseSales = pgTable(
     listPrice: integer("list_price").notNull(),
     /** Prix convenu avec le client. */
     agreedPrice: integer("agreed_price").notNull(),
-    /** Maintenance annuelle convenue (après la première année). */
+    /** Prix convenu pour 6 mois de maintenance (après les 6 premiers mois). */
     maintenancePrice: integer("maintenance_price").notNull(),
     status: text("status").notNull().default("active"), // active | annulee
     note: text("note"),
@@ -585,7 +585,7 @@ export const licenseSales = pgTable(
   (t) => [uniqueIndex("license_sales_number_idx").on(t.number), index("license_sales_business_idx").on(t.businessId)],
 );
 
-/** Argent reçu pour une licence (acompte, solde) ou pour sa maintenance annuelle. */
+/** Argent reçu pour une licence (acompte, solde) ou pour 6 mois de maintenance. */
 export const licensePayments = pgTable(
   "license_payments",
   {

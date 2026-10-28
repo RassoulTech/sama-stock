@@ -65,7 +65,7 @@ export function BuyLicence({ plan, businessName }: { plan: PlanState; businessNa
               </p>
               <p className="mt-2 text-sm">
                 <span className="font-medium">Une seule fois.</span>{" "}
-                <span className="text-muted-foreground">Ensuite, maintenance facultative : {formatFCFA(p.maintenancePrice)} par an.</span>
+                <span className="text-muted-foreground">Ensuite, maintenance facultative : {formatFCFA(p.maintenancePrice)} tous les 6 mois.</span>
               </p>
               <ul className="mt-6 space-y-2.5 text-sm">
                 {licenceFeatures(p).map((f) => (

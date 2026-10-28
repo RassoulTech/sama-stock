@@ -152,7 +152,7 @@ export function LicencePdf({ detail, kind, verifyUrl, qr }: { detail: Detail; ki
                 <Text style={[s.bold, { marginTop: 10, marginBottom: 4 }]}>Maintenance renouvelée</Text>
                 {maintenancePayments.map((p) => (
                   <View key={p.id} style={[s.row, s.line, { paddingVertical: 4 }]}>
-                    <Text style={{ width: "75%" }}>{pdfText(`${formatDate(p.paid_at)} · maintenance d'un an · ${method(p.method)}`)}</Text>
+                    <Text style={{ width: "75%" }}>{pdfText(`${formatDate(p.paid_at)} · maintenance de 6 mois · ${method(p.method)}`)}</Text>
                     <Text style={[s.right, { width: "25%" }]}>{money(p.amount)}</Text>
                   </View>
                 ))}
@@ -168,7 +168,7 @@ export function LicencePdf({ detail, kind, verifyUrl, qr }: { detail: Detail; ki
           )}
           <Text style={s.muted}>{pdfText("L'application est à vous : elle ne s'arrête jamais, même sans maintenance.")}</Text>
           <Text style={s.muted}>
-            {pdfText(`Après les ${MAINTENANCE_INCLUDED_MONTHS} premiers mois, la maintenance (assistance, nouveautés, sauvegardes) est facultative : ${formatFCFA(sale.maintenance_price)} par an.`)}
+            {pdfText(`Après les ${MAINTENANCE_INCLUDED_MONTHS} premiers mois, la maintenance (assistance, nouveautés, sauvegardes) est facultative : ${formatFCFA(sale.maintenance_price)} tous les 6 mois.`)}
           </Text>
           <Text style={s.muted}>{pdfText("Vos données vous appartiennent : vous pouvez les exporter dans Excel à tout moment.")}</Text>
         </View>

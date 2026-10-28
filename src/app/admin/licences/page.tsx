@@ -41,7 +41,7 @@ function reminder(s: LicenseSaleRow) {
   if (rest > 0) {
     return `Bonjour${first},\nPetit rappel pour votre application *${s.business}* (Sama Stock) : il reste *${formatFCFA(rest)}* à régler sur la licence ${s.number}. Vous pouvez payer par Wave, Orange Money ou en espèces.\nMerci et bonne journée !\nL'équipe Sama Stock`;
   }
-  return `Bonjour${first},\nLa maintenance de votre application *${s.business}* (assistance, nouveautés, sauvegardes) arrive à échéance. Pour la prolonger d'un an : ${formatFCFA(s.maintenance_price)}.\nVotre application reste à vous dans tous les cas.\nL'équipe Sama Stock`;
+  return `Bonjour${first},\nLa maintenance de votre application *${s.business}* (assistance, nouveautés, sauvegardes) arrive à échéance. Pour la prolonger de 6 mois : ${formatFCFA(s.maintenance_price)}.\nVotre application reste à vous dans tous les cas.\nL'équipe Sama Stock`;
 }
 
 export default async function AdminLicensesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -112,7 +112,7 @@ export default async function AdminLicensesPage({ searchParams }: { searchParams
                 <p className="num text-[0.8125rem] font-semibold whitespace-nowrap sm:text-lg">{formatFCFA(p.price)}</p>
                 <p className="text-[11px] text-muted-foreground">
                   puis {formatNumber(p.maintenancePrice)}
-                  <span className="hidden sm:inline"> FCFA</span> / an
+                  <span className="hidden sm:inline"> FCFA</span> / 6 mois
                 </p>
               </div>
             );

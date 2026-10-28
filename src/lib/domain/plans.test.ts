@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { brandCss } from "./brand";
-import { addMonths, canAdd, computePlanState, LICENSE_PACKS, limitLabel, TRIAL } from "./plans";
+import {
+  addMonths,
+  canAdd,
+  computePlanState,
+  LICENSE_PACKS,
+  licenceFeatures,
+  limitLabel,
+  MAINTENANCE_INCLUDED_MONTHS,
+  MAINTENANCE_PERIOD_LABEL,
+  MAINTENANCE_PERIOD_MONTHS,
+  TRIAL,
+} from "./plans";
 
 const now = new Date("2026-10-19T12:00:00Z");
 const days = (n: number) => new Date(now.getTime() + n * 86_400_000);
@@ -102,5 +113,15 @@ describe("couleurs des applications", () => {
     expect(brandCss("rouge;}body{display:none")).toBeNull();
     expect(brandCss(null)).toBeNull();
     expect(brandCss("bleu")).toContain("--primary:#1d4ed8");
+  });
+});
+
+describe("maintenance des licences", () => {
+  it("6 mois compris à l'achat, puis renouvelable par 6 mois", () => {
+    expect(MAINTENANCE_INCLUDED_MONTHS).toBe(6);
+    expect(MAINTENANCE_PERIOD_MONTHS).toBe(6);
+    expect(MAINTENANCE_PERIOD_LABEL).toBe("par 6 mois");
+    expect(licenceFeatures(LICENSE_PACKS.pro)).toContain("6 mois d'assistance compris");
+    expect(addMonths(new Date("2026-10-28T10:00:00Z"), MAINTENANCE_INCLUDED_MONTHS).toISOString().slice(0, 10)).toBe("2027-04-28");
   });
 });

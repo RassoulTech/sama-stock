@@ -188,8 +188,8 @@ const FAQ = [
     a: `L'installation à votre nom, votre logo et vos couleurs, l'import de vos produits, la formation de votre équipe et ${MAINTENANCE_INCLUDED_MONTHS} mois d'assistance (questions, nouveautés, sauvegardes).`,
   },
   {
-    q: "Et après la première année ?",
-    a: `La maintenance devient facultative : de ${formatFCFA(LICENSE_PACKS.boutique.maintenancePrice)} à ${formatFCFA(LICENSE_PACKS.business.maintenancePrice)} par an selon votre forfait. Sans elle, votre application continue de fonctionner normalement.`,
+    q: `Et après les ${MAINTENANCE_INCLUDED_MONTHS} premiers mois ?`,
+    a: `La maintenance devient facultative : de ${formatFCFA(LICENSE_PACKS.boutique.maintenancePrice)} à ${formatFCFA(LICENSE_PACKS.business.maintenancePrice)} tous les 6 mois selon votre forfait. Sans elle, votre application continue de fonctionner normalement.`,
   },
   {
     q: "Puis-je payer en plusieurs fois ?",
@@ -718,7 +718,7 @@ export default async function HomePage() {
                   Payez une fois. <span className="whitespace-nowrap">Gardez-la</span> pour toujours.
                 </>
               }
-              text="Le prix comprend l'installation, votre logo, l'import de vos produits, la formation et un an d'assistance. Il peut se payer en deux fois."
+              text={`Le prix comprend l'installation, votre logo, l'import de vos produits, la formation et ${MAINTENANCE_INCLUDED_MONTHS} mois d'assistance. Il peut se payer en deux fois.`}
             />
               <div className="mt-10 grid gap-4 md:grid-cols-3">
                 {LICENSE_ORDER.map((id) => {
@@ -745,7 +745,7 @@ export default async function HomePage() {
                       </p>
                       <p className="mt-2.5 text-sm">
                         <span className="font-medium">Une seule fois.</span>{" "}
-                        <span className="text-muted-foreground">Ensuite, maintenance facultative : {formatFCFA(p.maintenancePrice)} par an.</span>
+                        <span className="text-muted-foreground">Ensuite, maintenance facultative : {formatFCFA(p.maintenancePrice)} tous les 6 mois.</span>
                       </p>
                       <ul className="mt-7 space-y-3 text-sm">
                         {licenceFeatures(p).map((f) => (

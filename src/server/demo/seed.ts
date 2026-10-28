@@ -17,7 +17,7 @@ import {
   stockMovements,
   suppliers,
 } from "@/db/schema";
-import { DEMO_LICENCE } from "@/lib/domain/plans";
+import { addMonths, DEMO_LICENCE, MAINTENANCE_INCLUDED_MONTHS } from "@/lib/domain/plans";
 import type { DemoProduct, DemoSpec } from "./specs";
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -66,10 +66,10 @@ export async function seedDemoBusiness(tx: Tx, spec: DemoSpec, ownerId: string, 
     ...spec.business,
     plan: spec.plan,
     trialEndsAt: new Date(+createdAt + 14 * DAY),
-    // La démo montre une licence : achetée à l'ouverture de la boutique, maintenance d'un an
+    // La démo montre une licence : achetée à l'ouverture de la boutique, avec ses mois de maintenance compris
     licensePack: DEMO_LICENCE[spec.plan],
     licenseActivatedAt: createdAt,
-    maintenanceEndsAt: new Date(+createdAt + 365 * DAY),
+    maintenanceEndsAt: addMonths(createdAt, MAINTENANCE_INCLUDED_MONTHS),
     ownerId,
     isDemo: true,
     demoResetAt: new Date(NOW),

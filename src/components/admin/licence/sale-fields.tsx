@@ -82,7 +82,7 @@ export function SaleFields({ value, onChange }: { value: SaleDraft; onChange: (d
         >
           <SuffixInput id="sale-price" suffix="FCFA" min={0} inputMode="numeric" value={value.price} onChange={(e) => set({ price: e.target.value })} />
         </FormField>
-        <FormField label="Maintenance par an (dès la 2e année)" htmlFor="sale-maintenance" hint="La première année est comprise dans la licence.">
+        <FormField label="Maintenance tous les 6 mois (après les 6 premiers mois)" htmlFor="sale-maintenance" hint="Les 6 premiers mois sont compris dans la licence.">
           <SuffixInput id="sale-maintenance" suffix="FCFA" min={0} inputMode="numeric" value={value.maintenancePrice} onChange={(e) => set({ maintenancePrice: e.target.value })} />
         </FormField>
         <FormField label="Acompte reçu aujourd'hui" htmlFor="sale-deposit" hint={price > 0 ? `Reste à payer : ${formatFCFA(rest)}` : undefined}>

@@ -9,7 +9,7 @@ import { account, businesses, licensePayments, licenseSales, locations, members,
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
 import { brandLabel, DEFAULT_BRAND, normalizeBrand } from "@/lib/domain/brand";
 import { isValidSlug } from "@/lib/domain/slug";
-import { addMonths, computePlanState, LICENSE_PACKS, MAINTENANCE_INCLUDED_MONTHS, type LicensePackId } from "@/lib/domain/plans";
+import { addMonths, computePlanState, LICENSE_PACKS, MAINTENANCE_INCLUDED_MONTHS, MAINTENANCE_PERIOD_MONTHS, type LicensePackId } from "@/lib/domain/plans";
 import { ACTIVITIES, defaultModules, type Activity } from "@/lib/domain/sales";
 import { formatDate, formatFCFA, normalizePhone } from "@/lib/format";
 import { getLicenseSale } from "../queries/licences";
@@ -196,7 +196,7 @@ async function loadSale(saleId: string) {
   return s;
 }
 
-/** Argent reçu : solde de la licence, ou maintenance annuelle (prolonge la maintenance d'un an). */
+/** Argent reçu : solde de la licence, ou maintenance (prolonge la maintenance de 6 mois). */
 export async function adminRecordLicensePayment(
   saleId: string,
   input: { kind: "licence" | "maintenance"; amount: number | string; method: string; note?: string },
@@ -228,7 +228,7 @@ export async function adminRecordLicensePayment(
       if (data.kind === "maintenance") {
         const [b] = await tx.select({ end: businesses.maintenanceEndsAt }).from(businesses).where(eq(businesses.id, sale.businessId));
         const base = b?.end && b.end > new Date() ? b.end : new Date();
-        const end = addMonths(base, 12);
+        const end = addMonths(base, MAINTENANCE_PERIOD_MONTHS);
         await tx.update(businesses).set({ maintenanceEndsAt: end }).where(eq(businesses.id, sale.businessId));
         await logAdmin(tx, ctx, {
           action: "maintenance",

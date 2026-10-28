@@ -7,7 +7,7 @@ import { Logo } from "@/components/brand/logo";
 import { DownloadPdfButton, ShareDocumentButton } from "@/components/documents/share-document";
 import { Button } from "@/components/ui/button";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
-import { isLicensePack, LICENSE_PACKS } from "@/lib/domain/plans";
+import { isLicensePack, LICENSE_PACKS, MAINTENANCE_INCLUDED_MONTHS } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatPhone } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 import { NO_INDEX } from "@/lib/seo";
@@ -118,7 +118,7 @@ export default async function LicenseDocumentPage({
             </tr>
             <tr className="border-b border-[#e5e8e5]">
               <td className="px-3 py-2.5">
-                <p className="font-semibold">Maintenance pendant 12 mois</p>
+                <p className="font-semibold">Maintenance pendant {MAINTENANCE_INCLUDED_MONTHS} mois</p>
                 <p className="text-[#58635e]">Assistance, nouveautés et sauvegardes</p>
               </td>
               <td className="px-3 py-2.5 text-right text-[#58635e]">Inclus</td>
@@ -180,7 +180,7 @@ export default async function LicenseDocumentPage({
                     {maintenancePayments.map((p) => (
                       <tr key={p.id} className="border-b border-[#e5e8e5]">
                         <td className="px-3 py-2">
-                          {formatDate(p.paid_at)} · maintenance d&apos;un an · {LICENSE_PAYMENT_METHODS[p.method as LicensePaymentMethod] ?? p.method}
+                          {formatDate(p.paid_at)} · maintenance de 6 mois · {LICENSE_PAYMENT_METHODS[p.method as LicensePaymentMethod] ?? p.method}
                         </td>
                         <td className="w-32 px-3 py-2 text-right tabular-nums">{formatFCFA(p.amount)}</td>
                       </tr>
@@ -197,7 +197,7 @@ export default async function LicenseDocumentPage({
           {kind === "devis" && <p>Paiement : acompte de 50 % à la commande, solde à l&apos;installation. Wave, Orange Money, espèces ou virement.</p>}
           <p>L&apos;application est à vous : elle ne s&apos;arrête jamais, même sans maintenance.</p>
           <p>
-            Après les 12 premiers mois, la maintenance (assistance, nouveautés, sauvegardes) est facultative : {formatFCFA(sale.maintenance_price)} par an.
+            Après les {MAINTENANCE_INCLUDED_MONTHS} premiers mois, la maintenance (assistance, nouveautés, sauvegardes) est facultative : {formatFCFA(sale.maintenance_price)} tous les 6 mois.
           </p>
           <p>Vos données vous appartiennent : vous pouvez les exporter dans Excel à tout moment.</p>
         </section>

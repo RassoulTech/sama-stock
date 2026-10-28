@@ -25,8 +25,8 @@ export const TRIAL: { label: string; tagline: string; limits: PlanLimits } = {
 
 /**
  * Licences : l'application est achetée une fois (installation et personnalisation comprises)
- * et ne s'arrête jamais. La maintenance (assistance, nouveautés, sauvegardes) est comprise la
- * première année, puis renouvelable chaque année.
+ * et ne s'arrête jamais. La maintenance (assistance, nouveautés, sauvegardes) est comprise les
+ * 6 premiers mois, puis renouvelable tous les 6 mois.
  */
 export type LicensePackId = "boutique" | "pro" | "business";
 
@@ -35,7 +35,7 @@ export interface LicensePack {
   label: string;
   /** Prix catalogue, négociable à chaque vente. */
   price: number;
-  /** Maintenance annuelle après la première année. */
+  /** Prix de 6 mois de maintenance, après les 6 premiers mois. */
   maintenancePrice: number;
   tagline: string;
   limits: PlanLimits;
@@ -71,7 +71,11 @@ export const LICENSE_PACKS: Record<LicensePackId, LicensePack> = {
 export const LICENSE_ORDER: LicensePackId[] = ["boutique", "pro", "business"];
 
 /** Maintenance comprise dans l'achat d'une licence. */
-export const MAINTENANCE_INCLUDED_MONTHS = 12;
+export const MAINTENANCE_INCLUDED_MONTHS = 6;
+/** Durée achetée à chaque renouvellement de la maintenance (au prix `maintenancePrice`). */
+export const MAINTENANCE_PERIOD_MONTHS = 6;
+/** « par 6 mois », à côté d'un prix de maintenance. */
+export const MAINTENANCE_PERIOD_LABEL = `par ${MAINTENANCE_PERIOD_MONTHS} mois`;
 
 export function isLicensePack(value: unknown): value is LicensePackId {
   return value === "boutique" || value === "pro" || value === "business";
