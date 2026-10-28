@@ -77,8 +77,8 @@ const run = (runId: string, state: "ok" | "partiel" | "echec" = "ok", githubAt: 
 
 describe("conservation", () => {
   const now = new Date("2026-10-29T03:00:00Z");
-  it("garde 30 nuits, efface les plus vieilles", () => {
-    const del = runsToDelete([run("2026-10-28T02-00-00Z-nuit"), run("2026-09-20T02-00-00Z-nuit"), run("2026-09-30T02-00-00Z-nuit")], now);
+  it("garde 30 nuits, efface les plus vieilles (sauf la 1re du mois)", () => {
+    const del = runsToDelete([run("2026-10-28T02-00-00Z-nuit"), run("2026-09-10T02-00-00Z-nuit"), run("2026-09-20T02-00-00Z-nuit"), run("2026-09-30T02-00-00Z-nuit")], now);
     expect(del).toEqual(["2026-09-20T02-00-00Z-nuit"]);
   });
   it("garde la première nuit réussie de chaque mois pendant un an", () => {
