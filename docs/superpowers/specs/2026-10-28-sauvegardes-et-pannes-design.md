@@ -177,8 +177,12 @@ retrouver la panne. `global-error.tsx` a ses propres `<html>` et `<body>` et des
 
 ### Admin
 
-- Carte « Alertes sur ce téléphone » (tableau de bord admin et page Pannes) : activer, désactiver, envoyer un essai.
-  Actions super admin qui écrivent dans `push_subscriptions` pour l'utilisateur admin (pas besoin de commerce).
+- Carte « Alertes sur ce téléphone » (page Pannes) : activer, désactiver, envoyer un essai. Actions super admin qui
+  écrivent dans `push_subscriptions` pour l'utilisateur admin (pas besoin de commerce). Le tableau de bord admin
+  affiche un bandeau « N pannes à regarder » tant qu'il en reste.
+- Lien « Voir la page d'erreur (essai) » : `/admin/pannes/essai` lève volontairement une erreur (super admin seulement)
+  pour vérifier la page d'erreur et l'alerte de bout en bout.
+- Les erreurs inattendues des actions (attrapées par `runAction`) sont aussi enregistrées (route = page d'origine).
 - Page `/admin/pannes` (groupe « Sécurité ») : pannes non réglées d'abord ; route, source, message, nombre, première
   et dernière fois ; bouton « Réglée ». Pastille rouge dans le menu tant qu'il en reste.
 
