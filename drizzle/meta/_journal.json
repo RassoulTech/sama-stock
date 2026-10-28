@@ -85,6 +85,13 @@
       "when": 1793190050591,
       "tag": "0011_corrections",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793205891767,
+      "tag": "0012_pannes",
+      "breakpoints": true
     }
   ]
 }

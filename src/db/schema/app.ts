@@ -644,3 +644,25 @@ export const pushSubscriptions = pgTable(
   },
   (t) => [index("push_subscriptions_user_idx").on(t.userId)],
 );
+
+/** Pannes du site (serveur, navigateur, sauvegarde) : une ligne par panne, comptée à chaque retour. Aucune donnée personnelle. */
+export const appErrors = pgTable(
+  "app_errors",
+  {
+    id: id(),
+    /** Empreinte SHA-1 de source + adresse + message normalisés (src/lib/domain/app-errors.ts). */
+    fingerprint: text("fingerprint").notNull().unique(),
+    source: text("source").notNull(), // serveur | navigateur | sauvegarde
+    route: text("route").notNull(),
+    message: text("message").notNull(),
+    digest: text("digest"),
+    count: integer("count").notNull().default(1),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).defaultNow().notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+    /** Dernière alerte envoyée (téléphone et e-mail). */
+    alertedAt: timestamp("alerted_at", { withTimezone: true }),
+    /** Marquée « Réglée » dans l'admin ; remise à vide si la panne revient. */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (t) => [index("app_errors_last_seen_idx").on(t.lastSeenAt)],
+);
