@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { businesses, businessNotes, subscriptionEvents, user } from "@/db/schema";
 import { businessHealth } from "@/lib/domain/admin";
 import { computePlanState, type PlanStatus } from "@/lib/domain/plans";
+import { openAppErrorCount } from "./app-errors";
 import { licenseSummary, listLicenseSales } from "./licences";
 
 /** Ventes comptées : ventes validées en caisse et commandes livrées. */
@@ -70,7 +71,9 @@ export async function adminNavBadges() {
   const due = todo.trialsEnding.length + todo.recentlyExpired.length;
   const lic = licenseSummary(await listLicenseSales());
   const licenseTodo = lic.toCollect.length + lic.maintenanceSoon.length + lic.maintenanceOver.length;
+  const openErrors = await openAppErrorCount();
   return {
+    ...(openErrors > 0 ? { "/admin/pannes": { value: openErrors, tone: "alert" as const } } : {}),
     ...(licenseTodo > 0 ? { "/admin/licences": { value: licenseTodo, tone: "alert" as const } } : lic.count > 0 ? { "/admin/licences": { value: lic.count, tone: "muted" as const } } : {}),
     "/admin/commerces": due > 0 ? { value: due, tone: "alert" as const } : { value: rows.length, tone: "muted" as const },
   };

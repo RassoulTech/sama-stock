@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { businesses, members, pushSubscriptions } from "@/db/schema";
 import { receivesNotifications } from "@/lib/domain/notifications";
+import { pushSubscriptionSchema, type PushSubscriptionInput } from "@/lib/push-subscription";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
 import { notificationIcon, sendPush } from "../push";
@@ -43,16 +44,11 @@ export async function updateNotifyPrefs(input: z.input<typeof prefsSchema>) {
   });
 }
 
-const subscriptionSchema = z.object({
-  endpoint: z.url().startsWith("https://").max(1000),
-  keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
-});
-
 /** Ce téléphone recevra les notifications de cette personne, même application fermée. */
-export async function savePushSubscription(input: z.input<typeof subscriptionSchema>) {
+export async function savePushSubscription(input: PushSubscriptionInput) {
   return runAction(async () => {
     const ctx = await notifiedContext();
-    const sub = parse(subscriptionSchema, input);
+    const sub = parse(pushSubscriptionSchema, input);
     const userAgent = (await headers()).get("user-agent")?.slice(0, 300) ?? null;
     // Un même téléphone repris par quelqu'un d'autre : l'abonnement change de propriétaire
     await db

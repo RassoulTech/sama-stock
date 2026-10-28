@@ -1,4 +1,4 @@
-import { Activity, BadgeCheck, Coins, Download, Percent, ShoppingBag, Store, TrendingUp, UserRound } from "lucide-react";
+import { Activity, BadgeCheck, Coins, Download, Percent, ShoppingBag, Store, TrendingUp, TriangleAlert, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuditList } from "@/components/admin/audit-list";
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PLAN_STATUS_TONES } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatNumber } from "@/lib/format";
 import { activationFunnel, adminStats, listAllBusinesses, listAudit, platformOverview, todoLists } from "@/server/queries/admin";
+import { openAppErrorCount } from "@/server/queries/app-errors";
 import { licenseSummary, listLicenseSales } from "@/server/queries/licences";
 
 export const metadata: Metadata = { title: { absolute: "Tableau de bord · Administration" } };
@@ -22,7 +23,13 @@ const DAY = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", t
 const TODAY = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Dakar" });
 
 export default async function AdminDashboardPage() {
-  const [rows, overview, audit, sales] = await Promise.all([listAllBusinesses(), platformOverview(), listAudit({ limit: 6 }), listLicenseSales()]);
+  const [rows, overview, audit, sales, openErrors] = await Promise.all([
+    listAllBusinesses(),
+    platformOverview(),
+    listAudit({ limit: 6 }),
+    listLicenseSales(),
+    openAppErrorCount(),
+  ]);
   const lic = licenseSummary(sales);
   const stats = adminStats(rows);
   const c = overview.counts;
@@ -63,6 +70,15 @@ export default async function AdminDashboardPage() {
           </Button>
         }
       />
+
+      {openErrors > 0 && (
+        <Link
+          href="/admin/pannes"
+          className="mb-5 flex items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive"
+        >
+          <TriangleAlert className="size-4" /> {openErrors} panne{openErrors > 1 ? "s" : ""} à regarder
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <AdminStat
