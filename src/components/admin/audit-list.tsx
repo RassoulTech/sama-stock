@@ -5,7 +5,9 @@ import {
   CalendarPlus,
   CheckCircle2,
   CreditCard,
+  DatabaseBackup,
   FileSpreadsheet,
+  History,
   KeyRound,
   Link2,
   LogOut,
@@ -40,6 +42,8 @@ const ICONS: Record<AdminAction, { icon: LucideIcon; tone: string }> = {
   import: { icon: FileSpreadsheet, tone: "bg-accent text-primary" },
   address: { icon: Link2, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
   info: { icon: Store, tone: "bg-muted text-muted-foreground" },
+  restore: { icon: History, tone: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  backup: { icon: DatabaseBackup, tone: "bg-accent text-primary" },
 };
 
 export interface AuditEntry {

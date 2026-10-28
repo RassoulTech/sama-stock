@@ -18,6 +18,8 @@ export const ADMIN_ACTIONS = {
   import: "Produits importés",
   address: "Adresse de connexion",
   info: "Infos du commerce",
+  restore: "Restauration",
+  backup: "Sauvegarde",
 } as const;
 
 /** Moyens de paiement d'une licence ou d'une maintenance. */
