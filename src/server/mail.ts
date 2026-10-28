@@ -54,3 +54,17 @@ export function resetPasswordEmail(input: { name: string; url: string }) {
 </td></tr></table></td></tr></table></body></html>`;
   return { subject: "Changer votre mot de passe", text, html };
 }
+
+/** E-mail d'alerte pour l'équipe Sama Stock (panne, sauvegarde ratée) : le message et un bouton vers l'admin. */
+export function alertEmail(input: { title: string; body: string; url: string }) {
+  const text = [input.body, "", `Voir : ${input.url}`].join("\n");
+  const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#f7f8f5;font-family:Arial,Helvetica,sans-serif;color:#0b1310">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border:1px solid #e3e8e5;border-radius:16px">
+<tr><td style="padding:28px">
+<p style="margin:0 0 16px;font-size:18px;font-weight:bold;color:#b42318">${escapeHtml(input.title)}</p>
+<p style="margin:0 0 24px;font-size:15px;line-height:1.5">${escapeHtml(input.body)}</p>
+<p style="margin:0"><a href="${escapeHtml(input.url)}" style="display:inline-block;background:#0b6e4f;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:10px">Ouvrir l'administration</a></p>
+</td></tr></table></td></tr></table></body></html>`;
+  return { subject: input.title, text, html };
+}

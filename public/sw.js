@@ -108,6 +108,7 @@ const VIBRATIONS = {
   order: [200, 80, 200],
   stock_low: [300, 120, 300],
   stock_out: [400, 150, 400, 150, 400],
+  panne: [500, 200, 500, 200, 500],
 };
 
 self.addEventListener("push", (event) => {
@@ -119,8 +120,9 @@ self.addEventListener("push", (event) => {
     (async () => {
       const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const w of windows) w.postMessage({ type: "sama-notification", notification: data });
-      // Application ouverte devant la personne : elle joue son propre son et affiche le message elle-même
-      if (windows.some((w) => w.visibilityState === "visible")) return;
+      // Application ouverte devant la personne : elle joue son propre son et affiche le message elle-même.
+      // Sauf les pannes : l'espace admin n'a pas de cloche, la notification système s'affiche toujours.
+      if (data.kind !== "panne" && windows.some((w) => w.visibilityState === "visible")) return;
       await self.registration.showNotification(data.title || "Sama Stock", {
         body: data.body || "",
         icon: data.icon || "/icon-192.png",

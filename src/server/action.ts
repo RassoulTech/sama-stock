@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_rethrow } from "next/navigation";
+import { after } from "next/server";
 import type { z } from "zod";
 
 /** Erreur « métier » dont le message est montré tel quel à l'utilisateur. */
@@ -14,6 +15,15 @@ export async function runAction<T>(fn: () => Promise<T>): Promise<ActionResult<T
     unstable_rethrow(error);
     if (error instanceof ActionError) return { ok: false, error: error.message };
     console.error("[action]", error);
+    try {
+      // Import à la demande : app-errors importe ce fichier (ActionError)
+      after(async () => {
+        const { currentRoute, reportServerError } = await import("./services/app-errors");
+        await reportServerError(error, await currentRoute());
+      });
+    } catch {
+      // Hors d'une requête (script) : rien à enregistrer
+    }
     return { ok: false, error: "Une erreur inattendue est survenue. Réessayez." };
   }
 }

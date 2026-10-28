@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth";
 import { can, isRole, type Permission, type Role } from "@/lib/domain/permissions";
 import { computePlanState, type PlanState } from "@/lib/domain/plans";
 import { ActionError } from "./action";
+import { adminEmails } from "./admin-emails";
 
 export const BUSINESS_COOKIE = "ss_biz";
 export const LOCATION_COOKIE = "ss_loc";
@@ -49,11 +50,7 @@ export interface BusinessContext extends BaseContext {
 export type AppContext = BaseContext & ({ business: null } | Omit<BusinessContext, keyof BaseContext>);
 
 export function isSuperAdminEmail(email: string): boolean {
-  const list = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  return list.includes(email.toLowerCase());
+  return adminEmails().includes(email.toLowerCase());
 }
 
 export const getSession = cache(async () => auth.api.getSession({ headers: await headers() }));
