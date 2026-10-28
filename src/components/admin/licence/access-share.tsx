@@ -3,6 +3,7 @@
 import { Check, Copy, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { shopAppUrl } from "@/lib/domains";
 import { waLink } from "@/lib/whatsapp";
 
 /** Message d'accès envoyé au client sur WhatsApp. */
@@ -48,7 +49,9 @@ export function AccessShare({
   const [origin] = useState(() => (typeof window === "undefined" ? "" : window.location.origin));
   const [qr, setQr] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  const url = origin ? `${origin}${slug ? `/b/${slug}` : "/connexion"}?email=${encodeURIComponent(email)}` : "";
+  // Boutique sous licence : son adresse à elle (nom.sama-stock.com) ; sinon la connexion de Sama Stock
+  const appUrl = origin && slug ? shopAppUrl(origin, slug) : null;
+  const url = origin ? `${appUrl ?? `${origin}/connexion`}?email=${encodeURIComponent(email)}` : "";
 
   useEffect(() => {
     if (!url) return;
@@ -79,7 +82,7 @@ export function AccessShare({
     <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
       <div className="space-y-3">
         {[
-          ...(slug && origin ? [{ label: "Adresse de son application", value: `${origin}/b/${slug}` }] : []),
+          ...(appUrl ? [{ label: "Adresse de son application", value: appUrl }] : []),
           { label: "E-mail", value: email },
           ...(password ? [{ label: "Mot de passe provisoire", value: password }] : []),
         ].map((f) => (

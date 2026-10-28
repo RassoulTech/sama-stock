@@ -49,3 +49,5 @@ next-env.d.ts
 
 # sauvegardes faites sur l'ordinateur de développement
 /.sauvegardes-local/
+
+.env*.local

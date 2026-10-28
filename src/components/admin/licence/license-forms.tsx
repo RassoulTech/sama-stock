@@ -4,6 +4,7 @@ import { Copy, ExternalLink, KeyRound, Link2, Loader2, Pencil } from "lucide-rea
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useOrigin } from "@/components/shared/use-origin";
+import { legacyShopUrl, shopAppUrl } from "@/lib/domains";
 import { toast } from "sonner";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { FormField, SuffixInput } from "@/components/shared/form-field";
@@ -151,14 +152,14 @@ export function LicenseAccess({
   );
 }
 
-/** Adresse de la page de connexion de la boutique (…/b/son-nom) : copier, ouvrir ou modifier. */
+/** Adresse de l'application de la boutique (nom.sama-stock.com) : copier, ouvrir ou modifier. */
 function LoginAddress({ businessId, slug }: { businessId: string; slug: string | null }) {
   const router = useRouter();
   const origin = useOrigin();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(slug ?? "");
   const [pending, setPending] = useState(false);
-  const url = slug ? `${origin}/b/${slug}` : "";
+  const url = slug && origin ? shopAppUrl(origin, slug) : "";
 
   async function save(wanted?: string) {
     setPending(true);
@@ -214,6 +215,9 @@ function LoginAddress({ businessId, slug }: { businessId: string; slug: string |
       ) : (
         <>
           <p className="font-mono text-sm font-semibold break-all">{url}</p>
+          {slug && url.startsWith("https://") && (
+            <p className="text-xs text-muted-foreground">Ancienne adresse, toujours valable : {legacyShopUrl(slug)}</p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -224,7 +228,7 @@ function LoginAddress({ businessId, slug }: { businessId: string; slug: string |
               <Copy /> Copier
             </Button>
             <Button asChild size="sm" variant="outline">
-              <a href={`/b/${slug}`} target="_blank" rel="noopener noreferrer">
+              <a href={url || `/b/${slug}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink /> Ouvrir
               </a>
             </Button>

@@ -1,6 +1,7 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { isValidSlug } from "@/lib/domain/slug";
+import { shopSlugFromHost } from "@/lib/domains";
 import { isProtectedPath } from "@/lib/routes";
 import { DEVICE_COOKIE_NAME, OTHER_ACCOUNT_PARAM, SHOP_COOKIE } from "@/lib/shop-app";
 
@@ -10,6 +11,19 @@ import { DEVICE_COOKIE_NAME, OTHER_ACCOUNT_PARAM, SHOP_COOKIE } from "@/lib/shop
 export function proxy(request: NextRequest) {
   const { pathname, search, searchParams } = request.nextUrl;
   const hasSession = Boolean(getSessionCookie(request));
+
+  // Adresse d'une boutique (nom.sama-stock.com) : l'accueil est sa page de connexion, puis l'application
+  const hostShop = shopSlugFromHost(request.headers.get("host"));
+  if (hostShop) {
+    if (pathname === "/") {
+      if (hasSession) return NextResponse.redirect(new URL(`/b/${hostShop}/entrer`, request.url));
+      return NextResponse.rewrite(new URL(`/b/${hostShop}${search}`, request.url));
+    }
+    if ((isProtectedPath(pathname) && !hasSession) || (pathname === "/connexion" && !searchParams.has(OTHER_ACCOUNT_PARAM))) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
+  }
   const shop = request.cookies.get(SHOP_COOKIE)?.value;
   const shopPage = shop && isValidSlug(shop) ? `/b/${shop}` : null;
 
