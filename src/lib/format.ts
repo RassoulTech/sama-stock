@@ -46,6 +46,13 @@ export function formatNumber(value: number): string {
   return fcfa.format(Math.round(value));
 }
 
+/** Taille d'un fichier : « 512 o », « 290 Ko », « 1,4 Mo ». */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${formatNumber(Math.round(bytes / 1024))} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
+}
+
 export function formatQty(quantity: number, unit?: string): string {
   const n = qtyFormat.format(quantity);
   return unit ? `${n} ${unitLabel(unit, quantity)}` : n;

@@ -7,6 +7,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: "/admin/licences", label: "Licences", icon: "license", group: "manage" },
   { href: "/admin/utilisateurs", label: "Utilisateurs", icon: "users", group: "manage" },
   { href: "/admin/connexions", label: "Connexions", icon: "sessions", group: "admin" },
+  { href: "/admin/sauvegardes", label: "Sauvegardes", icon: "backup", group: "admin" },
   { href: "/admin/pannes", label: "Pannes", icon: "system", group: "admin" },
   { href: "/admin/journal", label: "Journal des actions", short: "Journal", icon: "history", group: "admin" },
 ];

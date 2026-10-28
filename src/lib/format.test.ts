@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatBytes,
   formatFCFA,
   formatPhone,
   formatQty,
@@ -83,5 +84,13 @@ describe("formatPhone", () => {
   });
   it("returns other inputs unchanged", () => {
     expect(formatPhone("abc")).toBe("abc");
+  });
+});
+
+describe("formatBytes", () => {
+  it("écrit la taille d'un fichier en o, Ko ou Mo", () => {
+    expect(formatBytes(512)).toBe("512 o");
+    expect(formatBytes(297_000)).toBe("290 Ko");
+    expect(formatBytes(1_468_006)).toBe("1,4 Mo");
   });
 });
