@@ -6,10 +6,13 @@ import { ArchiveProductButton, DeleteProductButton } from "@/components/products
 import { ProductThumb } from "@/components/products/product-thumb";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusPill, StockBadge } from "@/components/shared/stock-badge";
+import { MovementCancelButton } from "@/components/stock/movement-cancel";
 import { movementTypeLabel, reasonLabel, SignedQty } from "@/components/stock/movement-label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime, formatFCFA, formatQty, unitLabel, UNITS } from "@/lib/format";
+import { cancellableMovement } from "@/lib/domain/stock";
+import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/context";
 import { getProduct } from "@/server/queries/products";
 
@@ -22,6 +25,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
   if (!product) notFound();
 
   const writable = !ctx.plan.readOnly;
+  const canCancel = writable && ctx.can("stock.cancel");
   const unitName = UNITS.find((u) => u.id === product.unit)?.name ?? product.unit;
   const margin = product.costPrice !== null ? product.salePrice - product.costPrice : null;
   const current = product.current;
@@ -173,13 +177,18 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
                 <p className="text-sm text-muted-foreground">Aucun mouvement pour l&apos;instant.</p>
               ) : (
                 <ul className="divide-y">
-                  {product.movements.map((m) => (
+                  {product.movements.map((m) => {
+                    const cancel = canCancel ? cancellableMovement(m) : null;
+                    return (
                     <li key={m.id} className="flex items-start justify-between gap-3 py-3 text-sm">
                       <div className="min-w-0">
                         <p className="font-medium">
-                          {movementTypeLabel(m.type)}
+                          <span className={cn(m.cancelled && "text-muted-foreground line-through")}>{movementTypeLabel(m.type)}</span>
                           {reasonLabel(m.reason) && (
                             <span className="font-normal text-muted-foreground"> · {reasonLabel(m.reason)}</span>
+                          )}
+                          {m.cancelled && (
+                            <span className="ml-1.5 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">Annulée</span>
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -188,9 +197,13 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
                         </p>
                         {m.note && <p className="mt-0.5 text-xs text-muted-foreground italic">{m.note}</p>}
                       </div>
-                      <SignedQty quantity={m.quantity} unit={product.unit} />
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <SignedQty quantity={m.quantity} unit={product.unit} className={cn(m.cancelled && "opacity-50 line-through")} />
+                        {cancel && <MovementCancelButton kind={cancel} movementId={m.id} purchaseId={m.refId} productName={product.name} />}
+                      </div>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </CardContent>

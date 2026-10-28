@@ -24,6 +24,7 @@ export function periodStart(period: Period, now = new Date()): Date {
 }
 
 const seller = alias(user, "seller");
+const canceller = alias(user, "canceller");
 
 /** États de paiement proposés dans le filtre des ventes. */
 export const SALE_STATES = {
@@ -155,17 +156,27 @@ export async function getSale(ctx: BusinessContext, id: string) {
       sale: sales,
       customer: { id: customers.id, name: customers.name, phone: customers.phone, address: customers.address },
       sellerName: seller.name,
+      cancelledByName: canceller.name,
       locationName: locations.name,
     })
     .from(sales)
     .leftJoin(customers, eq(sales.customerId, customers.id))
     .leftJoin(seller, eq(sales.userId, seller.id))
+    .leftJoin(canceller, eq(sales.cancelledBy, canceller.id))
     .innerJoin(locations, eq(sales.locationId, locations.id))
     .where(and(eq(sales.id, id), eq(sales.businessId, ctx.business.id)));
   if (!row) return null;
   if (!ctx.can("dashboard.full") && row.sale.kind === "sale" && row.sale.userId !== ctx.user.id) return null;
 
-  const items = await db.select().from(saleItems).where(eq(saleItems.saleId, id));
+  // Vente corrigée : celle qu'elle remplace, et celle qui la remplace
+  const link = { id: sales.id, number: sales.number };
+  const [items, [replaces], [replacedBy]] = await Promise.all([
+    db.select().from(saleItems).where(eq(saleItems.saleId, id)),
+    row.sale.replacesId
+      ? db.select(link).from(sales).where(and(eq(sales.id, row.sale.replacesId), eq(sales.businessId, ctx.business.id)))
+      : Promise.resolve([]),
+    db.select(link).from(sales).where(and(eq(sales.replacesId, id), eq(sales.businessId, ctx.business.id))).limit(1),
+  ]);
   const showCost = ctx.can("costs.view");
   const profit = showCost
     ? items.reduce((s, i) => s + i.lineTotal - Math.round(i.unitCost * i.quantity), 0) - row.sale.discount
@@ -175,7 +186,10 @@ export async function getSale(ctx: BusinessContext, id: string) {
     ...row.sale,
     customer: row.customer?.id ? row.customer : null,
     sellerName: row.sellerName,
+    cancelledByName: row.cancelledByName,
     locationName: row.locationName,
+    replaces: replaces ?? null,
+    replacedBy: replacedBy ?? null,
     items: items.map((i) => ({ ...i, unitCost: showCost ? i.unitCost : null })),
     profit,
   };

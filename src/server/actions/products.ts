@@ -5,12 +5,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { categories, products } from "@/db/schema";
-import { isUnitId, unitAllowsDecimals } from "@/lib/format";
+import { formatQty, isUnitId, unitAllowsDecimals } from "@/lib/format";
 import { canAdd } from "@/lib/domain/plans";
+import { roundQty } from "@/lib/domain/stock";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext, type BusinessContext } from "../context";
 import { countActiveProducts, productHasHistory } from "../queries/products";
-import { applyStockMovement } from "../services/stock";
+import { watchStock } from "../services/notifications";
+import { applyStockMovement, lockStock } from "../services/stock";
 
 const money = (label: string) =>
   z.coerce
@@ -31,6 +33,8 @@ const productSchema = z.object({
   costPrice: money("Le prix d'achat"),
   alertThreshold: quantity,
   initialStock: quantity.optional().default(0),
+  /** Modification : quantité en rayon (boutique courante) vue à l'ouverture du formulaire, et celle saisie. */
+  stock: z.object({ seen: quantity, counted: quantity }).optional(),
   imageData: z
     .string()
     .max(600_000, "La photo est trop lourde.")
@@ -128,21 +132,47 @@ export async function updateProduct(id: string, input: ProductInput) {
     checkDecimals(data.unit, [data.alertThreshold]);
     const categoryId = await resolveCategory(ctx, data.categoryId, data.newCategory);
 
-    const updated = await db
-      .update(products)
-      .set({
-        name: data.name,
-        reference: data.reference || null,
-        unit: data.unit,
-        categoryId,
-        salePrice: data.salePrice,
-        costPrice: data.costPrice,
-        alertThreshold: data.alertThreshold,
-        ...(data.imageData !== undefined ? { imageData: data.imageData || null } : {}),
-      })
-      .where(and(eq(products.id, id), eq(products.businessId, ctx.business.id)))
-      .returning({ id: products.id });
-    if (updated.length === 0) throw new ActionError("Produit introuvable.");
+    await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(products)
+        .set({
+          name: data.name,
+          reference: data.reference || null,
+          unit: data.unit,
+          categoryId,
+          salePrice: data.salePrice,
+          costPrice: data.costPrice,
+          alertThreshold: data.alertThreshold,
+          ...(data.imageData !== undefined ? { imageData: data.imageData || null } : {}),
+        })
+        .where(and(eq(products.id, id), eq(products.businessId, ctx.business.id)))
+        .returning({ id: products.id, archivedAt: products.archivedAt });
+      if (!updated) throw new ActionError("Produit introuvable.");
+
+      const stock = data.stock;
+      if (stock && roundQty(stock.counted) !== roundQty(stock.seen)) {
+        if (updated.archivedAt) throw new ActionError("Ce produit est archivé : remettez-le en vente pour corriger son stock.");
+        checkDecimals(data.unit, [stock.counted]);
+        const physical = (await lockStock(tx, ctx.business.id, ctx.location.id, [id])).get(id) ?? 0;
+        // Une vente a pu passer pendant la modification : on ne l'écrase pas
+        if (roundQty(physical) !== roundQty(stock.seen)) {
+          throw new ActionError(
+            `Le stock a changé pendant votre modification (il est maintenant de ${formatQty(physical, data.unit)}). Vérifiez la quantité, puis enregistrez à nouveau.`,
+          );
+        }
+        const stockAlerts = await watchStock(tx, ctx, [id]);
+        await applyStockMovement(tx, {
+          businessId: ctx.business.id,
+          locationId: ctx.location.id,
+          productId: id,
+          quantity: roundQty(stock.counted - physical),
+          type: "correction",
+          unitCost: data.costPrice,
+          userId: ctx.user.id,
+        });
+        await stockAlerts();
+      }
+    });
 
     revalidatePath("/", "layout");
     return { id };

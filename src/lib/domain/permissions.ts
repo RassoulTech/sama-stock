@@ -22,13 +22,16 @@ export type Permission =
   | "dashboard.full"
   | "sales.create"
   | "sales.cancel"
+  | "sales.delete"
   | "orders.manage"
   | "products.view"
   | "products.manage"
   | "stock.in"
   | "stock.adjust"
   | "stock.transfer"
+  | "stock.cancel"
   | "customers.manage"
+  | "payments.cancel"
   | "suppliers.view"
   | "suppliers.manage"
   | "costs.view"
@@ -47,7 +50,9 @@ const MANAGER: Permission[] = [
   "stock.in",
   "stock.adjust",
   "stock.transfer",
+  "stock.cancel",
   "customers.manage",
+  "payments.cancel",
   "suppliers.view",
   "suppliers.manage",
   "costs.view",
@@ -55,7 +60,7 @@ const MANAGER: Permission[] = [
 ];
 
 const MATRIX: Record<Role, ReadonlySet<Permission>> = {
-  owner: new Set<Permission>([...MANAGER, "team.manage", "billing.manage", "settings.manage"]),
+  owner: new Set<Permission>([...MANAGER, "sales.delete", "team.manage", "billing.manage", "settings.manage"]),
   manager: new Set(MANAGER),
   seller: new Set<Permission>(["sales.create", "orders.manage", "products.view", "customers.manage"]),
   storekeeper: new Set<Permission>(["products.view", "stock.in", "stock.adjust", "stock.transfer", "suppliers.view"]),

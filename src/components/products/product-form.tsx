@@ -31,10 +31,13 @@ export function ProductForm({
   productId,
   categories,
   defaults,
+  stock,
 }: {
   productId?: string;
   categories: { id: string; name: string }[];
   defaults?: ProductFormValues;
+  /** Modification : quantité en rayon dans la boutique en cours, corrigeable (absent pour un produit archivé). */
+  stock?: { seen: number; locationName: string };
 }) {
   const router = useRouter();
   const isEdit = Boolean(productId);
@@ -54,6 +57,9 @@ export function ProductForm({
   const [categoryChoice, setCategoryChoice] = useState(values.categoryId ?? NO_CATEGORY);
   const [newCategory, setNewCategory] = useState("");
   const [initialStock, setInitialStock] = useState<number | "">("");
+  const [counted, setCounted] = useState<number | "">(stock?.seen ?? "");
+  /** Le stock n'est envoyé que s'il a été touché : sinon une vente faite entre-temps serait écrasée. */
+  const [stockTouched, setStockTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -79,6 +85,7 @@ export function ProductForm({
       costPrice: values.costPrice === "" ? 0 : values.costPrice,
       alertThreshold: values.alertThreshold === "" ? 0 : values.alertThreshold,
       initialStock: initialStock === "" ? 0 : initialStock,
+      stock: isEdit && stock && stockTouched && counted !== "" ? { seen: stock.seen, counted } : undefined,
       // En modification, on n'envoie la photo que si elle a changé
       imageData: isEdit && !imageTouched ? undefined : (values.imageData ?? ""),
     };
@@ -90,6 +97,8 @@ export function ProductForm({
       const res = isEdit ? await updateProduct(productId!, payload) : await createProduct(payload);
       if (!res.ok) {
         setError(res.error);
+        // Stock changé entre-temps : on relit la quantité en rayon pour le prochain essai
+        if (isEdit) router.refresh();
         return;
       }
       toast.success(isEdit ? "Produit mis à jour" : "Produit ajouté");
@@ -233,6 +242,26 @@ export function ProductForm({
                 onChange={(e) => set("alertThreshold", e.target.value === "" ? "" : Number(e.target.value))}
               />
             </FormField>
+            {isEdit && stock && (
+              <FormField
+                label={`Stock en rayon · ${stock.locationName}`}
+                htmlFor="stockCount"
+                hint="Corrigez la quantité si elle est fausse. La différence est notée dans l'historique du stock, sans compter comme une perte."
+              >
+                <SuffixInput
+                  id="stockCount"
+                  suffix={unitLabel(values.unit, 2)}
+                  min={0}
+                  step={step}
+                  inputMode="decimal"
+                  value={counted}
+                  onChange={(e) => {
+                    setStockTouched(true);
+                    setCounted(e.target.value === "" ? "" : Number(e.target.value));
+                  }}
+                />
+              </FormField>
+            )}
             {!isEdit && (
               <FormField label="Stock de départ" htmlFor="initialStock" hint="Quantité que vous avez aujourd'hui.">
                 <SuffixInput

@@ -181,6 +181,7 @@ export async function losses(ctx: BusinessContext, from: Date, to?: Date | null)
       and(
         eq(stockMovements.businessId, ctx.business.id),
         inArray(stockMovements.type, ["adjust", "inventory"]),
+        isNull(stockMovements.cancelledAt),
         sql`${stockMovements.quantity} < 0`,
         gte(stockMovements.createdAt, from),
         ...(to ? [lt(stockMovements.createdAt, to)] : []),

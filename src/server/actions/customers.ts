@@ -1,11 +1,12 @@
 "use server";
 
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { customerPayments, customers, sales } from "@/db/schema";
 import { formatFCFA, normalizePhone } from "@/lib/format";
+import { allocatePayment, paymentReversal } from "@/lib/domain/payments";
 import { PAYING_METHODS } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
@@ -131,12 +132,10 @@ export async function recordCustomerPayment(input: z.input<typeof paymentSchema>
       if (debt === 0) throw new ActionError("Ce client ne doit rien.");
       if (data.amount > debt) throw new ActionError(`Le montant dépasse la dette du client (${formatFCFA(debt)}).`);
 
-      let remaining = data.amount;
-      for (const row of unpaid) {
-        if (remaining <= 0) break;
-        const part = Math.min(remaining, row.total - row.amountPaid);
-        await tx.update(sales).set({ amountPaid: row.amountPaid + part }).where(eq(sales.id, row.id));
-        remaining -= part;
+      const parts = allocatePayment(data.amount, unpaid);
+      const paid = new Map(unpaid.map((r) => [r.id, r.amountPaid]));
+      for (const part of parts) {
+        await tx.update(sales).set({ amountPaid: paid.get(part.saleId)! + part.amount }).where(eq(sales.id, part.saleId));
       }
 
       await tx.insert(customerPayments).values({
@@ -146,7 +145,56 @@ export async function recordCustomerPayment(input: z.input<typeof paymentSchema>
         method: data.method,
         note: data.note || null,
         userId: ctx.user.id,
+        // Gardé pour pouvoir annuler ce paiement sur les bonnes ventes
+        allocations: parts,
       });
+    });
+
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
+/** Annule un remboursement saisi par erreur : la dette revient sur les ventes qu'il avait remboursées. */
+export async function cancelCustomerPayment(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("payments.cancel");
+
+    await db.transaction(async (tx) => {
+      const [payment] = await tx
+        .select()
+        .from(customerPayments)
+        .where(and(eq(customerPayments.id, id), eq(customerPayments.businessId, ctx.business.id)))
+        .for("update");
+      if (!payment) throw new ActionError("Paiement introuvable.");
+      if (payment.cancelledAt) throw new ActionError("Ce paiement est déjà annulé.");
+
+      const paidSales = await tx
+        .select({ id: sales.id, amountPaid: sales.amountPaid, paymentMethod: sales.paymentMethod, completedAt: sales.completedAt })
+        .from(sales)
+        .where(
+          and(
+            eq(sales.businessId, ctx.business.id),
+            eq(sales.customerId, payment.customerId),
+            COMPLETED_SALE,
+            sql`${sales.amountPaid} > 0`,
+            // Un paiement d'avant la répartition n'a pu rembourser que des ventes plus anciennes que lui
+            ...(payment.allocations ? [] : [lte(sales.completedAt, payment.createdAt)]),
+          ),
+        )
+        .for("update");
+      const parts = paymentReversal(
+        payment.amount,
+        payment.allocations ?? null,
+        paidSales.map((s) => ({ id: s.id, amountPaid: s.amountPaid, credit: s.paymentMethod === "credit", completedAt: s.completedAt ?? payment.createdAt })),
+      );
+      for (const part of parts) {
+        await tx
+          .update(sales)
+          .set({ amountPaid: sql`${sales.amountPaid} - ${part.amount}` })
+          .where(eq(sales.id, part.saleId));
+      }
+      await tx.update(customerPayments).set({ cancelledAt: new Date(), cancelledBy: ctx.user.id }).where(eq(customerPayments.id, id));
     });
 
     revalidatePath("/", "layout");

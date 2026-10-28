@@ -318,7 +318,7 @@ export async function convertQuoteToSale(id: string, input: z.input<typeof conve
         items.map((i) => ({ productId: i.productId!, quantity: i.quantity })),
         { prices: new Map(items.map((i) => [i.productId!, i.unitPrice])) },
       );
-      const newSaleId = await recordShopSale(tx, ctx, {
+      const { id: newSaleId } = await recordShopSale(tx, ctx, {
         lines,
         discount: quote.discount,
         deliveryFee: quote.deliveryFee,

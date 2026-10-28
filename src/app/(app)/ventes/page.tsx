@@ -1,6 +1,7 @@
 import { ChevronRight, CloudOff, Plus, ReceiptText, ShoppingBag, Wallet } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SaleRowMenu } from "@/components/sales/sale-actions";
 import { PaymentStatus, SaleStatus } from "@/components/sales/sale-status";
 import { EmptyState } from "@/components/shared/empty-state";
 import { FilterBar, type FilterSelect } from "@/components/shared/filter-bar";
@@ -25,6 +26,10 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
   const ctx = await requireContext("sales.create");
   const params = await searchParams;
   const own = !ctx.can("dashboard.full");
+  const writable = !ctx.plan.readOnly;
+  const canCancel = writable && ctx.can("sales.cancel");
+  const canCorrect = canCancel && ctx.can("sales.create") && ctx.business.modulePos;
+  const canDelete = writable && ctx.can("sales.delete");
 
   const period = resolvePeriod(params, { fallback: "today", allowed: PRESETS });
   const method = pickParam(params, "paiement", SALE_METHODS);
@@ -125,8 +130,8 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
         <>
           <ul className="divide-y overflow-hidden rounded-xl border bg-card">
             {sales.map((s) => (
-              <li key={s.id}>
-                <Link href={`/ventes/${s.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+              <li key={s.id} className="flex items-center hover:bg-muted/50">
+                <Link href={`/ventes/${s.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2">
                   <div className="min-w-0 flex-1">
                     <p className="flex flex-wrap items-center gap-2 font-semibold">
                       {s.number}
@@ -159,8 +164,17 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
                       {s.status === "completed" && s.amountPaid < s.total && <PaymentStatus total={s.total} amountPaid={s.amountPaid} />}
                     </div>
                   </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
+                  {!(canCancel || canDelete) && <ChevronRight className="size-4 text-muted-foreground" />}
                 </Link>
+                {(canCancel || canDelete) && (
+                  <SaleRowMenu
+                    sale={{ id: s.id, number: s.number, amountPaid: s.amountPaid }}
+                    cancelled={s.status === "cancelled"}
+                    canCorrect={canCorrect}
+                    canCancel={canCancel}
+                    canDelete={canDelete}
+                  />
+                )}
               </li>
             ))}
           </ul>

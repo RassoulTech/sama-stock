@@ -5,6 +5,7 @@ import { categories, documentItems, locations, products, purchaseItems, saleItem
 import { roundQty, stockStatus, type StockStatus } from "@/lib/domain/stock";
 import type { BusinessContext } from "../context";
 import { reservedQuantities } from "../services/stock";
+import { movementCancelColumns } from "./stock";
 
 export interface ProductRow {
   id: string;
@@ -156,6 +157,7 @@ export async function getProduct(ctx: BusinessContext, id: string) {
       createdAt: stockMovements.createdAt,
       locationName: locations.name,
       userName: user.name,
+      ...movementCancelColumns,
     })
     .from(stockMovements)
     .innerJoin(locations, eq(stockMovements.locationId, locations.id))
@@ -208,8 +210,12 @@ export async function getProductForEdit(ctx: BusinessContext, id: string) {
       costPrice: products.costPrice,
       alertThreshold: products.alertThreshold,
       imageData: products.imageData,
+      archivedAt: products.archivedAt,
+      /** Quantité en rayon dans la boutique en cours (corrigeable dans le formulaire). */
+      physical: sql<number>`coalesce(${stockLevels.quantity}, 0)::float8`,
     })
     .from(products)
+    .leftJoin(stockLevels, and(eq(stockLevels.productId, products.id), eq(stockLevels.locationId, ctx.location.id)))
     .where(and(eq(products.id, id), eq(products.businessId, ctx.business.id)));
-  return p ?? null;
+  return p ? { ...p, physical: Number(p.physical) } : null;
 }

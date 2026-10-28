@@ -17,40 +17,52 @@ import {
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/server/action";
 
-/** Bouton qui demande confirmation puis exécute une Server Action. */
+/**
+ * Bouton qui demande confirmation puis exécute une Server Action. Sans `trigger`, la fenêtre est ouverte de
+ * l'extérieur (`open` / `onOpenChange`), par exemple depuis un menu.
+ */
 export function ConfirmAction({
   trigger,
   title,
   description,
   confirmLabel,
+  cancelLabel = "Annuler",
   destructive = false,
   successMessage,
   action,
   redirectTo,
+  open: controlledOpen,
+  onOpenChange,
 }: {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   title: string;
   description: React.ReactNode;
   confirmLabel: string;
+  /** Bouton qui ferme sans rien faire (« Annuler » prête à confusion quand l'action est elle-même une annulation). */
+  cancelLabel?: string;
   destructive?: boolean;
   successMessage: string;
   action: () => Promise<ActionResult<unknown>>;
   redirectTo?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const open = controlledOpen ?? ownOpen;
+  const setOpen = onOpenChange ?? setOwnOpen;
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Annuler</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
           <Button
             variant={destructive ? "destructive" : "default"}
             disabled={pending}

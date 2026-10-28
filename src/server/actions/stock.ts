@@ -4,9 +4,9 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db, type Tx } from "@/db";
-import { products, purchaseItems, purchases, stockLevels, suppliers } from "@/db/schema";
+import { products, purchaseItems, purchases, stockLevels, stockMovements, suppliers } from "@/db/schema";
 import { formatQty, unitAllowsDecimals } from "@/lib/format";
-import { EXIT_REASONS, LOSS_REASONS, roundQty, weightedAverageCost } from "@/lib/domain/stock";
+import { costAfterPurchaseCancel, EXIT_REASONS, LOSS_REASONS, roundQty, weightedAverageCost } from "@/lib/domain/stock";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext, type BusinessContext } from "../context";
 import { watchStock } from "../services/notifications";
@@ -296,6 +296,119 @@ export async function createTransfer(input: z.input<typeof transferSchema>) {
         await applyStockMovement(tx, { ...common, locationId: destination.id, quantity, type: "transfer_in" });
       }
       await stockAlerts();
+    });
+
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
+// ── Annulations ─────────────────────────────────────────────────────────────
+
+/**
+ * Annule une entrée de stock mal saisie : chaque produit ressort de la boutique et le prix d'achat moyen est
+ * recalculé sans elle. Refusé si une partie a déjà été vendue ou sortie (on corrige alors le stock du produit).
+ */
+export async function cancelPurchase(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("stock.cancel");
+
+    await db.transaction(async (tx) => {
+      const [purchase] = await tx
+        .select()
+        .from(purchases)
+        .where(and(eq(purchases.id, id), eq(purchases.businessId, ctx.business.id)))
+        .for("update");
+      if (!purchase) throw new ActionError("Entrée de stock introuvable.");
+      if (purchase.cancelledAt) throw new ActionError("Cette entrée est déjà annulée.");
+
+      const items = await tx.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, id));
+      const ids = [...new Set(items.map((i) => i.productId))];
+      const rows = await tx
+        .select({ id: products.id, name: products.name, unit: products.unit, costPrice: products.costPrice })
+        .from(products)
+        .where(and(eq(products.businessId, ctx.business.id), inArray(products.id, ids)))
+        .for("update");
+      const map = new Map(rows.map((r) => [r.id, r]));
+
+      const physical = await lockStock(tx, ctx.business.id, purchase.locationId, ids);
+      const reserved = await reservedQuantities(tx, ctx.business.id, purchase.locationId, ids);
+      const entered = new Map<string, number>();
+      for (const i of items) entered.set(i.productId, roundQty((entered.get(i.productId) ?? 0) + i.quantity));
+      for (const [productId, quantity] of entered) {
+        const left = roundQty((physical.get(productId) ?? 0) - (reserved.get(productId) ?? 0));
+        if (left < quantity) {
+          const p = map.get(productId)!;
+          throw new ActionError(
+            `« ${p.name} » a déjà été vendu ou sorti en partie (il en reste ${formatQty(Math.max(0, left), p.unit)}) : corrigez plutôt son stock dans « Modifier le produit ».`,
+          );
+        }
+      }
+
+      const stockAlerts = await watchStock(tx, ctx, ids, purchase.locationId);
+      for (const item of items) {
+        const product = map.get(item.productId)!;
+        if (item.unitCost !== null) {
+          const [stock] = await tx
+            .select({ total: sql<string>`coalesce(sum(${stockLevels.quantity}), 0)` })
+            .from(stockLevels)
+            .where(eq(stockLevels.productId, item.productId));
+          const cost = costAfterPurchaseCancel(Number(stock?.total ?? 0), product.costPrice, item.quantity, item.unitCost);
+          await tx.update(products).set({ costPrice: cost }).where(eq(products.id, item.productId));
+          product.costPrice = cost;
+        }
+        await applyStockMovement(tx, {
+          businessId: ctx.business.id,
+          locationId: purchase.locationId,
+          productId: item.productId,
+          quantity: -item.quantity,
+          type: "purchase_cancel",
+          refType: "purchase",
+          refId: id,
+          unitCost: item.unitCost ?? product.costPrice,
+          userId: ctx.user.id,
+        });
+      }
+      await tx.update(purchases).set({ cancelledAt: new Date(), cancelledBy: ctx.user.id }).where(eq(purchases.id, id));
+      await stockAlerts();
+    });
+
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
+/** Annule une sortie ou une perte saisie par erreur : le produit revient et la perte sort des rapports. */
+export async function cancelStockMovement(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("stock.cancel");
+
+    await db.transaction(async (tx) => {
+      const [movement] = await tx
+        .select()
+        .from(stockMovements)
+        .where(and(eq(stockMovements.id, id), eq(stockMovements.businessId, ctx.business.id)))
+        .for("update");
+      if (!movement) throw new ActionError("Mouvement introuvable.");
+      if ((movement.type !== "out" && movement.type !== "adjust") || movement.refType) {
+        throw new ActionError("Seules les sorties et les pertes saisies à la main peuvent être annulées ici.");
+      }
+      if (movement.cancelledAt) throw new ActionError("Cette sortie est déjà annulée.");
+
+      await lockStock(tx, ctx.business.id, movement.locationId, [movement.productId]);
+      await applyStockMovement(tx, {
+        businessId: ctx.business.id,
+        locationId: movement.locationId,
+        productId: movement.productId,
+        quantity: -movement.quantity,
+        type: "movement_cancel",
+        reason: movement.reason,
+        refType: "movement",
+        refId: movement.id,
+        unitCost: movement.unitCost,
+        userId: ctx.user.id,
+      });
+      await tx.update(stockMovements).set({ cancelledAt: new Date() }).where(eq(stockMovements.id, id));
     });
 
     revalidatePath("/", "layout");

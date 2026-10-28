@@ -30,6 +30,7 @@ export default async function ModifierProduitPage({ params }: { params: Promise<
           alertThreshold: product.alertThreshold,
           imageData: product.imageData,
         }}
+        stock={product.archivedAt ? undefined : { seen: product.physical, locationName: ctx.location.name }}
       />
     </>
   );

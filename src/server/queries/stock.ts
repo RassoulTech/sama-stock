@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, lt, ne, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNotNull, isNull, lt, ne, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { locations, products, purchaseItems, purchases, stockMovements, suppliers, user } from "@/db/schema";
 import type { BusinessContext } from "../context";
@@ -11,9 +11,17 @@ export const MOVEMENT_GROUPS = {
   out: { label: "Ventes et sorties", types: ["sale", "order_out", "out"] },
   loss: { label: "Pertes et inventaire", types: ["adjust", "inventory"] },
   transfer: { label: "Transferts", types: ["transfer_in", "transfer_out"] },
+  fix: { label: "Corrections", types: ["correction", "purchase_cancel", "movement_cancel"] },
 } as const;
 
 export type MovementGroup = keyof typeof MOVEMENT_GROUPS;
+
+/** Colonnes pour annuler depuis l'historique : la ligne (ou son entrée de stock) est-elle déjà annulée ? */
+export const movementCancelColumns = {
+  refType: stockMovements.refType,
+  refId: stockMovements.refId,
+  cancelled: sql<boolean>`(${stockMovements.cancelledAt} is not null or (${stockMovements.type} = 'purchase' and ${stockMovements.refType} = 'purchase' and exists (select 1 from ${purchases} where ${purchases.id} = ${stockMovements.refId} and ${purchases.cancelledAt} is not null)))`,
+};
 
 type MovementFilters = { group?: MovementGroup; from?: Date | null; to?: Date | null; q?: string; categoryId?: string | null };
 
@@ -54,6 +62,7 @@ export async function listMovements(ctx: BusinessContext, opts: MovementFilters 
       unit: products.unit,
       locationName: locations.name,
       userName: user.name,
+      ...movementCancelColumns,
     })
     .from(stockMovements)
     .innerJoin(products, eq(stockMovements.productId, products.id))
@@ -77,7 +86,7 @@ export async function listSuppliers(businessId: string) {
       lastPurchaseAt: sql<Date | null>`max(${purchases.createdAt})`,
     })
     .from(suppliers)
-    .leftJoin(purchases, eq(purchases.supplierId, suppliers.id))
+    .leftJoin(purchases, and(eq(purchases.supplierId, suppliers.id), isNull(purchases.cancelledAt)))
     .where(eq(suppliers.businessId, businessId))
     .groupBy(suppliers.id)
     .orderBy(asc(suppliers.name));
@@ -96,6 +105,7 @@ export async function getSupplier(ctx: BusinessContext, id: string, page: { limi
       total: purchases.total,
       note: purchases.note,
       createdAt: purchases.createdAt,
+      cancelledAt: purchases.cancelledAt,
       locationName: locations.name,
       userName: user.name,
       itemCount: sql<number>`(select count(*)::int from ${purchaseItems} where ${purchaseItems.purchaseId} = ${purchases.id})`,
@@ -113,7 +123,7 @@ export async function getSupplier(ctx: BusinessContext, id: string, page: { limi
   const [summary] = await db
     .select({ count: sql<number>`count(*)::int`, total: sql<number>`coalesce(sum(${purchases.total}), 0)::bigint` })
     .from(purchases)
-    .where(and(eq(purchases.supplierId, id), eq(purchases.businessId, ctx.business.id)));
+    .where(and(eq(purchases.supplierId, id), eq(purchases.businessId, ctx.business.id), isNull(purchases.cancelledAt)));
 
   return { supplier, purchases: rows, purchaseCount: summary?.count ?? 0, purchaseTotal: Number(summary?.total ?? 0) };
 }

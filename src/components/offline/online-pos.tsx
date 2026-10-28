@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import type { CustomerOption } from "@/components/customers/customer-dialog";
-import { PosScreen, type PosProduct } from "@/components/pos/pos-screen";
+import { PosScreen, type PosInitial, type PosProduct } from "@/components/pos/pos-screen";
 import type { ReceiptBusiness } from "@/components/sales/receipt";
 import { localAvailability } from "@/lib/offline/stock";
 import type { OutboxSale, SaleDraft } from "@/lib/offline/types";
-import { createSale } from "@/server/actions/sales";
+import { correctSale, createSale } from "@/server/actions/sales";
 import { OfflineReceipt } from "./offline-receipt";
 import { useOfflineMode } from "./offline-provider";
 
@@ -21,12 +22,17 @@ export function OnlinePos({
   customers,
   business,
   sellerName,
+  correction,
+  banner,
 }: {
   products: PosProduct[];
   categories: { id: string; name: string }[];
   customers: CustomerOption[];
   business: ReceiptBusiness;
   sellerName: string;
+  /** Correction d'une vente : elle part au serveur (internet obligatoire), jamais dans le téléphone. */
+  correction?: { id: string; initial: PosInitial };
+  banner?: React.ReactNode;
 }) {
   const router = useRouter();
   const offline = useOfflineMode();
@@ -35,7 +41,29 @@ export function OnlinePos({
   const id = offline.identity;
   const shown = id ? localAvailability(products, offline.outbox, id.businessId, id.locationId) : products;
 
+  async function submitCorrection(id: string, draft: SaleDraft): Promise<string | null> {
+    let res: Awaited<ReturnType<typeof correctSale>>;
+    try {
+      res = await correctSale(id, {
+        items: draft.items.map((i) => ({ productId: i.productId, quantity: i.quantity, unitPrice: i.negotiated ? i.unitPrice : undefined })),
+        discount: draft.discount,
+        customerId: draft.customer?.id ?? null,
+        paymentMethod: draft.paymentMethod,
+        amountReceived: draft.amountReceived,
+      });
+    } catch {
+      return "Il faut internet pour corriger une vente. Réessayez quand la connexion revient.";
+    }
+    if (!res.ok) return res.error;
+    toast.success("Vente corrigée : l'ancienne est annulée");
+    void offline.refreshSnapshot(true);
+    router.push(`/ventes/${res.data.id}`);
+    router.refresh();
+    return null;
+  }
+
   async function submit(draft: SaleDraft): Promise<string | null> {
+    if (correction) return submitCorrection(correction.id, draft);
     let res: Awaited<ReturnType<typeof createSale>>;
     try {
       res = await createSale({
@@ -66,5 +94,16 @@ export function OnlinePos({
   if (receipt) {
     return <OfflineReceipt sale={receipt} business={business} sellerName={sellerName} onNewSale={() => setReceipt(null)} />;
   }
-  return <PosScreen products={shown} categories={categories} customers={customers} submit={submit} allowCustomerCreate={offline.online} />;
+  return (
+    <PosScreen
+      // En correction, le stock affiché est celui du serveur (ventes en attente comprises), plus l'ancienne vente
+      products={correction ? products : shown}
+      categories={categories}
+      customers={customers}
+      submit={submit}
+      allowCustomerCreate={offline.online}
+      initial={correction?.initial}
+      banner={banner}
+    />
+  );
 }

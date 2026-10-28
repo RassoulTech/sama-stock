@@ -5,10 +5,12 @@ import { notFound } from "next/navigation";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { MovementCancelButton } from "@/components/stock/movement-cancel";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime, formatFCFA, formatPhone } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { waLink } from "@/lib/whatsapp";
 import { deleteSupplier } from "@/server/actions/suppliers";
 import { requireContext } from "@/server/context";
@@ -28,6 +30,7 @@ export default async function FournisseurPage({ params, searchParams }: { params
   if (!data) notFound();
   const { supplier, purchases, purchaseCount } = data;
   const showCost = ctx.can("costs.view");
+  const canCancel = !ctx.plan.readOnly && ctx.can("stock.cancel");
   const total = data.purchaseTotal;
 
   return (
@@ -126,14 +129,24 @@ export default async function FournisseurPage({ params, searchParams }: { params
               {purchases.map((p) => (
                 <li key={p.id} className="flex items-start justify-between gap-3 py-3">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{p.summary}</p>
+                    <p className={cn("truncate font-medium", p.cancelledAt && "text-muted-foreground line-through")}>{p.summary}</p>
+                    {p.cancelledAt && <p className="text-xs font-medium text-muted-foreground">Entrée annulée le {formatDateTime(p.cancelledAt)}</p>}
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(p.createdAt)} · {p.itemCount} produit{p.itemCount > 1 ? "s" : ""} · {p.locationName}
                       {p.userName && <> · {p.userName}</>}
                     </p>
                     {p.note && <p className="text-xs text-muted-foreground italic">{p.note}</p>}
                   </div>
-                  {showCost && <span className="num font-semibold whitespace-nowrap">{formatFCFA(p.total)}</span>}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {showCost && (
+                      <span className={cn("num font-semibold whitespace-nowrap", p.cancelledAt && "text-muted-foreground line-through")}>
+                        {formatFCFA(p.total)}
+                      </span>
+                    )}
+                    {canCancel && !p.cancelledAt && (
+                      <MovementCancelButton kind="purchase" movementId={p.id} purchaseId={p.id} productName={p.summary} />
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

@@ -19,6 +19,11 @@ export const PAYING_METHODS = ["cash", "wave", "orange_money"] as const satisfie
 export const SALE_METHODS = [...PAYING_METHODS, "credit"] as const satisfies readonly PaymentMethod[];
 export type SaleMethod = (typeof SALE_METHODS)[number];
 
+/** Caisse rouverte avec le panier d'une vente, pour la corriger. */
+export function correctSaleHref(saleId: string): string {
+  return `/vendre?corriger=${saleId}`;
+}
+
 export function isPaymentMethod(value: string): value is PaymentMethod {
   return value in PAYMENT_METHODS;
 }

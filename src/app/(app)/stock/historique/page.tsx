@@ -5,7 +5,9 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
+import { MovementCancelButton } from "@/components/stock/movement-cancel";
 import { movementTypeLabel, reasonLabel, SignedQty } from "@/components/stock/movement-label";
+import { cancellableMovement } from "@/lib/domain/stock";
 import { param, pickParam, resolvePeriod, type PeriodPreset, type SearchParams } from "@/lib/filters";
 import { formatDateTime } from "@/lib/format";
 import { pageSlice, readPage } from "@/lib/pagination";
@@ -27,6 +29,7 @@ export default async function HistoriquePage({ searchParams }: { searchParams: P
   const categories = await listCategories(ctx.business.id);
   const categoryId = pickParam(params, "categorie", categories.map((c) => c.id));
   const filters = { group, from: period.from, to: period.to, q, categoryId };
+  const canCancel = !ctx.plan.readOnly && ctx.can("stock.cancel");
   const page = readPage(params);
   const [movements, total] = await Promise.all([listMovements(ctx, filters, pageSlice(page)), countMovements(ctx, filters)]);
 
@@ -83,15 +86,18 @@ export default async function HistoriquePage({ searchParams }: { searchParams: P
         <EmptyState icon={History} title="Aucun mouvement ne correspond" description="Changez la période ou les filtres." />
       ) : (
         <ul className="divide-y overflow-hidden rounded-xl border bg-card">
-          {movements.map((m) => (
+          {movements.map((m) => {
+            const cancel = canCancel ? cancellableMovement(m) : null;
+            return (
             <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
                 <Link href={`/produits/${m.productId}`} className="font-semibold hover:text-primary">
                   {m.productName}
                 </Link>
                 <p className="text-sm">
-                  {movementTypeLabel(m.type)}
+                  <span className={cn(m.cancelled && "text-muted-foreground line-through")}>{movementTypeLabel(m.type)}</span>
                   {reasonLabel(m.reason) && <span className="text-muted-foreground"> · {reasonLabel(m.reason)}</span>}
+                  {m.cancelled && <span className="ml-1.5 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">Annulée</span>}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {formatDateTime(m.createdAt)}
@@ -99,9 +105,13 @@ export default async function HistoriquePage({ searchParams }: { searchParams: P
                 </p>
                 {m.note && <p className="text-xs text-muted-foreground italic">{m.note}</p>}
               </div>
-              <SignedQty quantity={m.quantity} unit={m.unit} />
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <SignedQty quantity={m.quantity} unit={m.unit} className={cn(m.cancelled && "opacity-50 line-through")} />
+                {cancel && <MovementCancelButton kind={cancel} movementId={m.id} purchaseId={m.refId} productName={m.productName} />}
+              </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
       <Pagination path="/stock/historique" params={params} page={page} total={total} />

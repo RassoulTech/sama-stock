@@ -1,18 +1,18 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
-import { saleItems, sales } from "@/db/schema";
+import { customerPayments, notifications, sales, stockMovements } from "@/db/schema";
+import { saleCancelMessage } from "@/lib/domain/notifications";
 import { SALE_METHODS } from "@/lib/domain/sales";
 import { ActionError, parse, runAction } from "../action";
 import { requireActionContext } from "../context";
-import { cancelInvoicesOfSale } from "../services/documents";
+import { notify } from "../services/notifications";
 import { findSaleByClientRef } from "../services/offline-sales";
 import { priceAndReserve } from "../services/sale-lines";
-import { recordShopSale } from "../services/shop-sale";
-import { applyStockMovement } from "../services/stock";
+import { cancelShopSale, recordShopSale } from "../services/shop-sale";
 
 const saleSchema = z.object({
   items: z
@@ -49,7 +49,7 @@ export async function createSale(input: z.input<typeof saleSchema>) {
       }
       const negotiated = new Map(data.items.flatMap((i) => (i.unitPrice === undefined ? [] : [[i.productId, i.unitPrice] as const])));
       const lines = await priceAndReserve(tx, ctx, data.items, { prices: negotiated });
-      return recordShopSale(tx, ctx, {
+      const sale = await recordShopSale(tx, ctx, {
         lines,
         discount: data.discount,
         customerId: data.customerId,
@@ -58,6 +58,7 @@ export async function createSale(input: z.input<typeof saleSchema>) {
         note: data.note,
         clientRef: data.clientRef,
       });
+      return sale.id;
     });
 
     revalidatePath("/", "layout");
@@ -70,31 +71,91 @@ export async function cancelSale(id: string) {
     const ctx = await requireActionContext("sales.cancel");
 
     await db.transaction(async (tx) => {
+      const sale = await cancelShopSale(tx, ctx, id);
+      await notify(tx, ctx, saleCancelMessage({ id: sale.id, number: sale.number, total: sale.total, actorName: ctx.user.name }));
+    });
+
+    revalidatePath("/", "layout");
+    return null;
+  });
+}
+
+/**
+ * Corrige une vente : dans la même transaction, l'ancienne est annulée (stock remis) et la nouvelle, refaite à la
+ * caisse avec le même panier modifié, est enregistrée en la remplaçant.
+ */
+export async function correctSale(id: string, input: z.input<typeof saleSchema>) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("sales.cancel");
+    if (!ctx.can("sales.create")) throw new ActionError("Vous n'avez pas accès à cette action.");
+    if (!ctx.business.modulePos) throw new ActionError("La caisse n'est pas activée pour ce commerce.");
+    const data = parse(saleSchema, input);
+
+    const replacement = await db.transaction(async (tx) => {
+      const old = await cancelShopSale(tx, ctx, id, (sale) => {
+        if (sale.locationId !== ctx.location.id) {
+          const where = ctx.locations.find((l) => l.id === sale.locationId)?.name ?? "une autre boutique";
+          throw new ActionError(`Cette vente a été faite à ${where} : passez sur cette boutique pour la corriger.`);
+        }
+        if (sale.deliveryFee > 0) {
+          throw new ActionError("Cette vente a des frais de livraison : annulez-la, puis refaites-la depuis son devis.");
+        }
+      });
+      const negotiated = new Map(data.items.flatMap((i) => (i.unitPrice === undefined ? [] : [[i.productId, i.unitPrice] as const])));
+      const lines = await priceAndReserve(tx, ctx, data.items, { prices: negotiated });
+      const sale = await recordShopSale(tx, ctx, {
+        lines,
+        discount: data.discount,
+        customerId: data.customerId,
+        paymentMethod: data.paymentMethod,
+        amountReceived: data.amountReceived,
+        note: data.note || old.note,
+        replacesId: old.id,
+        keepPaid: old.amountPaid,
+      });
+      // Les remboursements imputés à l'ancienne vente passent sur la nouvelle (pour pouvoir encore les annuler)
+      await tx.execute(sql`
+        update ${customerPayments}
+        set allocations = (
+          select jsonb_agg(case when e->>'saleId' = ${old.id} then jsonb_set(e, '{saleId}', to_jsonb(${sale.id}::text)) else e end)
+          from jsonb_array_elements(${customerPayments.allocations}) e
+        )
+        where ${customerPayments.businessId} = ${ctx.business.id}
+          and ${customerPayments.allocations} @> ${JSON.stringify([{ saleId: old.id }])}::jsonb
+      `);
+      await notify(tx, ctx, saleCancelMessage({ id: old.id, number: old.number, total: old.total, actorName: ctx.user.name, replacement: sale }));
+      return sale;
+    });
+
+    revalidatePath("/", "layout");
+    return { id: replacement.id };
+  });
+}
+
+/**
+ * Efface pour de bon une vente déjà annulée (propriétaire seulement) : la vente, ses lignes, ses mouvements de stock
+ * (la sortie et le retour, qui s'annulent) et ses notifications. Une facture annulée reste, sans lien vers la vente.
+ */
+export async function deleteSale(id: string) {
+  return runAction(async () => {
+    const ctx = await requireActionContext("sales.delete");
+
+    await db.transaction(async (tx) => {
       const [sale] = await tx
-        .select()
+        .select({ id: sales.id, status: sales.status })
         .from(sales)
         .where(and(eq(sales.id, id), eq(sales.businessId, ctx.business.id), eq(sales.kind, "sale")))
         .for("update");
       if (!sale) throw new ActionError("Vente introuvable.");
-      if (sale.status !== "completed") throw new ActionError("Cette vente est déjà annulée.");
+      if (sale.status !== "cancelled") throw new ActionError("Annulez d'abord la vente : seule une vente annulée peut être supprimée.");
 
-      await tx.update(sales).set({ status: "cancelled", cancelledAt: new Date() }).where(eq(sales.id, id));
-      await cancelInvoicesOfSale(tx, id);
-      const items = await tx.select().from(saleItems).where(eq(saleItems.saleId, id));
-      for (const item of items) {
-        if (!item.productId) continue;
-        await applyStockMovement(tx, {
-          businessId: ctx.business.id,
-          locationId: sale.locationId,
-          productId: item.productId,
-          quantity: item.quantity,
-          type: "sale_cancel",
-          refType: "sale",
-          refId: id,
-          unitCost: item.unitCost,
-          userId: ctx.user.id,
-        });
-      }
+      await tx
+        .delete(stockMovements)
+        .where(and(eq(stockMovements.businessId, ctx.business.id), eq(stockMovements.refType, "sale"), eq(stockMovements.refId, id)));
+      await tx
+        .delete(notifications)
+        .where(and(eq(notifications.businessId, ctx.business.id), eq(notifications.href, `/ventes/${id}`)));
+      await tx.delete(sales).where(eq(sales.id, id));
     });
 
     revalidatePath("/", "layout");

@@ -79,6 +79,7 @@ export async function getCustomer(ctx: BusinessContext, id: string, upTo = 30) {
       method: customerPayments.method,
       note: customerPayments.note,
       createdAt: customerPayments.createdAt,
+      cancelledAt: customerPayments.cancelledAt,
       userName: user.name,
     })
     .from(customerPayments)

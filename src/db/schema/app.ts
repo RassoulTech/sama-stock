@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   index,
   integer,
@@ -227,6 +228,8 @@ export const stockMovements = pgTable(
     note: text("note"),
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     createdAt: createdAt(),
+    /** Sortie ou perte annulée : un mouvement « Annulation » l'a compensée, elle ne compte plus dans les pertes. */
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   },
   (t) => [
     index("stock_movements_business_created_idx").on(t.businessId, t.createdAt),
@@ -264,6 +267,8 @@ export const purchases = pgTable(
     note: text("note"),
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     createdAt: createdAt(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
   },
   (t) => [index("purchases_business_idx").on(t.businessId, t.createdAt)],
 );
@@ -330,6 +335,9 @@ export const sales = pgTable(
     /** Date de prise en compte dans le chiffre d'affaires (vente validée / commande livrée) */
     completedAt: timestamp("completed_at", { withTimezone: true }),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
+    /** Vente corrigée : celle-ci remplace la vente annulée indiquée. */
+    replacesId: text("replaces_id").references((): AnyPgColumn => sales.id, { onDelete: "set null" }),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
@@ -391,6 +399,10 @@ export const customerPayments = pgTable(
     note: text("note"),
     userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     createdAt: createdAt(),
+    /** Ventes remboursées par ce paiement (pour pouvoir l'annuler) ; absent sur les paiements d'avant. */
+    allocations: jsonb("allocations").$type<{ saleId: string; amount: number }[]>(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    cancelledBy: text("cancelled_by").references(() => user.id, { onDelete: "set null" }),
   },
   (t) => [
     index("customer_payments_customer_idx").on(t.customerId),

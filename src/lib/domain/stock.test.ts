@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { roundQty, stockStatus, weightedAverageCost } from "./stock";
+import { cancellableMovement, costAfterPurchaseCancel, roundQty, stockStatus, weightedAverageCost } from "./stock";
 
 describe("weightedAverageCost", () => {
   it("matches the spec example (10 @ 4000 + 10 @ 5000 = 4500)", () => {
@@ -37,5 +37,30 @@ describe("roundQty", () => {
   it("keeps 3 decimals and removes float noise", () => {
     expect(roundQty(0.1 + 0.2)).toBe(0.3);
     expect(roundQty(1.23456)).toBe(1.235);
+  });
+});
+
+describe("costAfterPurchaseCancel", () => {
+  it("retire l'entrée annulée du coût moyen", () => {
+    // 10 à 4 000 puis 10 à 5 000 → 4 500 ; annuler la 2e entrée ramène à 4 000
+    expect(costAfterPurchaseCancel(20, 4500, 10, 5000)).toBe(4000);
+  });
+  it("garde le coût s'il ne reste rien ou si le calcul devient négatif", () => {
+    expect(costAfterPurchaseCancel(10, 4500, 10, 5000)).toBe(4500);
+    expect(costAfterPurchaseCancel(12, 1000, 10, 5000)).toBe(1000);
+  });
+});
+
+describe("cancellableMovement", () => {
+  it("une entrée annule tout l'achat, une sortie ou une perte s'annule seule", () => {
+    expect(cancellableMovement({ type: "purchase", refType: "purchase", cancelled: false })).toBe("purchase");
+    expect(cancellableMovement({ type: "out", refType: null, cancelled: false })).toBe("movement");
+    expect(cancellableMovement({ type: "adjust", refType: null, cancelled: false })).toBe("movement");
+  });
+  it("rien pour une vente, un inventaire, un transfert ou une ligne déjà annulée", () => {
+    expect(cancellableMovement({ type: "sale", refType: "sale", cancelled: false })).toBeNull();
+    expect(cancellableMovement({ type: "inventory", refType: "inventory", cancelled: false })).toBeNull();
+    expect(cancellableMovement({ type: "transfer_out", refType: "transfer", cancelled: false })).toBeNull();
+    expect(cancellableMovement({ type: "out", refType: null, cancelled: true })).toBeNull();
   });
 });

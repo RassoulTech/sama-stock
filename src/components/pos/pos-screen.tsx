@@ -13,7 +13,7 @@ import { formatFCFA, formatQty, unitAllowsDecimals, unitLabel } from "@/lib/form
 import { roundQty } from "@/lib/domain/stock";
 import type { SaleDraft } from "@/lib/offline/types";
 import { cn } from "@/lib/utils";
-import { CheckoutDialog, type CheckoutResult } from "./checkout-dialog";
+import { CheckoutDialog, type CheckoutDefaults, type CheckoutResult } from "./checkout-dialog";
 
 export interface PosProduct {
   id: string;
@@ -25,6 +25,12 @@ export interface PosProduct {
   categoryId: string | null;
 }
 
+export interface PosInitial {
+  items: { productId: string; quantity: number; unitPrice: number }[];
+  discount: number;
+  checkout: CheckoutDefaults;
+}
+
 export function PosScreen({
   products,
   categories,
@@ -32,6 +38,8 @@ export function PosScreen({
   submit,
   allowCustomerCreate = true,
   bottomNav = true,
+  initial,
+  banner,
 }: {
   products: PosProduct[];
   categories: { id: string; name: string }[];
@@ -41,12 +49,24 @@ export function PosScreen({
   allowCustomerCreate?: boolean;
   /** Une barre de navigation est-elle affichée en bas de l'écran (téléphone) ? */
   bottomNav?: boolean;
+  /** Correction d'une vente : son panier, sa remise et son paiement de départ. */
+  initial?: PosInitial;
+  /** Bandeau au-dessus de la caisse (correction en cours). */
+  banner?: React.ReactNode;
 }) {
-  const [cart, setCart] = useState<Map<string, number>>(new Map());
+  const [cart, setCart] = useState<Map<string, number>>(() => new Map(initial?.items.map((i) => [i.productId, i.quantity])));
   /** Prix négociés avec le client, pour cette vente seulement (la fiche produit ne change pas). */
-  const [prices, setPrices] = useState<Map<string, number>>(new Map());
-  const [discount, setDiscount] = useState<number | "">("");
-  const [showDiscount, setShowDiscount] = useState(false);
+  const [prices, setPrices] = useState<Map<string, number>>(
+    () =>
+      new Map(
+        initial?.items.flatMap((i) => {
+          const product = products.find((p) => p.id === i.productId);
+          return product && product.salePrice !== i.unitPrice ? [[i.productId, i.unitPrice] as const] : [];
+        }),
+      ),
+  );
+  const [discount, setDiscount] = useState<number | "">(initial?.discount || "");
+  const [showDiscount, setShowDiscount] = useState(Boolean(initial?.discount));
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("all");
   const [cartOpen, setCartOpen] = useState(false);
@@ -275,6 +295,7 @@ export function PosScreen({
 
   return (
     <>
+      {banner}
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6">
         <section className="space-y-4">
           <SearchInput value={q} onChange={setQ} placeholder="Rechercher un produit…" />
@@ -383,6 +404,7 @@ export function PosScreen({
         pending={pending}
         error={error}
         allowCustomerCreate={allowCustomerCreate}
+        defaults={initial?.checkout}
       />
     </>
   );

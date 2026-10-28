@@ -31,6 +31,24 @@ export interface CheckoutResult {
   customerId: string | null;
 }
 
+/** Correction d'une vente : on repart de son paiement et de son client. */
+export interface CheckoutDefaults {
+  paymentMethod: SaleMethod;
+  customerId: string | null;
+  /** Déjà encaissé sur la vente corrigée : compté dans le montant reçu. */
+  previousPaid: number;
+  previousTotal: number;
+  previousNumber: string;
+}
+
+/**
+ * Montant reçu proposé pour une correction : une vente payée en entier l'est encore (le client paie la différence ou
+ * on lui rend la monnaie) ; une vente à crédit ou payée en partie garde ce qui a été payé.
+ */
+function correctionReceived(d: CheckoutDefaults, total: number): number {
+  return d.previousPaid >= d.previousTotal ? Math.max(total, d.previousPaid) : d.previousPaid;
+}
+
 interface CheckoutProps {
   total: number;
   customers: CustomerOption[];
@@ -40,6 +58,7 @@ interface CheckoutProps {
   error: string | null;
   /** Sans internet, pas de création de client. */
   allowCustomerCreate?: boolean;
+  defaults?: CheckoutDefaults;
 }
 
 export function CheckoutDialog({
@@ -61,13 +80,14 @@ export function CheckoutDialog({
   );
 }
 
-function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending, error, allowCustomerCreate = true }: CheckoutProps) {
-  const [method, setMethod] = useState<SaleMethod>("cash");
-  const [received, setReceived] = useState<number | "">(total);
-  const [customerId, setCustomerId] = useState<string | null>(null);
+function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending, error, allowCustomerCreate = true, defaults }: CheckoutProps) {
+  const [method, setMethod] = useState<SaleMethod>(defaults?.paymentMethod ?? "cash");
+  const [received, setReceived] = useState<number | "">(defaults && defaults.previousPaid > 0 ? correctionReceived(defaults, total) : total);
+  const [customerId, setCustomerId] = useState<string | null>(defaults?.customerId ?? null);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const amount = method === "credit" ? 0 : received === "" ? 0 : received;
+  // À crédit, une correction garde ce que le client avait déjà remboursé (le serveur fait de même)
+  const amount = method === "credit" ? (defaults?.previousPaid ?? 0) : received === "" ? 0 : received;
   const paid = Math.min(amount, total);
   const rest = total - paid;
   const change = method === "cash" ? Math.max(0, amount - total) : 0;
@@ -94,6 +114,20 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
         <p className="text-sm opacity-80">Total à payer</p>
         <p className="num text-3xl font-semibold tracking-tight">{formatFCFA(total)}</p>
       </div>
+      {defaults && defaults.previousPaid > 0 && (
+        <div className="space-y-1 rounded-xl bg-muted/60 px-4 py-3 text-sm">
+          <p>
+            Déjà payé sur la vente {defaults.previousNumber} : <span className="num font-semibold">{formatFCFA(defaults.previousPaid)}</span>,
+            compté dans le montant reçu.
+          </p>
+          {method !== "credit" && paid > defaults.previousPaid && (
+            <p className="font-semibold">À encaisser en plus : {formatFCFA(paid - defaults.previousPaid)}</p>
+          )}
+          {method !== "cash" && defaults.previousPaid > paid && (
+            <p className="font-semibold">À rendre au client : {formatFCFA(defaults.previousPaid - paid)}</p>
+          )}
+        </div>
+      )}
 
       <div className="space-y-5">
         <FormField label="Mode de paiement">
@@ -158,7 +192,7 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
         <FormError message={localError ?? error} />
         <Button type="button" size="lg" variant="saffron" className="w-full" disabled={pending} onClick={confirm}>
           {pending && <Loader2 className="animate-spin" />}
-          Valider la vente
+          {defaults ? "Valider la correction" : "Valider la vente"}
         </Button>
       </div>
     </>

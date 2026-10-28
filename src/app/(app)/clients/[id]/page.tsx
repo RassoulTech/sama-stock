@@ -1,4 +1,4 @@
-import { HandCoins, MapPin, MessageCircle, Pencil, Phone, Receipt, Trash2 } from "lucide-react";
+import { HandCoins, MapPin, MessageCircle, Pencil, Phone, Receipt, Trash2, Undo2 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,10 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { SearchParams } from "@/lib/filters";
 import { formatDateTime, formatFCFA, formatPhone } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { PAGE_SIZE, readPage } from "@/lib/pagination";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/domain/sales";
 import { debtReminderMessage, waLink } from "@/lib/whatsapp";
-import { deleteCustomer } from "@/server/actions/customers";
+import { cancelCustomerPayment, deleteCustomer } from "@/server/actions/customers";
 import { requireContext } from "@/server/context";
 import { getCustomer } from "@/server/queries/customers";
 
@@ -31,6 +32,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   if (!data) notFound();
   const { customer, history, payments, historyTotal, debt } = data;
   const writable = !ctx.plan.readOnly;
+  const canCancelPayment = writable && ctx.can("payments.cancel");
 
   const timeline = [
     ...history.map((h) => ({ kind: "sale" as const, date: h.createdAt, h })),
@@ -164,14 +166,39 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
                           <HandCoins className="size-4" />
                         </span>
                         <div>
-                          <p className="font-semibold">Remboursement</p>
+                          <p className="font-semibold">
+                            <span className={cn(t.p.cancelledAt && "text-muted-foreground line-through")}>Remboursement</span>
+                            {t.p.cancelledAt && (
+                              <span className="ml-1.5 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">Annulé</span>
+                            )}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {formatDateTime(t.p.createdAt)} · {PAYMENT_METHODS[t.p.method as PaymentMethod] ?? t.p.method}
                             {t.p.userName && <> · {t.p.userName}</>}
                           </p>
                         </div>
                       </div>
-                      <p className="num font-semibold text-success">+{formatFCFA(t.p.amount)}</p>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <p className={cn("num font-semibold text-success", t.p.cancelledAt && "text-muted-foreground line-through")}>
+                          +{formatFCFA(t.p.amount)}
+                        </p>
+                        {canCancelPayment && !t.p.cancelledAt && (
+                          <ConfirmAction
+                            trigger={
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive">
+                                <Undo2 className="size-3.5" /> Annuler
+                              </Button>
+                            }
+                            title={`Annuler ce remboursement de ${formatFCFA(t.p.amount)} ?`}
+                            description={`À faire si ce paiement a été saisi par erreur ou en double : ${customer.name} devra de nouveau cette somme. Le paiement reste visible, barré.`}
+                            confirmLabel="Annuler le remboursement"
+                            cancelLabel="Garder"
+                            destructive
+                            successMessage="Remboursement annulé, la dette est revenue"
+                            action={cancelCustomerPayment.bind(null, t.p.id)}
+                          />
+                        )}
+                      </div>
                     </li>
                   ),
                 )}

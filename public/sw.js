@@ -102,7 +102,13 @@ self.addEventListener("fetch", (event) => {
 });
 
 /* Notifications (vente, commande, stock) envoyées par le serveur, même application fermée. */
-const VIBRATIONS = { sale: [120, 60, 120], order: [200, 80, 200], stock_low: [300, 120, 300], stock_out: [400, 150, 400, 150, 400] };
+const VIBRATIONS = {
+  sale: [120, 60, 120],
+  sale_cancel: [300, 120, 300],
+  order: [200, 80, 200],
+  stock_low: [300, 120, 300],
+  stock_out: [400, 150, 400, 150, 400],
+};
 
 self.addEventListener("push", (event) => {
   let data = {};

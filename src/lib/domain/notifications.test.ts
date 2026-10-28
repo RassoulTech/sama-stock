@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { notifyPrefs, orderMessage, receivesNotifications, saleMessage, stockCrossing, stockMessage } from "./notifications";
+import { notifyPrefs, orderMessage, receivesNotifications, saleCancelMessage, saleMessage, stockCrossing, stockMessage } from "./notifications";
 
 describe("alertes de stock", () => {
   it("prévient une seule fois, au passage du seuil", () => {
@@ -52,5 +52,21 @@ describe("textes", () => {
     const low = stockMessage({ kind: "stock_low", productId: "p2", name: "Ciment 50 kg", available: 3, unit: "sac", locationName: "Dépôt" });
     expect(low.title).toBe("Stock bas");
     expect(low.body).toMatch(/^Ciment 50 kg \(Dépôt\) : plus que 3 /);
+  });
+});
+
+describe("vente annulée ou corrigée", () => {
+  it("annulée : lien vers la vente", () => {
+    const m = saleCancelMessage({ id: "s1", number: "V-0042", total: 12500, actorName: "Fatou Ndiaye" });
+    expect(m.kind).toBe("sale_cancel");
+    expect(m.title).toBe("Vente annulée · V-0042");
+    expect(m.body).toContain("Fatou");
+    expect(m.href).toBe("/ventes/s1");
+  });
+  it("corrigée : lien vers la nouvelle vente", () => {
+    const m = saleCancelMessage({ id: "s1", number: "V-0042", total: 12500, actorName: "Fatou", replacement: { id: "s2", number: "V-0050" } });
+    expect(m.title).toBe("Vente corrigée · V-0042");
+    expect(m.body).toContain("remplacée par V-0050");
+    expect(m.href).toBe("/ventes/s2");
   });
 });

@@ -3,7 +3,7 @@ import { CHANNELS, isChannel } from "./sales";
 import { stockStatus } from "./stock";
 
 /** Ce qui déclenche une notification. */
-export const NOTIFY_KINDS = ["sale", "order", "stock_low", "stock_out"] as const;
+export const NOTIFY_KINDS = ["sale", "sale_cancel", "order", "stock_low", "stock_out"] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 
 export function isNotifyKind(value: unknown): value is NotifyKind {
@@ -12,10 +12,16 @@ export function isNotifyKind(value: unknown): value is NotifyKind {
 
 /** Réglages de chaque personne : un interrupteur par sujet, et le son dans l'application. */
 export type NotifyTopic = "sale" | "order" | "stock";
-export const TOPIC_OF: Record<NotifyKind, NotifyTopic> = { sale: "sale", order: "order", stock_low: "stock", stock_out: "stock" };
+export const TOPIC_OF: Record<NotifyKind, NotifyTopic> = {
+  sale: "sale",
+  sale_cancel: "sale",
+  order: "order",
+  stock_low: "stock",
+  stock_out: "stock",
+};
 
 export const TOPICS: Record<NotifyTopic, { label: string; hint: string }> = {
-  sale: { label: "Ventes", hint: "Chaque vente faite par votre équipe" },
+  sale: { label: "Ventes", hint: "Chaque vente faite, annulée ou corrigée par votre équipe" },
   order: { label: "Commandes", hint: "Chaque nouvelle commande client" },
   stock: { label: "Stock bas et ruptures", hint: "Quand un produit passe sous son seuil d'alerte ou n'en a plus" },
 };
@@ -84,6 +90,22 @@ export function saleMessage(s: { id: string; number: string; total: number; item
     title: `Vente de ${formatFCFA(s.total)}`,
     body: `${first(s.actorName)} · ${articles} · ${s.number}${s.offline ? " · faite sans internet" : ""}`,
     href: `/ventes/${s.id}`,
+  };
+}
+
+/** Vente annulée, ou corrigée (le lien mène alors à la nouvelle vente). */
+export function saleCancelMessage(s: {
+  id: string;
+  number: string;
+  total: number;
+  actorName: string;
+  replacement?: { id: string; number: string } | null;
+}): NotifyMessage {
+  return {
+    kind: "sale_cancel",
+    title: `${s.replacement ? "Vente corrigée" : "Vente annulée"} · ${s.number}`,
+    body: `${first(s.actorName)} · ${formatFCFA(s.total)}${s.replacement ? ` · remplacée par ${s.replacement.number}` : ""}`,
+    href: `/ventes/${s.replacement?.id ?? s.id}`,
   };
 }
 
