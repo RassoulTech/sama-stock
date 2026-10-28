@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, DatabaseBackup, Globe, Server } from "lucide-react";
+import { CheckCircle2, DatabaseBackup, Globe, HardDrive, Server } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ const SOURCES = {
   serveur: { label: "Serveur", icon: Server },
   navigateur: { label: "Téléphone ou ordinateur", icon: Globe },
   sauvegarde: { label: "Sauvegarde", icon: DatabaseBackup },
+  plateforme: { label: "Plateforme", icon: HardDrive },
 } as const;
 
 /** Liste des pannes : non réglées en rouge, avec le bouton « Réglée ». */

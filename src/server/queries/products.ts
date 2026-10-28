@@ -1,7 +1,8 @@
 import "server-only";
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, type DbOrTx } from "@/db";
-import { categories, documentItems, locations, products, purchaseItems, saleItems, stockLevels, stockMovements, user } from "@/db/schema";
+import { categories, documentItems, locations, products, purchaseItems, saleItems, sales, stockLevels, stockMovements, user } from "@/db/schema";
+import { RESERVING_STATUSES } from "@/lib/domain/orders";
 import { roundQty, stockStatus, type StockStatus } from "@/lib/domain/stock";
 import type { BusinessContext } from "../context";
 import { reservedQuantities } from "../services/stock";
@@ -84,6 +85,69 @@ export async function listProducts(
       archived: r.archivedAt !== null,
     };
   });
+}
+
+export interface StockAlertRow {
+  id: string;
+  name: string;
+  unit: string;
+  available: number;
+  status: StockStatus;
+  imageUrl: string | null;
+}
+
+/**
+ * Produits en stock bas ou en rupture dans la boutique ouverte (disponible = en rayon − commandes réservées),
+ * calculés par la base : le tableau de bord reste rapide même avec des milliers de produits.
+ */
+export async function stockAlerts(ctx: BusinessContext, limit = 6): Promise<{ count: number; items: StockAlertRow[] }> {
+  const locationId = ctx.location.id;
+  const reserved = db
+    .select({ productId: saleItems.productId, quantity: sql<string>`sum(${saleItems.quantity})`.as("reserved_qty") })
+    .from(saleItems)
+    .innerJoin(sales, eq(saleItems.saleId, sales.id))
+    .where(
+      and(
+        eq(sales.businessId, ctx.business.id),
+        eq(sales.locationId, locationId),
+        eq(sales.kind, "order"),
+        inArray(sales.status, [...RESERVING_STATUSES]),
+      ),
+    )
+    .groupBy(saleItems.productId)
+    .as("reserved");
+  const available = sql<string>`coalesce(${stockLevels.quantity}, 0) - coalesce(${reserved.quantity}, 0)`;
+  const rows = await db
+    .select({
+      id: products.id,
+      name: products.name,
+      unit: products.unit,
+      alertThreshold: products.alertThreshold,
+      hasImage: sql<boolean>`${products.imageData} is not null`,
+      updatedAt: products.updatedAt,
+      available,
+      total: sql<number>`(count(*) over ())::int`,
+    })
+    .from(products)
+    .leftJoin(stockLevels, and(eq(stockLevels.productId, products.id), eq(stockLevels.locationId, locationId)))
+    .leftJoin(reserved, eq(reserved.productId, products.id))
+    .where(and(eq(products.businessId, ctx.business.id), isNull(products.archivedAt), sql`${available} <= greatest(${products.alertThreshold}, 0)`))
+    .orderBy(sql`${available} asc`, asc(products.name))
+    .limit(limit);
+  return {
+    count: rows[0]?.total ?? 0,
+    items: rows.map((r) => {
+      const qty = roundQty(Number(r.available));
+      return {
+        id: r.id,
+        name: r.name,
+        unit: r.unit,
+        available: qty,
+        status: stockStatus(qty, r.alertThreshold),
+        imageUrl: r.hasImage ? productImageUrl(r.id, r.updatedAt) : null,
+      };
+    }),
+  };
 }
 
 export async function countActiveProducts(businessId: string): Promise<number> {

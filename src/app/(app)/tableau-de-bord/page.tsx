@@ -32,7 +32,7 @@ import { requireContext } from "@/server/context";
 import { dailySeries, recentSales, salesSummary, stockValue } from "@/server/queries/analytics";
 import { totalCustomerDebt } from "@/server/queries/customers";
 import { listOrders } from "@/server/queries/orders";
-import { listProducts } from "@/server/queries/products";
+import { countActiveProducts, stockAlerts } from "@/server/queries/products";
 import { countFlaggedSales, periodStart } from "@/server/queries/sales";
 import { employeeCount } from "@/server/queries/team";
 
@@ -52,8 +52,9 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-  const [products, today, week, month, series, debt, value, orders, recent, teamCount, flagged] = await Promise.all([
-    listProducts(ctx),
+  const [stock, productCount, today, week, month, series, debt, value, orders, recent, teamCount, flagged] = await Promise.all([
+    stockAlerts(ctx),
+    countActiveProducts(ctx.business.id),
     ctx.can("sales.create") || full ? salesSummary(ctx, periodStart("today"), { own: seller }) : null,
     full ? salesSummary(ctx, periodStart("7j")) : null,
     full ? salesSummary(ctx, monthStart) : null,
@@ -66,12 +67,14 @@ export default async function DashboardPage() {
     full ? countFlaggedSales(ctx, periodStart("7j")) : 0,
   ]);
 
-  const alerts = products.filter((p) => p.status !== "ok").sort((a, b) => a.available - b.available);
+  // Alertes de stock calculées par la base : seulement le nombre et les 6 plus urgentes
+  const alerts = stock.items;
+  const alertCount = stock.count;
   const firstName = ctx.user.name.split(" ")[0];
   const writable = !ctx.plan.readOnly;
 
   const checklist = ctx.role === "owner" && [
-    { done: products.length > 0, label: "Ajouter un premier produit", href: "/produits/nouveau" },
+    { done: productCount > 0, label: "Ajouter un premier produit", href: "/produits/nouveau" },
     {
       done: Boolean(recent?.length || orders?.length),
       label: showPos ? "Faire une première vente" : "Enregistrer une première commande",
@@ -84,7 +87,7 @@ export default async function DashboardPage() {
         : []
       : [{ done: (teamCount ?? 0) > 0, label: "Ajouter un employé (licences Pro et Business)", href: "/equipe" }]),
   ];
-  const showChecklist = !ctx.business.isDemo && checklist && checklist.some((c) => !c.done) && products.length < 5;
+  const showChecklist = !ctx.business.isDemo && checklist && checklist.some((c) => !c.done) && productCount < 5;
 
   // Téléphone : raccourcis ronds, le plus utile d'abord (4 au plus)
   const mobileActions: MobileAction[] = [
@@ -100,7 +103,7 @@ export default async function DashboardPage() {
       <MobileHome
         firstName={firstName}
         dateLabel={todayLabel.format(now).replace(/^./, (c) => c.toUpperCase())}
-        alerts={alerts.length}
+        alerts={alertCount}
         searchable={ctx.can("products.view")}
         actions={mobileActions}
         today={today ? { label: seller ? "Mes ventes du jour" : "Aujourd'hui", revenue: today.revenue, count: today.count } : null}
@@ -239,10 +242,10 @@ export default async function DashboardPage() {
         {!full && (
           <StatCard
             label="Alertes de stock"
-            value={alerts.length}
+            value={alertCount}
             hint="Produits en stock bas ou en rupture"
             icon={AlertTriangle}
-            tone={alerts.length > 0 ? "saffron" : "neutral"}
+            tone={alertCount > 0 ? "saffron" : "neutral"}
             href="/produits?etat=bas"
           />
         )}
@@ -269,7 +272,7 @@ export default async function DashboardPage() {
             <CardTitle className="flex items-center gap-2 font-semibold">
               <AlertTriangle className="size-4 text-warning dark:text-saffron" /> Alertes de stock
             </CardTitle>
-            {alerts.length > 0 && (
+            {alertCount > 0 && (
               <CardAction>
                 <Link href="/produits?etat=bas" className="text-sm font-semibold text-primary hover:underline">
                   Tout voir
@@ -278,14 +281,14 @@ export default async function DashboardPage() {
             )}
           </CardHeader>
           <CardContent>
-            {alerts.length === 0 ? (
+            {alertCount === 0 ? (
               <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
                 <CheckCircle2 className="size-8 text-success" />
-                {products.length === 0 ? "Ajoutez des produits pour suivre votre stock." : "Tout est en stock. Rien à signaler."}
+                {productCount === 0 ? "Ajoutez des produits pour suivre votre stock." : "Tout est en stock. Rien à signaler."}
               </div>
             ) : (
               <ul className="space-y-2">
-                {alerts.slice(0, 6).map((p) => (
+                {alerts.map((p) => (
                   <li key={p.id}>
                     <Link href={`/produits/${p.id}`} className="flex items-center gap-3 rounded-xl p-1.5 hover:bg-muted/60">
                       <ProductThumb name={p.name} imageUrl={p.imageUrl} className="size-9 rounded-lg text-xs" />
@@ -299,7 +302,7 @@ export default async function DashboardPage() {
                 ))}
               </ul>
             )}
-            {alerts.length > 0 && ctx.can("stock.in") && writable && (
+            {alertCount > 0 && ctx.can("stock.in") && writable && (
               <Button asChild variant="outline" className="mt-4 w-full">
                 <Link href="/stock/entree">
                   <ArrowDownToLine /> Réapprovisionner
@@ -393,7 +396,7 @@ export default async function DashboardPage() {
               <div>
                 <p className="num text-3xl font-semibold tracking-tight">{formatFCFA(value)}</p>
                 <p className="text-sm opacity-80">
-                  {products.length} produit{products.length > 1 ? "s" : ""} · au prix d&apos;achat moyen
+                  {productCount} produit{productCount > 1 ? "s" : ""} · au prix d&apos;achat moyen
                 </p>
               </div>
               <Link href="/stock" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline">

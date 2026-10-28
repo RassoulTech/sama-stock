@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 // Tables requises par Better Auth (noms de champs imposés par la bibliothèque)
 
@@ -73,3 +73,14 @@ export const verification = pgTable(
   },
   (t) => [index("verification_identifier_idx").on(t.identifier)],
 );
+
+/**
+ * Compteurs de la protection contre les essais à répétition (connexion, mot de passe oublié…), partagés entre
+ * tous les serveurs. Une ligne par adresse IP et par type de demande ; effacée la nuit quand elle est ancienne.
+ */
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});

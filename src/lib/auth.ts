@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
-import { account, session, user, verification } from "@/db/schema";
+import { account, rateLimit, session, user, verification } from "@/db/schema";
 import { resetPasswordEmail, sendMail } from "@/server/mail";
 import { pinSignIn } from "./auth-pin";
 import { TRUSTED_ORIGINS } from "./domains";
@@ -21,7 +21,7 @@ export const auth = betterAuth({
   trustedOrigins: isLocal ? ["http://192.168.*:3000", "http://10.*:3000", "http://172.*:3000"] : TRUSTED_ORIGINS,
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: { user, session, account, verification },
+    schema: { user, session, account, verification, rateLimit },
   }),
   emailAndPassword: {
     enabled: true,
@@ -46,6 +46,9 @@ export const auth = betterAuth({
   account: {
     accountLinking: { enabled: true, trustedProviders: ["google"] },
   },
+  // Essais à répétition (mots de passe…) : compteurs dans la base, communs à tous les serveurs.
+  // La lecture de session, très fréquente, n'est pas comptée (elle n'a rien à protéger).
+  rateLimit: { storage: "database", customRules: { "/get-session": false } },
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,

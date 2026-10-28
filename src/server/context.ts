@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, sql } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -17,6 +17,15 @@ export const LOCATION_COOKIE = "ss_loc";
 export const CONTEXT_COOKIE_OPTIONS = { httpOnly: true, sameSite: "lax" as const, path: "/", maxAge: 60 * 60 * 24 * 365 };
 
 export type Business = typeof businesses.$inferSelect;
+
+/**
+ * Commerce chargé à chaque page : sans l'image du logo elle-même (lourde, elle passait dans chaque page),
+ * mais avec l'adresse qui la sert. Cette adresse change quand le logo change (on peut donc la garder en cache).
+ */
+const businessColumns = {
+  ...getTableColumns(businesses),
+  logo: sql<string | null>`case when ${businesses.logo} is null then null else '/api/images/logo/' || ${businesses.id} || '?v=' || left(md5(${businesses.logo}), 10) end`,
+};
 export type Location = typeof locations.$inferSelect;
 
 export interface SessionUser {
@@ -67,7 +76,7 @@ export const getContext = cache(async (): Promise<AppContext | null> => {
   };
 
   const rows = await db
-    .select({ member: members, business: businesses })
+    .select({ member: members, business: businessColumns })
     .from(members)
     .innerJoin(businesses, eq(members.businessId, businesses.id))
     .where(eq(members.userId, user.id))
@@ -165,7 +174,7 @@ export async function requireSuperAdminAction(): Promise<AppContext> {
  */
 export async function contextForBusiness(user: SessionUser, businessId: string, locationId: string): Promise<BusinessContext | null> {
   const [row] = await db
-    .select({ member: members, business: businesses })
+    .select({ member: members, business: businessColumns })
     .from(members)
     .innerJoin(businesses, eq(members.businessId, businesses.id))
     .where(and(eq(members.userId, user.id), eq(members.businessId, businessId)));

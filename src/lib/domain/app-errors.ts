@@ -1,6 +1,6 @@
 /** Pannes du site : reconnaître une même panne et décider quand prévenir l'administrateur. */
 
-export const ERROR_SOURCES = ["serveur", "navigateur", "sauvegarde"] as const;
+export const ERROR_SOURCES = ["serveur", "navigateur", "sauvegarde", "plateforme"] as const;
 export type ErrorSource = (typeof ERROR_SOURCES)[number];
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
@@ -58,10 +58,11 @@ const SOURCE_LABELS: Record<ErrorSource, string> = {
   serveur: "serveur",
   navigateur: "téléphone ou ordinateur",
   sauvegarde: "sauvegarde",
+  plateforme: "plateforme",
 };
 
 export function alertText(input: { source: ErrorSource; route: string; message: string; count: number }): { title: string; body: string } {
-  const where = input.source === "sauvegarde" ? "Sauvegarde" : input.route;
+  const where = input.source === "sauvegarde" ? "Sauvegarde" : input.source === "plateforme" ? "Plateforme" : input.route;
   const times = input.count <= 1 ? "1re fois" : `${input.count} fois`;
   return { title: `Panne sur Sama Stock — ${where}`, body: `${SOURCE_LABELS[input.source]} : ${input.message.slice(0, 140)} (${times})` };
 }
