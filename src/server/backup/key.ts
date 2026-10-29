@@ -2,7 +2,7 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 
 /** Valeur collée à la main dans Vercel : espaces, retours à la ligne ou guillemets autour sont ignorés. */
-function cleanSecret(raw: string | undefined): string {
+export function cleanSecret(raw: string | undefined): string {
   return (raw ?? "").trim().replace(/^["']|["']$/g, "").trim();
 }
 

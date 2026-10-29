@@ -1,12 +1,30 @@
 import "server-only";
 import nodemailer from "nodemailer";
+import { MAIN_DOMAIN } from "@/lib/domains";
+import { LEGAL } from "@/lib/legal";
+import { cleanSecret } from "./backup/key";
 
 /**
- * Envoi d'e-mails par Gmail (compte de Sama Stock, « mot de passe d'application » Google).
- * Réglages : SMTP_USER (adresse Gmail) et SMTP_PASS (mot de passe d'application, 16 lettres).
- * Plus tard, avec le nom de domaine : SMTP_HOST / SMTP_PORT d'un service d'envoi et noreply@samastock.sn.
+ * Envoi d'e-mails.
+ * - Resend (RESEND_API_KEY) : expéditeur noreply@sama-stock.com (domaine vérifié chez Resend), réponses vers LEGAL.email.
+ * - Gmail en secours (SMTP_USER / SMTP_PASS, « mot de passe d'application » Google) : sans clé Resend,
+ *   ou si Resend refuse l'envoi.
  */
-export const isMailEnabled = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+const resendKey = cleanSecret(process.env.RESEND_API_KEY);
+const isSmtpEnabled = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+export const isMailEnabled = Boolean(resendKey) || isSmtpEnabled;
+
+type MailMessage = { to: string; subject: string; text: string; html: string };
+
+async function sendWithResend(message: MailMessage) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from: `Sama Stock <noreply@${MAIN_DOMAIN}>`, reply_to: LEGAL.email, ...message, to: [message.to] }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Resend a refusé l'e-mail (${res.status}) : ${(await res.text()).slice(0, 200)}`);
+}
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -21,8 +39,16 @@ function getTransporter() {
   return transporter;
 }
 
-export async function sendMail(message: { to: string; subject: string; text: string; html: string }) {
-  if (!isMailEnabled) throw new Error("Envoi d'e-mails non configuré (SMTP_USER / SMTP_PASS).");
+export async function sendMail(message: MailMessage) {
+  if (!isMailEnabled) throw new Error("Envoi d'e-mails non configuré (RESEND_API_KEY ou SMTP_USER / SMTP_PASS).");
+  if (resendKey) {
+    try {
+      return await sendWithResend(message);
+    } catch (error) {
+      if (!isSmtpEnabled) throw error;
+      console.error("[mail] Resend en échec, envoi par Gmail :", error);
+    }
+  }
   await getTransporter().sendMail({
     from: { name: "Sama Stock", address: process.env.SMTP_USER! },
     ...message,
