@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo";
 
 // Date de la dernière mise à jour du contenu public (à avancer quand ces pages changent)
-const UPDATED = new Date("2026-10-20");
+const UPDATED = new Date("2026-10-29");
 
 /** Uniquement les pages publiques réellement destinées aux moteurs de recherche. */
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
+import { MAIN_DOMAIN } from "./domains";
 
-/** Adresse publique du site : liens canoniques, sitemap et aperçus de partage. */
-export const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? "https://sama-stock-one.vercel.app").replace(/\/$/, "");
+/**
+ * Adresse officielle du site pour Google : liens canoniques, plan du site et aperçus de partage.
+ * En ligne, toujours sama-stock.com (même si le site est ouvert depuis l'ancienne adresse).
+ */
+export const SITE_URL = (
+  process.env.VERCEL_ENV === "production" ? `https://${MAIN_DOMAIN}` : (process.env.NEXT_PUBLIC_APP_URL ?? `https://${MAIN_DOMAIN}`)
+).replace(/\/$/, "");
 export const SITE_NAME = "Sama Stock";
 
 /** Métadonnées d'une page publique : titre, description, URL canonique et aperçu de partage cohérents. */

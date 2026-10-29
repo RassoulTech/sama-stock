@@ -1,7 +1,7 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { isValidSlug } from "@/lib/domain/slug";
-import { shopSlugFromHost } from "@/lib/domains";
+import { legacyRedirect, shopSlugFromHost } from "@/lib/domains";
 import { isProtectedPath } from "@/lib/routes";
 import { DEVICE_COOKIE_NAME, OTHER_ACCOUNT_PARAM, SHOP_COOKIE } from "@/lib/shop-app";
 
@@ -26,6 +26,11 @@ export function proxy(request: NextRequest) {
   }
   const shop = request.cookies.get(SHOP_COOKIE)?.value;
   const shopPage = shop && isValidSlug(shop) ? `/b/${shop}` : null;
+
+  // Ancienne adresse : sa vitrine renvoie vers sama-stock.com (une seule adresse dans Google) ;
+  // les personnes connectées et les appareils des boutiques déjà installées n'en sont jamais détournés
+  const moved = legacyRedirect(request.headers.get("host"), pathname, { hasSession, hasShop: Boolean(shopPage) });
+  if (moved) return NextResponse.redirect(`${moved}${search}`, 308);
 
   if (isProtectedPath(pathname) && !hasSession) {
     // Appareil d'une boutique : on revient sur sa page de connexion (son logo, ses employés, le code PIN)

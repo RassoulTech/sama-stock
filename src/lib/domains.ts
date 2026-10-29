@@ -33,3 +33,24 @@ export function shopAppUrl(origin: string, slug: string): string {
 export function legacyShopUrl(slug: string): string {
   return `https://${LEGACY_HOST}/b/${slug}`;
 }
+
+/** Pages publiques (vitrine) : sur l'ancienne adresse, elles renvoient vers sama-stock.com pour Google. */
+export const PUBLIC_PAGES = ["/", "/inscription", "/demo", "/mentions-legales", "/confidentialite", "/conditions"];
+
+/**
+ * Ancienne adresse : renvoi des pages de la vitrine vers sama-stock.com (une seule adresse dans Google).
+ * Jamais pour quelqu'un de connecté ni pour un appareil de boutique : leur application reste sur l'ancienne adresse.
+ */
+export function legacyRedirect(host: string | null | undefined, pathname: string, opts: { hasSession: boolean; hasShop: boolean }): string | null {
+  if (!host || host.toLowerCase().split(":")[0] !== LEGACY_HOST) return null;
+  if (opts.hasSession || opts.hasShop || !PUBLIC_PAGES.includes(pathname)) return null;
+  return `https://${MAIN_DOMAIN}${pathname === "/" ? "" : pathname}`;
+}
+
+/** Ce que les moteurs de recherche peuvent explorer selon l'adresse : tout (site principal), la vitrine (ancienne adresse), rien (boutiques, essais Vercel). */
+export function crawlScope(host: string | null | undefined): "site" | "legacy" | "none" {
+  const hostname = (host ?? "").toLowerCase().split(":")[0];
+  if (hostname === MAIN_DOMAIN || hostname === "localhost") return "site";
+  if (hostname === LEGACY_HOST) return "legacy";
+  return "none";
+}
