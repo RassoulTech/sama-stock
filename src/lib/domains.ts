@@ -12,7 +12,7 @@ export const LEGACY_HOST = "sama-stock-one.vercel.app";
 /** Origines acceptées pour se connecter (en plus de l'adresse principale). */
 export const TRUSTED_ORIGINS = [`https://${MAIN_DOMAIN}`, `https://*.${MAIN_DOMAIN}`, `https://${LEGACY_HOST}`];
 
-/** « senegal-sanitary.sama-stock.com » → « senegal-sanitary » ; null pour le site principal, www ou une autre adresse. */
+/** « keur-fatou.sama-stock.com » → « keur-fatou » ; null pour le site principal, www ou une autre adresse. */
 export function shopSlugFromHost(host: string | null | undefined): string | null {
   if (!host) return null;
   const hostname = host.toLowerCase().split(":")[0]!;

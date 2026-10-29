@@ -18,7 +18,7 @@ const sale: LicenseSaleRow = {
   created_at: new Date("2026-10-27T09:00:00Z"),
   cancelled_at: null,
   business_id: "b1",
-  business: "Sénégal Sanitary Ware",
+  business: "Keur Fatou Boutique",
   city: "Dakar",
   phone: "+221771234567",
   logo: null,

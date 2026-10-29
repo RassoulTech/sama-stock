@@ -3,8 +3,8 @@ import { crawlScope, legacyRedirect, legacyShopUrl, shopAppUrl, shopSlugFromHost
 
 describe("adresse de chaque boutique", () => {
   it("reconnaît la boutique dans son sous-domaine", () => {
-    expect(shopSlugFromHost("senegal-sanitary.sama-stock.com")).toBe("senegal-sanitary");
-    expect(shopSlugFromHost("Senegal-Sanitary.SAMA-STOCK.com:443")).toBe("senegal-sanitary");
+    expect(shopSlugFromHost("keur-fatou.sama-stock.com")).toBe("keur-fatou");
+    expect(shopSlugFromHost("Keur-Fatou.SAMA-STOCK.com:443")).toBe("keur-fatou");
   });
   it("ignore le site principal, www, les mots réservés et les autres adresses", () => {
     expect(shopSlugFromHost("sama-stock.com")).toBeNull();
@@ -16,10 +16,10 @@ describe("adresse de chaque boutique", () => {
     expect(shopSlugFromHost(null)).toBeNull();
   });
   it("donne l'adresse à envoyer au client : sous-domaine en ligne, …/b/nom sur l'ordinateur de développement", () => {
-    expect(shopAppUrl("https://sama-stock.com", "tgi-informatique")).toBe("https://tgi-informatique.sama-stock.com");
-    expect(shopAppUrl("https://sama-stock-one.vercel.app", "tgi-informatique")).toBe("https://tgi-informatique.sama-stock.com");
-    expect(shopAppUrl("http://localhost:3000", "tgi-informatique")).toBe("http://localhost:3000/b/tgi-informatique");
-    expect(legacyShopUrl("tgi-informatique")).toBe("https://sama-stock-one.vercel.app/b/tgi-informatique");
+    expect(shopAppUrl("https://sama-stock.com", "quincaillerie-ndiaye")).toBe("https://quincaillerie-ndiaye.sama-stock.com");
+    expect(shopAppUrl("https://sama-stock-one.vercel.app", "quincaillerie-ndiaye")).toBe("https://quincaillerie-ndiaye.sama-stock.com");
+    expect(shopAppUrl("http://localhost:3000", "quincaillerie-ndiaye")).toBe("http://localhost:3000/b/quincaillerie-ndiaye");
+    expect(legacyShopUrl("quincaillerie-ndiaye")).toBe("https://sama-stock-one.vercel.app/b/quincaillerie-ndiaye");
   });
   it("accepte les connexions venant du nouveau domaine, de ses sous-domaines et de l'ancienne adresse", () => {
     expect(TRUSTED_ORIGINS).toEqual(["https://sama-stock.com", "https://*.sama-stock.com", "https://sama-stock-one.vercel.app"]);
@@ -36,13 +36,13 @@ describe("référencement : une seule adresse dans Google", () => {
     expect(legacyRedirect("sama-stock-one.vercel.app", "/", { hasSession: true, hasShop: false })).toBeNull();
     expect(legacyRedirect("sama-stock-one.vercel.app", "/", { hasSession: false, hasShop: true })).toBeNull();
     expect(legacyRedirect("sama-stock-one.vercel.app", "/connexion", visitor)).toBeNull();
-    expect(legacyRedirect("sama-stock-one.vercel.app", "/b/tgi-informatique", visitor)).toBeNull();
+    expect(legacyRedirect("sama-stock-one.vercel.app", "/b/quincaillerie-ndiaye", visitor)).toBeNull();
     expect(legacyRedirect("sama-stock.com", "/", visitor)).toBeNull();
   });
   it("dit aux moteurs ce qu'ils peuvent explorer selon l'adresse", () => {
     expect(crawlScope("sama-stock.com")).toBe("site");
     expect(crawlScope("sama-stock-one.vercel.app")).toBe("legacy");
-    expect(crawlScope("tgi-informatique.sama-stock.com")).toBe("none");
+    expect(crawlScope("quincaillerie-ndiaye.sama-stock.com")).toBe("none");
     expect(crawlScope("sama-stock-abc123-rassoultechs-projects.vercel.app")).toBe("none");
   });
 });

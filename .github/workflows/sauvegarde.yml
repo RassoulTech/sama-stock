@@ -1,7 +1,7 @@
 # Copie de secours des sauvegardes de Sama Stock, chaque nuit, gardée 30 jours dans GitHub.
 # Les fichiers arrivent CHIFFRÉS (clé de secours gardée par le propriétaire, hors du site) : illisibles ici.
 # Réglages (Settings › Secrets and variables › Actions) : secret SAUVEGARDE_CLE (= CRON_SECRET de Vercel),
-# variable SITE_URL facultative (adresse du site, par défaut https://sama-stock-one.vercel.app).
+# variable SITE_URL facultative (adresse du site, par défaut https://sama-stock.com).
 name: Sauvegarde de secours
 
 on:
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      SITE: ${{ vars.SITE_URL || 'https://sama-stock-one.vercel.app' }}
+      SITE: ${{ vars.SITE_URL || 'https://sama-stock.com' }}
       CLE: ${{ secrets.SAUVEGARDE_CLE }}
     steps:
       - name: Télécharger la dernière sauvegarde (chiffrée)
@@ -38,4 +38,6 @@ jobs:
           path: sauvegarde/
           retention-days: 30
       - name: Prévenir le site que la copie est faite
-        run: curl -fsS -X POST -H "Authorization: Bearer $CLE" "$SITE/api/sauvegardes/github-ok?passe=$PASSE"
+        # « run: | » obligatoire : le « : » de « Authorization: » casse une ligne simple en YAML
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $CLE" "$SITE/api/sauvegardes/github-ok?passe=$PASSE"
