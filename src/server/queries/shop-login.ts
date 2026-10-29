@@ -28,8 +28,12 @@ export const shopBySlug = cache(async (slug: string) => {
   if (!shop) return null;
   const licensed = shop.licensePack !== null;
   const brandColor = licensed ? shop.brandColor : null;
-  // Change avec le nom, le logo ou la couleur : les téléphones voient une nouvelle icône et mettent l'application à jour
-  const version = createHash("sha256").update(`${shop.name}|${brandColor ?? ""}|${shop.logo ?? ""}`).digest("base64url").slice(0, 10);
+  // Change avec le nom, le logo, la couleur ou le dessin de l'icône (ICON_DESIGN) : les téléphones voient une
+  // nouvelle icône et mettent l'application à jour
+  const version = createHash("sha256")
+    .update(`${shop.name}|${brandColor ?? ""}|${shop.logo ?? ""}|${ICON_DESIGN}`)
+    .digest("base64url")
+    .slice(0, 10);
   return { ...shop, licensed, brandColor, version };
 });
 
@@ -46,7 +50,13 @@ export async function staffWithPin(businessId: string) {
   return rows.map((r) => ({ id: r.id, name: r.name, roleLabel: isRole(r.role) ? ROLE_LABELS[r.role] : r.role }));
 }
 
-/** Icône de l'application de la boutique ; l'adresse change avec le logo ou la couleur (mise à jour des téléphones). */
-export function shopIcon(shop: Pick<Shop, "slug" | "version">, size: 180 | 192 | 512): string {
-  return `/b/${shop.slug}/icone/${size}?v=${shop.version}`;
+/** À augmenter quand le dessin de l'icône change (contour plus fin : 2). */
+const ICON_DESIGN = 2;
+
+/**
+ * Icône de l'application de la boutique ; l'adresse change avec le logo ou la couleur (mise à jour des téléphones).
+ * `maskable` : version pour Android, qui découpe l'icône en rond ou en carré arrondi.
+ */
+export function shopIcon(shop: Pick<Shop, "slug" | "version">, size: 180 | 192 | 512, maskable = false): string {
+  return `/b/${shop.slug}/icone/${size}?v=${shop.version}${maskable ? "&masque=1" : ""}`;
 }

@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     icons: [
       { src: shopIcon(shop, 192), sizes: "192x192", type: "image/png" },
       { src: shopIcon(shop, 512), sizes: "512x512", type: "image/png" },
-      { src: shopIcon(shop, 512), sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: shopIcon(shop, 512, true), sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
   return Response.json(manifest, {

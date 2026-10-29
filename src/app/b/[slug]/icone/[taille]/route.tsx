@@ -7,7 +7,8 @@ const SIZES = new Set([180, 192, 512]);
 
 /**
  * Icône de l'application d'une boutique : son logo sur un carré blanc, posé sur sa couleur (les initiales à défaut
- * de logo). Le fond couvre toute l'icône : elle reste belle quand le téléphone l'arrondit.
+ * de logo), avec un contour fin. Le fond couvre toute l'icône : elle reste belle quand le téléphone l'arrondit.
+ * `?masque=1` (Android découpe l'icône en rond) : carré un peu plus petit et plus arrondi, pour ne pas être coupé.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string; taille: string }> }) {
   const { slug, taille } = await params;
@@ -17,7 +18,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   const colors = shopColors(shop.brandColor);
   const logo = iconLogo(shop.logo);
-  const tile = Math.round(size * 0.62);
+  const maskable = new URL(request.url).searchParams.get("masque") === "1";
+  const tile = Math.round(size * (maskable ? 0.72 : 0.82));
 
   return new ImageResponse(
     (
@@ -26,7 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
           style={{
             width: tile,
             height: tile,
-            borderRadius: Math.round(size * 0.14),
+            borderRadius: Math.round(size * (maskable ? 0.2 : 0.17)),
             background: "#ffffff",
             display: "flex",
             alignItems: "center",
@@ -38,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
             // eslint-disable-next-line @next/next/no-img-element -- image générée côté serveur
             <img src={logo} alt="" width={tile} height={tile} style={{ objectFit: "cover" }} />
           ) : (
-            <span style={{ fontSize: Math.round(size * 0.24), fontWeight: 700, color: colors.primary, letterSpacing: -1 }}>{initials(shop.name)}</span>
+            <span style={{ fontSize: Math.round(size * (maskable ? 0.26 : 0.3)), fontWeight: 700, color: colors.primary, letterSpacing: -1 }}>{initials(shop.name)}</span>
           )}
         </div>
       </div>
