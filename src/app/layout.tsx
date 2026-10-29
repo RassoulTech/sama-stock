@@ -40,6 +40,8 @@ export const metadata: Metadata = {
   openGraph: { type: "website", siteName: SITE_NAME, locale: "fr_SN" },
   twitter: { card: "summary_large_image" },
   formatDetection: { telephone: false },
+  // Google Search Console (même code que l'enregistrement TXT du domaine sama-stock.com)
+  verification: { google: "1YWrPI7cLNAnY24ieb22KLuEIbNOhNjlSoA1f-jrtZ8" },
 };
 
 export const viewport: Viewport = {
