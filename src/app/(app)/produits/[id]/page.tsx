@@ -43,7 +43,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
         description={[product.categoryName, product.reference].filter(Boolean).join(" · ") || undefined}
         actions={
           writable && (
-            <>
+            <div className="grid w-full auto-cols-fr grid-flow-col gap-2 sm:flex sm:w-auto">
               {ctx.can("stock.in") && !product.archived && (
                 <Button asChild variant="outline">
                   <Link href={`/stock/entree?produit=${product.id}`}>
@@ -54,14 +54,19 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
               {ctx.can("stock.adjust") && !product.archived && (
                 <Button asChild variant="outline">
                   <Link href={`/stock/sortie?produit=${product.id}`}>
-                    <ArrowUpFromLine /> Sortie / perte
+                    <ArrowUpFromLine />
+                    <span>
+                      Sortie<span className="max-sm:hidden"> / perte</span>
+                    </span>
                   </Link>
                 </Button>
               )}
               {ctx.can("products.manage") && (
                 <>
-                  <ArchiveProductButton id={product.id} archived={product.archived} />
-                  {!product.hasHistory && <DeleteProductButton id={product.id} name={product.name} />}
+                  <span className="contents max-md:hidden">
+                    <ArchiveProductButton id={product.id} archived={product.archived} />
+                    {!product.hasHistory && <DeleteProductButton id={product.id} name={product.name} />}
+                  </span>
                   <Button asChild>
                     <Link href={`/produits/${product.id}/modifier`}>
                       <Pencil /> Modifier
@@ -69,19 +74,18 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
                   </Button>
                 </>
               )}
-            </>
+            </div>
           )
         }
       />
 
       <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-3">
-        <Card>
+        <Card className="max-lg:order-2">
           <CardContent className="space-y-5">
-            <ProductThumb
-              name={product.name}
-              imageUrl={product.imageUrl}
-              className="aspect-[4/3] size-auto w-full rounded-xl text-4xl"
-            />
+            {/* Sans photo, pas de grand carré d'initiales : le nom est déjà en titre */}
+            {product.imageUrl && (
+              <ProductThumb name={product.name} imageUrl={product.imageUrl} className="aspect-[4/3] size-auto w-full rounded-xl" />
+            )}
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <dt className="text-muted-foreground">Prix de vente</dt>
@@ -117,14 +121,14 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        <div className="space-y-5 xl:col-span-2">
+        <div className="space-y-5 max-lg:contents xl:col-span-2">
           {current && (
-            <Card>
+            <Card className="max-lg:order-1">
               <CardContent>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Disponible · {current.locationName}</p>
-                    <p className="num mt-1 text-4xl font-semibold tracking-tight">
+                    <p className="amount mt-1 text-4xl font-bold">
                       {formatQty(current.available, product.unit)}
                     </p>
                   </div>
@@ -166,7 +170,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
             </Card>
           )}
 
-          <Card>
+          <Card className="max-lg:order-3">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base font-semibold">
                 <History className="size-4 text-primary" /> Derniers mouvements
@@ -209,6 +213,13 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
         </div>
+
+        {writable && ctx.can("products.manage") && (
+          <div className="order-4 grid gap-2 md:hidden">
+            <ArchiveProductButton id={product.id} archived={product.archived} />
+            {!product.hasHistory && <DeleteProductButton id={product.id} name={product.name} />}
+          </div>
+        )}
       </div>
     </>
   );

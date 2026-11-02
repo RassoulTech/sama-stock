@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NO_CATEGORY } from "@/lib/filters";
 import { formatFCFA, formatQty } from "@/lib/format";
+import { STOCK_STATUS_LABELS } from "@/lib/domain/stock";
+import { cn } from "@/lib/utils";
 import type { ProductRow } from "@/server/queries/products";
 import { ProductThumb } from "./product-thumb";
 
@@ -78,34 +80,36 @@ export function ProductList({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row">
         <SearchInput value={q} onChange={setQ} placeholder="Rechercher un produit…" className="flex-1" />
-        {categories.length > 0 && (
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-full sm:w-56" aria-label="Catégorie">
+        <div className={cn("grid gap-3 sm:flex", categories.length > 0 && "grid-cols-2")}>
+          {categories.length > 0 && (
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger className="w-full min-w-0 sm:w-56" aria-label="Catégorie">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les catégories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+                {hasUncategorized && <SelectItem value={NO_CATEGORY}>Sans catégorie</SelectItem>}
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
+            <SelectTrigger className="w-full min-w-0 sm:w-60" aria-label="Trier">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes les catégories</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
+              {(Object.entries(SORTS) as [Sort, string][]).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
                 </SelectItem>
               ))}
-              {hasUncategorized && <SelectItem value={NO_CATEGORY}>Sans catégorie</SelectItem>}
             </SelectContent>
           </Select>
-        )}
-        <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-          <SelectTrigger className="w-full sm:w-60" aria-label="Trier">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.entries(SORTS) as [Sort, string][]).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <FilterChips
@@ -149,31 +153,35 @@ export function ProductList({
         <>
           <div ref={setTop} className="scroll-mt-20" />
           {/* Mobile : cartes */}
-          <ul className="space-y-2 md:hidden">
+          <ul className="surface divide-y overflow-hidden md:hidden">
             {pager.items.map((p) => (
               <li key={p.id}>
-                <Link
-                  href={`/produits/${p.id}`}
-                  className="flex items-center gap-3 rounded-xl bg-card p-3 border active:bg-muted"
-                >
-                  <ProductThumb name={p.name} imageUrl={p.imageUrl} />
+                <Link href={`/produits/${p.id}`} className="flex items-center gap-3 px-3.5 py-3 transition-colors active:bg-muted">
+                  <ProductThumb name={p.name} imageUrl={p.imageUrl} className="size-12 rounded-xl" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{p.name}</p>
-                    <p className="num text-sm text-muted-foreground">
-                      {formatFCFA(p.salePrice)} · {formatQty(p.available, p.unit)}
-                    </p>
+                    <p className="line-clamp-2 text-[0.9375rem] leading-snug font-semibold">{p.name}</p>
+                    <p className="amount mt-0.5 text-sm font-bold">{formatFCFA(p.salePrice)}</p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <StockBadge status={p.status} />
+                  <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                    <span className="num text-sm font-semibold">{formatQty(p.available, p.unit)}</span>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 text-xs font-medium",
+                        p.status === "out" ? "text-destructive" : p.status === "low" ? "text-warning dark:text-saffron" : "text-success",
+                      )}
+                    >
+                      <span aria-hidden className="size-1.5 rounded-full bg-current" />
+                      {STOCK_STATUS_LABELS[p.status]}
+                    </span>
                   </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground/60" />
                 </Link>
               </li>
             ))}
           </ul>
 
           {/* Ordinateur : tableau */}
-          <div className="hidden overflow-hidden rounded-xl bg-card border md:block">
+          <div className="surface hidden overflow-hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
