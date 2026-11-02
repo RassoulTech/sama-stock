@@ -4,9 +4,9 @@ import { CustomerDialog } from "@/components/customers/customer-dialog";
 import { CustomerList } from "@/components/customers/customer-list";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
 import { formatFCFA } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { requireContext } from "@/server/context";
 import { listCustomers } from "@/server/queries/customers";
 
@@ -30,7 +30,11 @@ export default async function ClientsPage() {
 
   return (
     <>
-      <PageHeader title="Clients et crédits" description={`${customers.length} client(s)`} actions={addButton} />
+      <PageHeader
+        title="Clients et crédits"
+        description={`${customers.length} client${customers.length > 1 ? "s" : ""}`}
+        actions={addButton}
+      />
       {customers.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -40,16 +44,33 @@ export default async function ClientsPage() {
         />
       ) : (
         <>
-          <div className="mb-5 grid gap-3 sm:grid-cols-2">
-            <StatCard
-              label="Total à encaisser"
-              value={formatFCFA(totalDebt)}
-              icon={HandCoins}
-              tone={totalDebt > 0 ? "danger" : "primary"}
-              hint={`${debtors} client${debtors > 1 ? "s" : ""} avec une dette`}
-            />
-            <StatCard label="Clients enregistrés" value={customers.length} icon={Users} tone="neutral" />
-          </div>
+          {/* Ce que les clients doivent, en une carte aux couleurs de la boutique */}
+          <section
+            aria-label="Crédits clients"
+            className="relative mb-6 overflow-hidden rounded-[1.75rem] p-5 text-primary-foreground shadow-[0_22px_44px_-24px_var(--sidebar)] sm:max-w-xl"
+            style={{ backgroundImage: "linear-gradient(150deg, var(--sidebar) 0%, color-mix(in oklab, var(--sidebar) 70%, black) 100%)" }}
+          >
+            <div aria-hidden className="absolute -top-20 -right-12 size-52 rounded-full bg-white/[0.07]" />
+            <div className="relative flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium opacity-80">Total à encaisser</p>
+                <p className="amount mt-1 text-[2rem] leading-none font-bold">{formatFCFA(totalDebt)}</p>
+              </div>
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/12">
+                <HandCoins className="size-5" />
+              </span>
+            </div>
+            <div className="relative mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10">
+              <div className="bg-white/[0.04] px-3 py-3">
+                <p className="text-xs opacity-75">Doivent de l&apos;argent</p>
+                <p className={cn("amount mt-0.5 text-xl font-bold", debtors > 0 && "text-saffron")}>{debtors}</p>
+              </div>
+              <div className="bg-white/[0.04] px-3 py-3">
+                <p className="text-xs opacity-75">Clients enregistrés</p>
+                <p className="amount mt-0.5 text-xl font-bold">{customers.length}</p>
+              </div>
+            </div>
+          </section>
           <CustomerList customers={customers} />
         </>
       )}
