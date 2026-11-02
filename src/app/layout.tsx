@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Serif, Inter } from "next/font/google";
+import { Instrument_Serif, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +9,14 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+/** Titres, grands montants et chiffres clés de l'application : plus affirmés que le texte courant. */
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -55,7 +63,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${inter.variable} ${serif.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="fr" className={`${inter.variable} ${jakarta.variable} ${serif.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full">
         <ThemeProvider>
           <TooltipProvider>

@@ -30,11 +30,11 @@ export function StatCard({
     <>
       <div className="flex items-start justify-between gap-2">
         <p className="min-w-0 text-[0.8125rem] leading-snug font-medium text-muted-foreground">{label}</p>
-        <span className={cn("grid size-8 shrink-0 place-items-center rounded-lg", TONES[tone])}>
-          <Icon className="size-4" />
+        <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl", TONES[tone])}>
+          <Icon className="size-[1.125rem]" />
         </span>
       </div>
-      <p className="num mt-3 flex min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 text-[1.25rem] leading-none font-semibold tracking-[-0.03em] min-[400px]:text-[1.375rem] sm:text-[1.5rem] xl:text-[1.625rem]">
+      <p className="amount mt-3 flex min-w-0 flex-wrap items-baseline gap-x-1 gap-y-0.5 text-[1.25rem] leading-none font-bold min-[400px]:text-[1.375rem] sm:text-[1.5rem] xl:text-[1.625rem]">
         {typeof value === "string" && value.endsWith(" FCFA") ? (
           <>
             <span className="whitespace-nowrap">{value.slice(0, -5)}</span>
@@ -47,7 +47,11 @@ export function StatCard({
       {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
     </>
   );
-  const classes = cn("surface block p-4 sm:p-5", href && "transition-colors hover:border-primary/40", className);
+  const classes = cn(
+    "surface block p-4 sm:p-5",
+    href && "transition-[border-color,box-shadow] duration-200 hover:border-primary/40 hover:shadow-[0_1px_2px_rgb(11_19_16/0.05),0_14px_32px_-16px_rgb(11_19_16/0.25)]",
+    className,
+  );
   return href ? (
     <Link href={href} className={classes}>
       {body}

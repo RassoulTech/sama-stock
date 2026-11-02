@@ -10,6 +10,7 @@ import {
   HandCoins,
   Package,
   Plus,
+  ReceiptText,
   ShoppingCart,
   TrendingUp,
   Wallet,
@@ -40,6 +41,10 @@ import { DemoGuide } from "@/components/demo/demo-guide";
 import { DEMO_SPECS } from "@/server/demo/specs";
 
 export const metadata: Metadata = { title: "Tableau de bord" };
+
+/** Lien « Tout voir » des cartes : pastille discrète. */
+const SEE_ALL =
+  "inline-flex h-8 items-center rounded-full bg-muted px-3 text-xs font-semibold text-foreground transition-colors hover:bg-accent hover:text-primary";
 
 const todayLabel = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Dakar" });
 
@@ -274,7 +279,7 @@ export default async function DashboardPage() {
             </CardTitle>
             {alertCount > 0 && (
               <CardAction>
-                <Link href="/produits?etat=bas" className="text-sm font-semibold text-primary hover:underline">
+                <Link href="/produits?etat=bas" className={SEE_ALL}>
                   Tout voir
                 </Link>
               </CardAction>
@@ -290,8 +295,8 @@ export default async function DashboardPage() {
               <ul className="space-y-2">
                 {alerts.map((p) => (
                   <li key={p.id}>
-                    <Link href={`/produits/${p.id}`} className="flex items-center gap-3 rounded-xl p-1.5 hover:bg-muted/60">
-                      <ProductThumb name={p.name} imageUrl={p.imageUrl} className="size-9 rounded-lg text-xs" />
+                    <Link href={`/produits/${p.id}`} className="-mx-2 flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted/60">
+                      <ProductThumb name={p.name} imageUrl={p.imageUrl} className="size-10 rounded-xl text-xs" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">{p.name}</p>
                         <p className="num text-xs text-muted-foreground">Reste {formatQty(p.available, p.unit)}</p>
@@ -320,7 +325,7 @@ export default async function DashboardPage() {
                 <span className="num rounded-full bg-muted px-2 text-xs">{orders.length}</span>
               </CardTitle>
               <CardAction>
-                <Link href="/commandes" className="text-sm font-semibold text-primary hover:underline">
+                <Link href="/commandes" className={SEE_ALL}>
                   Tout voir
                 </Link>
               </CardAction>
@@ -332,8 +337,11 @@ export default async function DashboardPage() {
                 <ul className="divide-y">
                   {orders.slice(0, 5).map((o) => (
                     <li key={o.id}>
-                      <Link href={`/commandes/${o.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-primary">
-                        <span className="min-w-0">
+                      <Link href={`/commandes/${o.id}`} className="flex items-center gap-3 py-3 transition-colors hover:text-primary">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                          <Bike className="size-[1.125rem]" />
+                        </span>
+                        <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-semibold">
                             {o.number} · {o.customerName}
                           </span>
@@ -356,7 +364,7 @@ export default async function DashboardPage() {
                 <ShoppingCart className="size-4 text-primary" /> {seller ? "Mes dernières ventes" : "Dernières ventes"}
               </CardTitle>
               <CardAction>
-                <Link href="/ventes" className="text-sm font-semibold text-primary hover:underline">
+                <Link href="/ventes" className={SEE_ALL}>
                   Tout voir
                 </Link>
               </CardAction>
@@ -368,8 +376,11 @@ export default async function DashboardPage() {
                 <ul className="divide-y">
                   {recent.map((s) => (
                     <li key={s.id}>
-                      <Link href={`/ventes/${s.id}`} className="flex items-center justify-between gap-3 py-2.5 hover:text-primary">
-                        <span>
+                      <Link href={`/ventes/${s.id}`} className="flex items-center gap-3 py-3 transition-colors hover:text-primary">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                          <ReceiptText className="size-[1.125rem]" />
+                        </span>
+                        <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold">{s.number}</span>
                           <span className="text-xs text-muted-foreground">{formatDateTime(s.createdAt)}</span>
                         </span>
@@ -387,19 +398,26 @@ export default async function DashboardPage() {
         )}
 
         {value !== null && (
-          <Card className="bg-primary text-primary-foreground ring-primary">
-            <CardContent className="flex h-full flex-col justify-between gap-6">
+          <Card
+            className="relative border-0 text-primary-foreground shadow-[0_22px_44px_-24px_var(--sidebar)]"
+            style={{ backgroundImage: "linear-gradient(150deg, var(--sidebar) 0%, color-mix(in oklab, var(--sidebar) 70%, black) 100%)" }}
+          >
+            <div aria-hidden className="absolute -top-16 -right-12 size-44 rounded-full bg-white/[0.07]" />
+            <CardContent className="relative flex h-full flex-col justify-between gap-6">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium opacity-80">Valeur de votre stock</p>
                 <Package className="size-5 opacity-80" />
               </div>
               <div>
-                <p className="num text-3xl font-semibold tracking-tight">{formatFCFA(value)}</p>
+                <p className="amount text-3xl font-bold">{formatFCFA(value)}</p>
                 <p className="text-sm opacity-80">
                   {productCount} produit{productCount > 1 ? "s" : ""} · au prix d&apos;achat moyen
                 </p>
               </div>
-              <Link href="/stock" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline">
+              <Link
+                href="/stock"
+                className="inline-flex h-10 w-fit items-center gap-1.5 rounded-full bg-white/12 px-4 text-sm font-semibold transition-colors hover:bg-white/20"
+              >
                 Voir le stock <ArrowRight className="size-4" />
               </Link>
             </CardContent>

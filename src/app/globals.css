@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-serif), ui-serif, Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -89,7 +89,7 @@
   --chart-3: #3ba57f;
   --chart-4: #8aa89a;
   --chart-5: #b45309;
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   /* Menu latéral vert de la marque en mode clair (le contenu reste blanc) */
   --sidebar: #0a5c42;
   --sidebar-foreground: #ffffff;
@@ -164,7 +164,8 @@
   h1,
   h2,
   h3 {
-    letter-spacing: -0.022em;
+    font-family: var(--font-heading);
+    letter-spacing: -0.025em;
   }
 }
 
@@ -174,9 +175,15 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum", "cv11", "ss01";
   }
-  /* Surface standard : carte bordée, ombre très légère */
+  /* Surface standard : carte bordée, ombre douce sur deux niveaux */
   .surface {
-    @apply rounded-xl border bg-card shadow-[0_1px_2px_rgb(11_19_16/0.04)];
+    @apply rounded-2xl border bg-card shadow-[0_1px_2px_rgb(11_19_16/0.04),0_10px_28px_-18px_rgb(11_19_16/0.18)];
+  }
+  /* Grands montants : police des titres, chiffres alignés */
+  .amount {
+    font-family: var(--font-heading);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
