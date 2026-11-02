@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Menu, Search, Store, UserRound } from "lucide-react";
+import { ArrowLeft, ChevronRight, Ellipsis, Plus, Search, Store, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -9,7 +9,7 @@ import { NavIconView } from "@/components/shell/nav-icon";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ADMIN_BOTTOM_NAV, ADMIN_NAV, ADMIN_NAV_LABELS, type NavBadges } from "./admin-nav";
@@ -123,7 +123,10 @@ export function AdminSearchButton({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** Barre du bas sur téléphone : 4 rubriques principales et un menu complet. */
+/**
+ * Barre du bas sur téléphone, comme dans l'application : pilule flottante, la rubrique ouverte montre son nom, les
+ * autres leur icône ; au centre, le rond « Nouvelle licence ». « ⋯ » ouvre toutes les rubriques.
+ */
 export function AdminBottomNav({
   badges,
   user,
@@ -138,62 +141,84 @@ export function AdminBottomNav({
   const activeHref = ADMIN_NAV.filter((i) => isActive(pathname, i.href)).sort((a, b) => b.href.length - a.href.length)[0]?.href;
   const main = ADMIN_NAV.filter((i) => ADMIN_BOTTOM_NAV.includes(i.href));
   const menuAlert = ADMIN_NAV.some((i) => !ADMIN_BOTTOM_NAV.includes(i.href) && badges[i.href]?.tone === "alert");
+  const inMenu = activeHref !== undefined && !ADMIN_BOTTOM_NAV.includes(activeHref);
+  const newLicence = pathname.startsWith("/admin/licences/nouveau");
+
+  const tab = (item: (typeof ADMIN_NAV)[number]) => {
+    const active = item.href === activeHref && !newLicence;
+    const badge = badges[item.href];
+    const label = item.short ?? item.label;
+    return (
+      <li key={item.href} className="min-w-0">
+        <Link
+          href={item.href}
+          aria-label={active ? undefined : label}
+          aria-current={active ? "page" : undefined}
+          className={cn(
+            "flex h-11 items-center justify-center gap-1.5 rounded-full text-muted-foreground transition-[background-color,color,padding] active:scale-95",
+            active ? "bg-muted px-4 text-[13px] font-semibold text-foreground" : "w-11",
+          )}
+        >
+          <span className="relative shrink-0">
+            <NavIconView icon={item.icon} className="size-[21px]" />
+            {badge?.tone === "alert" && (
+              <span className="num absolute -top-1.5 -right-2.5 min-w-4 rounded-full bg-saffron px-1 text-center text-[10px] leading-4 font-bold text-saffron-foreground ring-2 ring-card">
+                {badge.value}
+              </span>
+            )}
+          </span>
+          {active && <span className="truncate">{label}</span>}
+        </Link>
+      </li>
+    );
+  };
 
   return (
-    <nav
-      aria-label="Administration"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-safe backdrop-blur supports-[backdrop-filter]:bg-card/85 lg:hidden"
-    >
-      <ul className="mx-auto grid max-w-lg grid-cols-5">
-        {main.map((item) => {
-          const active = item.href === activeHref;
-          const badge = badges[item.href];
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground",
-                  active && "font-semibold text-primary",
-                )}
-              >
-                <span className="relative">
-                  <NavIconView icon={item.icon} className="size-[22px]" />
-                  {badge?.tone === "alert" && (
-                    <span className="num absolute -top-1.5 -right-2.5 min-w-4 rounded-full bg-saffron px-1 text-center text-[10px] leading-4 font-bold text-saffron-foreground ring-2 ring-card">
-                      {badge.value}
-                    </span>
-                  )}
-                </span>
-                {item.short ?? item.label}
-                {active && <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-primary" />}
-              </Link>
-            </li>
-          );
-        })}
+    <nav aria-label="Administration" className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-safe lg:hidden">
+      <ul className="pointer-events-auto mx-auto mb-2 flex h-14 max-w-md items-center justify-between gap-1 rounded-full border bg-card/95 px-1.5 shadow-[0_10px_30px_-12px_rgb(0_0_0/0.28)] backdrop-blur supports-[backdrop-filter]:bg-card/85">
+        {main.slice(0, 2).map(tab)}
+        <li>
+          <Link
+            href="/admin/licences/nouveau"
+            aria-label="Nouvelle licence"
+            aria-current={newLicence ? "page" : undefined}
+            className={cn(
+              "grid size-11 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_16px_-6px_var(--primary)] transition-transform active:scale-95",
+              newLicence && "ring-2 ring-primary/30 ring-offset-2 ring-offset-card",
+            )}
+          >
+            <Plus className="size-5" />
+          </Link>
+        </li>
+        {main.slice(2).map(tab)}
         <li>
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="relative flex h-16 w-full flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground"
+            aria-label="Toutes les rubriques"
+            className={cn(
+              "flex h-11 items-center justify-center gap-1.5 rounded-full text-muted-foreground transition-colors active:scale-95",
+              inMenu || open ? "bg-muted px-4 text-[13px] font-semibold text-foreground" : "w-11",
+            )}
           >
-            <span className="relative">
-              <Menu className="size-[22px]" aria-hidden />
+            <span className="relative shrink-0">
+              <Ellipsis className="size-[22px]" aria-hidden />
               {menuAlert && <span className="absolute -top-0.5 -right-1 size-2 rounded-full bg-saffron ring-2 ring-card" />}
             </span>
-            Menu
+            {(inMenu || open) && <span>Plus</span>}
           </button>
         </li>
       </ul>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="max-h-[88dvh] gap-0 rounded-t-3xl pb-safe">
-          <SheetHeader className="pb-2">
-            <SheetTitle>Administration</SheetTitle>
+        <SheetContent side="bottom" className="max-h-[88dvh] gap-0 rounded-t-[1.75rem] bg-background">
+          <div aria-hidden className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-muted-foreground/25" />
+          <SheetHeader className="pb-3">
+            <SheetTitle className="text-lg">Administration</SheetTitle>
+            <SheetDescription>Touchez une rubrique pour l&apos;ouvrir.</SheetDescription>
           </SheetHeader>
-          <div className="space-y-5 overflow-y-auto px-4 pb-6">
-            <div className="flex items-center gap-3 rounded-xl border bg-muted/40 p-3">
+          <div className="space-y-4 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            <div className="flex items-center gap-3 rounded-2xl border bg-card p-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                 {initials(user.name || user.email)}
               </span>
@@ -204,41 +229,54 @@ export function AdminBottomNav({
             </div>
             {(["main", "manage", "admin"] as const).map((group) => (
               <section key={group}>
-                <p className="mb-2 px-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{ADMIN_NAV_LABELS[group]}</p>
-                <div className="grid grid-cols-3 gap-2">
+                <p className="mb-1.5 px-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{ADMIN_NAV_LABELS[group]}</p>
+                <ul className="divide-y overflow-hidden rounded-2xl border bg-card">
                   {ADMIN_NAV.filter((i) => i.group === group).map((item) => {
                     const badge = badges[item.href];
+                    const active = item.href === activeHref;
                     return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className={cn(
-                          "relative flex flex-col items-center gap-2 rounded-xl border bg-card p-3 text-center text-xs font-medium",
-                          item.href === activeHref && "border-primary bg-accent text-accent-foreground",
-                        )}
-                      >
-                        <span className="grid size-10 place-items-center rounded-xl bg-muted">
-                          <NavIconView icon={item.icon} className="size-5" />
-                        </span>
-                        {item.short ?? item.label}
-                        {badge && (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => setOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 text-[0.9375rem] font-medium transition-colors active:bg-muted",
+                            active && "bg-accent/60 text-accent-foreground",
+                          )}
+                        >
                           <span
                             className={cn(
-                              "num absolute top-2 right-2 min-w-5 rounded-full px-1.5 text-[10px] leading-5 font-bold",
-                              badge.tone === "alert" ? "bg-saffron text-saffron-foreground" : "bg-muted text-muted-foreground",
+                              "grid size-9 shrink-0 place-items-center rounded-xl",
+                              active ? "bg-primary text-primary-foreground" : "bg-accent text-primary",
                             )}
                           >
-                            {badge.value}
+                            <NavIconView icon={item.icon} className="size-[18px]" />
                           </span>
-                        )}
-                      </Link>
+                          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                          {badge && (
+                            <span
+                              className={cn(
+                                "num min-w-5 rounded-full px-1.5 text-center text-[11px] leading-5 font-bold",
+                                badge.tone === "alert" ? "bg-saffron text-saffron-foreground" : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {badge.value}
+                            </span>
+                          )}
+                          {active ? (
+                            <span className="size-2 rounded-full bg-primary" aria-hidden />
+                          ) : (
+                            <ChevronRight className="size-4 text-muted-foreground/60" aria-hidden />
+                          )}
+                        </Link>
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               </section>
             ))}
-            <section className="space-y-2 border-t pt-4">
+            <section className="space-y-2 rounded-2xl border bg-card p-2">
               <ThemeToggle withLabel className="w-full justify-start" />
               {showBusinessLink && (
                 <Link

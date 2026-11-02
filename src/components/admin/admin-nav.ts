@@ -16,7 +16,8 @@ export const ADMIN_NAV: NavItem[] = [
 export const ADMIN_NAV_LABELS = { main: "Pilotage", manage: "Gestion", admin: "Sécurité" };
 
 /** Les 4 rubriques de la barre du bas sur téléphone (le reste est dans « Menu »). */
-export const ADMIN_BOTTOM_NAV = ["/admin", "/admin/commerces", "/admin/licences", "/admin/utilisateurs"];
+/** Barre du bas sur téléphone : deux rubriques, le rond « Nouvelle licence », une rubrique ; le reste dans « ⋯ ». */
+export const ADMIN_BOTTOM_NAV = ["/admin", "/admin/commerces", "/admin/licences"];
 
 /** Petit compteur à côté d'une rubrique : « alert » attire l'œil (quelque chose à traiter). */
 export type NavBadges = Partial<Record<string, { value: number; tone: "alert" | "muted" }>>;
