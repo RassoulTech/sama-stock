@@ -1,4 +1,4 @@
-import { Activity, BadgeCheck, Coins, Download, Percent, ShoppingBag, Store, TrendingUp, TriangleAlert, UserRound } from "lucide-react";
+import { Activity, ArrowDownRight, ArrowUpRight, Download, ShoppingBag, Store, TriangleAlert, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuditList } from "@/components/admin/audit-list";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PLAN_STATUS_TONES } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { activationFunnel, adminStats, listAllBusinesses, listAudit, platformOverview, todoLists } from "@/server/queries/admin";
 import { openAppErrorCount } from "@/server/queries/app-errors";
 import { licenseSummary, listLicenseSales } from "@/server/queries/licences";
@@ -57,6 +58,8 @@ export default async function AdminDashboardPage() {
   });
   const today = TODAY.format(new Date());
 
+  const revenueTrend = compareTrend(c.revenue_month, c.revenue_prev, "vs mois dernier", { format: (n) => formatNumber(n) });
+
   return (
     <>
       <PageHeader
@@ -80,27 +83,56 @@ export default async function AdminDashboardPage() {
         </Link>
       )}
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+      {/* Argent du mois en tête, avec les ventes de licences, la conversion et les essais */}
+      <section
+        aria-label="Ventes de licences"
+        className="relative mb-4 overflow-hidden rounded-[1.75rem] p-5 text-white shadow-[0_22px_44px_-24px_var(--sidebar)] sm:p-6"
+        style={{ backgroundImage: "linear-gradient(150deg, var(--sidebar) 0%, color-mix(in oklab, var(--sidebar) 70%, black) 100%)" }}
+      >
+        <div aria-hidden className="absolute -top-24 -right-16 size-64 rounded-full bg-white/[0.07]" />
+        <div className="relative flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium opacity-80">Encaissé ce mois</p>
+            <p className="amount mt-1 text-[2.25rem] leading-none font-bold sm:text-[2.75rem]">{formatFCFA(c.revenue_month)}</p>
+          </div>
+          {revenueTrend && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+                revenueTrend.good ? "bg-white/15 text-white" : "bg-saffron/25 text-saffron",
+              )}
+            >
+              {revenueTrend.up ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
+              {revenueTrend.text}
+            </span>
+          )}
+        </div>
+        <div className="relative mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-2xl bg-white/10">
+          <Link href="/admin/licences" className="bg-white/[0.04] px-3 py-3 transition-colors hover:bg-white/10 sm:px-4">
+            <p className="text-xs opacity-75">Licences vendues</p>
+            <p className="amount mt-0.5 text-xl font-bold">{lic.count}</p>
+            <p className={cn("mt-0.5 text-[11px] leading-snug", lic.due > 0 ? "font-semibold text-saffron" : "opacity-70")}>
+              {lic.due > 0 ? `${formatFCFA(lic.due)} dus` : `${formatFCFA(lic.collected)} reçus`}
+            </p>
+          </Link>
+          <div className="bg-white/[0.04] px-3 py-3 sm:px-4">
+            <p className="text-xs opacity-75">Conversion</p>
+            <p className="amount mt-0.5 text-xl font-bold">{conversion} %</p>
+            <p className="mt-0.5 text-[11px] leading-snug opacity-70">des inscrits</p>
+          </div>
+          <Link href="/admin/commerces?statut=trialing" className="bg-white/[0.04] px-3 py-3 transition-colors hover:bg-white/10 sm:px-4">
+            <p className="text-xs opacity-75">Essais en cours</p>
+            <p className="amount mt-0.5 text-xl font-bold">{stats.trialing}</p>
+            <p className={cn("mt-0.5 text-[11px] leading-snug", todo.trialsEnding.length > 0 ? "font-semibold text-saffron" : "opacity-70")}>
+              {todo.trialsEnding.length > 0 ? `${todo.trialsEnding.length} à 3 j de la fin` : `${stats.expired} terminé${stats.expired > 1 ? "s" : ""}`}
+            </p>
+          </Link>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <AdminStat
           index={0}
-          label="Licences vendues"
-          value={lic.count}
-          hint={lic.due > 0 ? `${formatFCFA(lic.due)} à encaisser` : `${formatFCFA(lic.collected)} encaissés`}
-          icon={BadgeCheck}
-          tone={lic.due > 0 ? "saffron" : "green"}
-          href="/admin/licences"
-        />
-        <AdminStat
-          index={1}
-          label="Encaissé ce mois"
-          value={c.revenue_month}
-          unit="FCFA"
-          trend={compareTrend(c.revenue_month, c.revenue_prev, "vs mois dernier", { format: (n) => formatNumber(n) })}
-          icon={Coins}
-          href="/admin/licences"
-        />
-        <AdminStat
-          index={2}
           label="Commerces inscrits"
           value={stats.total}
           hint={`${c.signups_month} ce mois · ${stats.trialing} en essai`}
@@ -108,9 +140,8 @@ export default async function AdminDashboardPage() {
           icon={Store}
           href="/admin/commerces"
         />
-        <AdminStat index={3} label="Taux de conversion" value={conversion} unit="%" hint="Inscrits qui ont acheté leur licence" icon={Percent} tone="blue" />
         <AdminStat
-          index={4}
+          index={1}
           label="En activité (7 j)"
           value={stats.alive7}
           hint={`sur ${stats.total} · une vente ou du stock`}
@@ -119,7 +150,7 @@ export default async function AdminDashboardPage() {
           href="/admin/commerces?activite=active"
         />
         <AdminStat
-          index={5}
+          index={2}
           label="Vendu par les commerçants"
           value={c.gmv30}
           unit="FCFA"
@@ -128,22 +159,13 @@ export default async function AdminDashboardPage() {
           tone="slate"
         />
         <AdminStat
-          index={6}
+          index={3}
           label="Utilisateurs"
           value={c.users}
           hint={`${c.active_users7} actif${c.active_users7 > 1 ? "s" : ""} (7 j) · ${c.orphan_users} sans commerce`}
           icon={UserRound}
           tone="slate"
           href="/admin/utilisateurs"
-        />
-        <AdminStat
-          index={7}
-          label="Essais en cours"
-          value={stats.trialing}
-          hint={`${todo.trialsEnding.length} se termine${todo.trialsEnding.length > 1 ? "nt" : ""} dans 3 jours · ${stats.expired} terminé${stats.expired > 1 ? "s" : ""}`}
-          icon={TrendingUp}
-          tone={todo.trialsEnding.length > 0 ? "saffron" : "blue"}
-          href="/admin/commerces?statut=trialing"
         />
       </div>
 

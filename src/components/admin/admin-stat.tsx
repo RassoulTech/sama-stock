@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 import { CountUp } from "./count-up";
 
 const TONES = {
-  green: { bar: "bg-primary", tile: "bg-accent text-primary" },
-  blue: { bar: "bg-sky-500", tile: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
-  saffron: { bar: "bg-saffron", tile: "bg-saffron/15 text-warning dark:text-saffron" },
-  red: { bar: "bg-destructive", tile: "bg-destructive/10 text-destructive" },
-  slate: { bar: "bg-muted-foreground/40", tile: "bg-muted text-muted-foreground" },
+  green: { tile: "bg-accent text-primary" },
+  blue: { tile: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
+  saffron: { tile: "bg-saffron/15 text-warning dark:text-saffron" },
+  red: { tile: "bg-destructive/10 text-destructive" },
+  slate: { tile: "bg-muted text-muted-foreground" },
 } as const;
 
 /**
@@ -42,20 +42,14 @@ export function AdminStat({
   const trendGood = trend ? (trend.good ?? trend.up) : false;
   const body = (
     <>
-      <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", colors.bar)} />
       <div className="flex items-start justify-between gap-2">
         <p className="text-[0.8125rem] leading-snug font-medium text-muted-foreground sm:text-sm">{label}</p>
-        <span
-          className={cn(
-            "hidden size-9 shrink-0 place-items-center rounded-lg transition-transform duration-300 group-hover:scale-110 sm:grid",
-            colors.tile,
-          )}
-        >
-          <Icon className="size-[1.125rem]" />
+        <span className={cn("grid size-8 shrink-0 place-items-center rounded-xl sm:size-9", colors.tile)}>
+          <Icon className="size-4 sm:size-[1.125rem]" />
         </span>
       </div>
-      <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1.5 sm:mt-2">
-        <span className="num text-[1.375rem] leading-tight font-semibold tracking-[-0.03em] sm:text-[1.75rem]">
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 sm:mt-3">
+        <span className="amount text-[1.375rem] leading-tight font-bold sm:text-[1.75rem]">
           <CountUp value={value} />
         </span>
         {unit && <span className="text-xs font-medium text-muted-foreground sm:text-sm">{unit}</span>}
@@ -76,7 +70,7 @@ export function AdminStat({
   );
 
   const className = cn(
-    "enter group relative block overflow-hidden rounded-xl border bg-card p-3.5 pl-4.5 shadow-[0_1px_2px_rgb(11_19_16/0.04)] transition-[box-shadow,border-color] duration-300 sm:p-5 sm:pl-6",
+    "enter surface group relative block overflow-hidden p-4 transition-[box-shadow,border-color] duration-300 sm:p-5",
     href && "hover:border-primary/30 hover:shadow-[0_16px_32px_-18px_rgb(11_19_16/0.3)] focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
   );
   const style = { "--enter-delay": `${index * 60}ms` } as React.CSSProperties;
