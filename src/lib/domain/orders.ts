@@ -24,7 +24,8 @@ const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   new: ["preparing", "shipping", "cancelled"],
   preparing: ["shipping", "cancelled"],
   shipping: ["delivered", "returned"],
-  delivered: [],
+  // Le client rapporte la marchandise après la livraison
+  delivered: ["returned"],
   cancelled: [],
   returned: [],
 };
@@ -50,6 +51,6 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
 /** Effet d'un changement de statut sur le stock physique. */
 export function orderStockEffect(from: OrderStatus, to: OrderStatus): "none" | "out" | "in" {
   if (to === "shipping" && (RESERVING_STATUSES as readonly string[]).includes(from)) return "out";
-  if (from === "shipping" && to === "returned") return "in";
+  if (to === "returned" && (from === "shipping" || from === "delivered")) return "in";
   return "none";
 }

@@ -10,11 +10,11 @@ describe("canTransition", () => {
     expect(canTransition("preparing", "cancelled")).toBe(true);
     expect(canTransition("shipping", "delivered")).toBe(true);
     expect(canTransition("shipping", "returned")).toBe(true);
+    expect(canTransition("delivered", "returned")).toBe(true);
   });
   it("refuses going backwards or leaving a final state", () => {
     expect(canTransition("preparing", "new")).toBe(false);
     expect(canTransition("shipping", "cancelled")).toBe(false);
-    expect(canTransition("delivered", "returned")).toBe(false);
     expect(canTransition("cancelled", "new")).toBe(false);
     expect(canTransition("returned", "shipping")).toBe(false);
   });
@@ -32,6 +32,7 @@ describe("orderStockEffect", () => {
     expect(orderStockEffect("new", "preparing")).toBe("none");
     expect(orderStockEffect("preparing", "cancelled")).toBe("none");
     expect(orderStockEffect("shipping", "delivered")).toBe("none");
+    expect(orderStockEffect("delivered", "returned")).toBe("in");
   });
 });
 

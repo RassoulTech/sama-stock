@@ -25,7 +25,7 @@ import { recordOrderPayment, updateOrderStatus } from "@/server/actions/orders";
 const CONFIRM_TEXT: Partial<Record<OrderStatus, string>> = {
   shipping: "Les produits vont sortir du stock.",
   cancelled: "La réservation des produits sera libérée. Cette action est définitive.",
-  returned: "Les produits reviendront en stock. Cette action est définitive.",
+  returned: "Les produits reviendront en stock et la commande ne comptera plus dans le chiffre d'affaires. Pensez à rembourser le client s'il a payé. Cette action est définitive.",
   delivered: "La commande comptera dans votre chiffre d'affaires.",
 };
 

@@ -163,10 +163,10 @@ export default async function CommandePage({ params }: { params: Promise<{ id: s
         </div>
 
         <div className="space-y-5">
-          {writable && !closed && status !== "delivered" && (
+          {writable && !closed && nextStatuses(status).length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="font-semibold">Étape suivante</CardTitle>
+                <CardTitle className="font-semibold">{status === "delivered" ? "Retour du client" : "Étape suivante"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <OrderStatusButtons id={order.id} next={nextStatuses(status)} />
