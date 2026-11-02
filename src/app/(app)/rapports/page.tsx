@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BarList } from "@/components/charts/bar-list";
 import { RevenueProfitChart } from "@/components/charts/revenue-charts";
 import { FilterBar } from "@/components/shared/filter-bar";
+import { PagedList } from "@/components/shared/paged-list";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
@@ -257,7 +258,7 @@ export default async function RapportsPage({ searchParams }: { searchParams: Pro
             {dormant.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucun produit dormant. Votre stock tourne bien.</p>
             ) : (
-              <ul className="divide-y">
+              <PagedList className="divide-y" pageSize={8}>
                 {dormant.map((d) => (
                   <li key={d.id}>
                     <Link href={`/produits/${d.id}`} className="flex items-center justify-between gap-3 py-2.5 text-sm hover:text-primary">
@@ -271,7 +272,7 @@ export default async function RapportsPage({ searchParams }: { searchParams: Pro
                     </Link>
                   </li>
                 ))}
-              </ul>
+              </PagedList>
             )}
           </CardContent>
         </Card>

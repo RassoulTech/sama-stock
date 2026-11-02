@@ -378,3 +378,10 @@
 .legal dd {
   font-weight: 500;
 }
+
+/* Listes en pages (PagedList) : les lignes des autres pages sont cachées à l'écran, mais imprimées */
+@media screen {
+  [data-hors-page] {
+    display: none !important;
+  }
+}

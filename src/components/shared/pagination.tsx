@@ -4,7 +4,9 @@ import type { SearchParams } from "@/lib/filters";
 import { PAGE_SIZE, pageCount, pageHref, pageItems, rangeLabel } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 
-const ITEM = "inline-flex h-10 min-w-10 items-center justify-center gap-1 rounded-lg px-3 text-sm font-medium transition-colors";
+// Téléphone d'abord : boutons de 44 px, plus serrés sur ordinateur
+const ITEM =
+  "inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-xl px-3 text-sm font-medium transition-colors sm:h-10 sm:min-w-10 sm:rounded-lg";
 
 /**
  * Pages d'une liste : « Précédent · 1 … 5 6 7 … 12 · Suivant » (« 3 / 12 » sur téléphone).
@@ -30,21 +32,25 @@ export function PaginationNav({
   const current = Math.min(page, count);
 
   return (
-    <nav aria-label="Pages" className={cn("mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between print:hidden", className)}>
-      <p className="num text-xs text-muted-foreground">{rangeLabel(current, total, pageSize)}</p>
-      <div className="flex items-center gap-1">
+    <nav
+      aria-label="Pages"
+      className={cn("mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between print:hidden", className)}
+    >
+      <p className="num order-last text-center text-xs text-muted-foreground sm:order-none sm:text-left">
+        {rangeLabel(current, total, pageSize)}
+      </p>
+      {/* Téléphone : « ‹ Précédent · 3 / 12 · Suivant › » sur toute la largeur ; ordinateur : les numéros */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:gap-1">
         {current > 1 ? (
-          <PageItem to={current - 1} href={href} onSelect={onSelect} className="border bg-card hover:bg-muted" rel="prev">
-            <ChevronLeft className="size-4" /> <span className="hidden sm:inline">Précédent</span>
-            <span className="sr-only sm:hidden">Page précédente</span>
+          <PageItem to={current - 1} href={href} onSelect={onSelect} className="border bg-card shadow-[0_1px_2px_rgb(11_19_16/0.05)] hover:bg-muted" rel="prev">
+            <ChevronLeft className="size-4" /> Précédent
           </PageItem>
         ) : (
           <span className={cn(ITEM, "border bg-card opacity-40")} aria-hidden>
-            <ChevronLeft className="size-4" /> <span className="hidden sm:inline">Précédent</span>
+            <ChevronLeft className="size-4" /> Précédent
           </span>
         )}
-        {/* Sur téléphone : « 3 / 12 » à la place des numéros */}
-        <span className="num px-3 text-sm font-medium sm:hidden">
+        <span className="num min-w-16 text-center text-sm font-semibold sm:hidden">
           {current} / {count}
         </span>
         {pageItems(current, count).map((item, i) =>
@@ -63,13 +69,12 @@ export function PaginationNav({
           ),
         )}
         {current < count ? (
-          <PageItem to={current + 1} href={href} onSelect={onSelect} className="border bg-card hover:bg-muted" rel="next">
-            <span className="hidden sm:inline">Suivant</span>
-            <span className="sr-only sm:hidden">Page suivante</span> <ChevronRight className="size-4" />
+          <PageItem to={current + 1} href={href} onSelect={onSelect} className="border bg-card shadow-[0_1px_2px_rgb(11_19_16/0.05)] hover:bg-muted" rel="next">
+            Suivant <ChevronRight className="size-4" />
           </PageItem>
         ) : (
           <span className={cn(ITEM, "border bg-card opacity-40")} aria-hidden>
-            <span className="hidden sm:inline">Suivant</span> <ChevronRight className="size-4" />
+            Suivant <ChevronRight className="size-4" />
           </span>
         )}
       </div>

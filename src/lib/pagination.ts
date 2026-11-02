@@ -1,7 +1,7 @@
 import { param, type SearchParams } from "./filters";
 
 /** Nombre de lignes par page dans les listes (ventes, commandes, clients, admin…). */
-export const PAGE_SIZE = 30;
+export const PAGE_SIZE = 20;
 
 /** Numéro de page demandé dans l'adresse (?page=3), 1 par défaut. */
 export function readPage(params: SearchParams): number {

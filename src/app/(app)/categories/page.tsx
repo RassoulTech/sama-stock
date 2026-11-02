@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CategoryDialog } from "@/components/products/category-dialog";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PagedList } from "@/components/shared/paged-list";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { NO_CATEGORY, presetRange } from "@/lib/filters";
@@ -73,7 +74,7 @@ export default async function CategoriesPage() {
           action={addButton}
         />
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <PagedList className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {rows.map((c) => {
             const s = salesById.get(c.id ?? NO_CATEGORY);
             return (
@@ -139,7 +140,7 @@ export default async function CategoriesPage() {
               </li>
             );
           })}
-        </ul>
+        </PagedList>
       )}
 
       {showSales && rows.length > 0 && (

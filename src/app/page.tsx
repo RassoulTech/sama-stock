@@ -265,7 +265,9 @@ function structuredData() {
       {
         "@type": "WebSite",
         "@id": `${SITE_URL}/#site`,
+        // Nom du site dans les résultats Google, avec l'orthographe sans espace souvent tapée
         name: SITE_NAME,
+        alternateName: ["SamaStock", "sama-stock.com"],
         url: SITE_URL,
         inLanguage: "fr",
         publisher: { "@id": `${SITE_URL}/#organisation` },

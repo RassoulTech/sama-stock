@@ -41,7 +41,12 @@ export const metadata: Metadata = {
   // Déclarés ici (et non par fichiers) pour que la page de connexion d'une boutique puisse les remplacer
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    // Google affiche l'icône dans ses résultats : il veut un carré multiple de 48 px (favicon.ico 16/32/48, PNG 192)
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },

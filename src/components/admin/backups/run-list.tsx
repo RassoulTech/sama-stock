@@ -3,6 +3,7 @@
 import { ChevronDown, Download, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
 import { Button } from "@/components/ui/button";
 import type { ImpactLine } from "@/lib/backup/compare";
 import type { RunKind, RunState, RunSummary } from "@/lib/backup/format";
@@ -33,6 +34,7 @@ export function RunList({ runs }: { runs: RunSummary[] }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [target, setTarget] = useState<RestoreTarget | null>(null);
   const [lines, setLines] = useState<ImpactLine[] | null>(null);
+  const { setTop, items, ...pager } = usePaged(runs, "");
 
   async function toggle(runId: string) {
     if (open === runId) {
@@ -65,8 +67,9 @@ export function RunList({ runs }: { runs: RunSummary[] }) {
 
   return (
     <>
+      <div ref={setTop} className="scroll-mt-20" />
       <ul className="divide-y rounded-xl border">
-        {runs.map((r) => {
+        {items.map((r) => {
           const state = STATES[r.state];
           return (
             <li key={r.runId}>
@@ -116,6 +119,7 @@ export function RunList({ runs }: { runs: RunSummary[] }) {
           );
         })}
       </ul>
+      <ClientPagination pager={{ ...pager, items }} />
       <RestoreDialog target={target} lines={lines} onClose={() => setTarget(null)} />
     </>
   );

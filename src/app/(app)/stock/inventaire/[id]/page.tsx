@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { PagedList } from "@/components/shared/paged-list";
 import { PageHeader } from "@/components/shared/page-header";
 import { PrintButton } from "@/components/sales/print-button";
 import { SignedQty } from "@/components/stock/movement-label";
@@ -37,7 +38,7 @@ export default async function InventaireDetailPage({ params }: { params: Promise
 
       <Card>
         <CardContent className="p-0">
-          <ul className="divide-y">
+          <PagedList className="divide-y">
             {inv.lines.map((l) => (
               <li key={l.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                 <p className="min-w-0 truncate font-medium">{l.productName}</p>
@@ -49,7 +50,7 @@ export default async function InventaireDetailPage({ params }: { params: Promise
                 </div>
               </li>
             ))}
-          </ul>
+          </PagedList>
         </CardContent>
       </Card>
       <p className="mt-3 text-xs text-muted-foreground">
