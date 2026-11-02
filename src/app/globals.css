@@ -179,11 +179,13 @@
   .surface {
     @apply rounded-2xl border bg-card shadow-[0_1px_2px_rgb(11_19_16/0.04),0_10px_28px_-18px_rgb(11_19_16/0.18)];
   }
-  /* Grands montants : police des titres, chiffres alignés */
+  /* Grands montants : chiffres alignés et serrés. En Inter : la police des titres dessine l'espace des milliers
+     (U+202F) presque sans largeur, « 10 500 » deviendrait « 10500 ». */
   .amount {
-    font-family: var(--font-heading);
+    font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.03em;
+    font-feature-settings: "tnum", "cv11", "ss01";
+    letter-spacing: -0.035em;
   }
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);

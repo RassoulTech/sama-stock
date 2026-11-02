@@ -156,10 +156,13 @@ export function PosScreen({
 
   const cartPanel = (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between pb-3">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <ShoppingCart className="size-5 text-primary" /> Panier
-          {itemCount > 0 && <span className="num rounded-full bg-primary px-2 text-xs text-primary-foreground">{itemCount}</span>}
+      <div className="flex items-center justify-between pr-10 pb-4 lg:pr-0">
+        <h2 className="flex items-center gap-2.5 text-lg font-bold">
+          <span className="grid size-9 place-items-center rounded-xl bg-accent text-primary">
+            <ShoppingCart className="size-[1.125rem]" />
+          </span>
+          Panier
+          {itemCount > 0 && <span className="num grid h-6 min-w-6 place-items-center rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{itemCount}</span>}
         </h2>
         {itemCount > 0 && (
           <Button variant="ghost" size="sm" onClick={clearCart}>
@@ -168,14 +171,21 @@ export function PosScreen({
         )}
       </div>
       {itemCount === 0 ? (
-        <div className="grid flex-1 place-items-center rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-          Touchez un produit pour l&apos;ajouter au panier.
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed bg-muted/30 p-6 text-center">
+          <span className="grid size-14 place-items-center rounded-2xl bg-card text-muted-foreground shadow-[0_1px_2px_rgb(11_19_16/0.05)]">
+            <ShoppingCart className="size-6" />
+          </span>
+          <span>
+            <span className="block font-semibold">Le panier est vide</span>
+            <span className="mt-0.5 block text-sm text-muted-foreground">Touchez un produit pour l&apos;ajouter.</span>
+          </span>
         </div>
       ) : (
         <ul className="-mx-1 flex-1 space-y-2 overflow-y-auto px-1">
           {lines.map(({ product, qty }) => (
-            <li key={product.id} className="rounded-xl border bg-card p-3">
-              <div className="flex items-start gap-2">
+            <li key={product.id} className="rounded-2xl border bg-card p-3 shadow-[0_1px_2px_rgb(11_19_16/0.04)]">
+              <div className="flex items-start gap-3">
+                <ProductThumb name={product.name} imageUrl={product.imageUrl} className="size-11 rounded-xl text-xs" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{product.name}</p>
                   <LinePrice product={product} price={priceOf(product)} onChange={(p) => setPrice(product.id, p)} />
@@ -219,7 +229,7 @@ export function PosScreen({
                     <Plus className="size-4" />
                   </button>
                 </div>
-                <span className="num font-semibold">{formatFCFA(Math.round(qty * priceOf(product)))}</span>
+                <span className="amount text-base font-bold">{formatFCFA(Math.round(qty * priceOf(product)))}</span>
               </div>
             </li>
           ))}
@@ -331,26 +341,40 @@ export function PosScreen({
                       disabled={out || maxed}
                       onClick={() => add(p.id)}
                       className={cn(
-                        "surface group relative flex h-full w-full flex-col gap-3 p-3 text-left transition-[border-color,box-shadow] hover:border-primary/40 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50",
-                        inCart > 0 && "border-primary ring-1 ring-primary",
+                        "group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border bg-card text-left shadow-[0_1px_2px_rgb(11_19_16/0.04),0_10px_28px_-20px_rgb(11_19_16/0.2)] transition-[border-color,box-shadow,transform] duration-150 hover:border-primary/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:active:scale-100",
+                        inCart > 0 && "border-primary ring-2 ring-primary/20",
                       )}
                     >
-                      {p.imageUrl ? (
-                        <ProductThumb name={p.name} imageUrl={p.imageUrl} className="aspect-[4/3] size-auto w-full" />
-                      ) : (
-                        <ProductThumb name={p.name} imageUrl={null} />
-                      )}
-                      {inCart > 0 && (
-                        <span className="num absolute top-2.5 right-2.5 grid h-6 min-w-6 place-items-center rounded-md bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
-                          {formatQty(inCart)}
-                        </span>
-                      )}
-                      <span className="flex flex-1 flex-col gap-0.5">
-                        <span className="line-clamp-2 text-[0.8125rem] leading-snug font-medium">{p.name}</span>
-                        <span className="num mt-auto pt-1.5 text-[0.9375rem] font-semibold">{formatFCFA(p.salePrice)}</span>
-                        <span className={cn("num text-xs", out ? "font-medium text-destructive" : "text-muted-foreground")}>
+                      <span className="relative block aspect-[16/10] w-full">
+                        <ProductThumb
+                          name={p.name}
+                          imageUrl={p.imageUrl}
+                          className="absolute inset-0 size-full rounded-none text-xl ring-0 ring-inset"
+                        />
+                        <span
+                          className={cn(
+                            "num absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm backdrop-blur-sm",
+                            out ? "bg-destructive text-white" : "bg-card/90 text-foreground",
+                          )}
+                        >
                           {out ? "Rupture" : `${formatQty(p.available, p.unit)} dispo`}
                         </span>
+                        {inCart > 0 && (
+                          <span className="num absolute top-2 right-2 grid h-7 min-w-7 place-items-center rounded-full bg-primary px-2 text-xs font-bold text-primary-foreground shadow-[0_6px_14px_-6px_var(--primary)]">
+                            {formatQty(inCart)}
+                          </span>
+                        )}
+                      </span>
+                      <span className="flex flex-1 items-end gap-2 p-3">
+                        <span className="flex min-w-0 flex-1 flex-col gap-1">
+                          <span className="line-clamp-2 text-[0.8125rem] leading-snug font-medium">{p.name}</span>
+                          <span className="amount text-[0.9375rem] font-bold">{formatFCFA(p.salePrice)}</span>
+                        </span>
+                        {!out && !maxed && (
+                          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                            <Plus className="size-4" />
+                          </span>
+                        )}
                       </span>
                     </button>
                   </li>
@@ -360,7 +384,7 @@ export function PosScreen({
           )}
         </section>
 
-        <aside className="sticky top-24 hidden h-[calc(100dvh-8rem)] rounded-2xl bg-card p-5 border lg:block">
+        <aside className="sticky top-24 hidden h-[calc(100dvh-8rem)] rounded-[1.75rem] border bg-card p-5 shadow-[0_1px_2px_rgb(11_19_16/0.04),0_18px_40px_-24px_rgb(11_19_16/0.25)] lg:block">
           {cartPanel}
         </aside>
       </div>
@@ -376,12 +400,13 @@ export function PosScreen({
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="flex h-14 w-full items-center justify-between rounded-xl bg-primary px-5 text-primary-foreground shadow-xl shadow-primary/30"
+            className="flex h-14 w-full items-center justify-between rounded-full bg-primary pr-5 pl-2 text-primary-foreground shadow-[0_16px_32px_-14px_var(--primary)] transition-transform active:scale-[0.99]"
           >
-            <span className="flex items-center gap-2 font-semibold">
-              <ShoppingCart className="size-5" /> Panier · {itemCount} article{itemCount > 1 ? "s" : ""}
+            <span className="flex items-center gap-2.5 font-semibold">
+              <span className="num grid size-10 place-items-center rounded-full bg-white/15 text-sm font-bold">{itemCount}</span>
+              Voir le panier
             </span>
-            <span className="num text-lg font-semibold">{formatFCFA(total)}</span>
+            <span className="amount text-lg font-bold">{formatFCFA(total)}</span>
           </button>
         </div>
       )}
