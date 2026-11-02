@@ -7,7 +7,6 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { Pagination } from "@/components/shared/pagination";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { param, pickParam, resolvePeriod, type PeriodPreset, type SearchParams } from "@/lib/filters";
 import { formatDateTime, formatFCFA } from "@/lib/format";
@@ -113,29 +112,28 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
           }
         />
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2">
+        <ul className="surface divide-y overflow-hidden">
           {orders.map((o) => (
             <li key={o.id}>
-              <Link
-                href={`/commandes/${o.id}`}
-                className="flex h-full items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:ring-primary/30"
-              >
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
+              <Link href={`/commandes/${o.id}`} className="flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted/50 sm:px-5">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                  <Bike className="size-[1.125rem]" />
+                </span>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-semibold">{o.number}</span>
                     <SaleStatus kind="order" status={o.status} />
-                    <StatusPill tone="gray">{CHANNELS[o.channel as Channel] ?? o.channel}</StatusPill>
                   </div>
-                  <p className="truncate font-medium">{o.customerName ?? "Client inconnu"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDateTime(o.createdAt)} · {o.itemCount} article{o.itemCount > 1 ? "s" : ""}
+                  <p className="truncate text-sm font-medium">{o.customerName ?? "Client inconnu"}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {CHANNELS[o.channel as Channel] ?? o.channel} · {formatDateTime(o.createdAt)} · {o.itemCount} article{o.itemCount > 1 ? "s" : ""}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="num font-semibold">{formatFCFA(o.total)}</span>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="amount font-bold">{formatFCFA(o.total)}</span>
                   <PaymentStatus total={o.total} amountPaid={o.amountPaid} />
                 </div>
-                <ChevronRight className="size-4 text-muted-foreground" />
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground/60" />
               </Link>
             </li>
           ))}
