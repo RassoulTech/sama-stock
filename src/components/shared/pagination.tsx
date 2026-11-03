@@ -10,6 +10,7 @@ const ITEM =
 
 /**
  * Pages d'une liste : « Précédent · 1 … 5 6 7 … 12 · Suivant » (« 3 / 12 » sur téléphone).
+ * Toujours affichée dès qu'il y a une ligne (boutons grisés s'il n'y a qu'une page), cachée pour une liste vide.
  * Avec `href`, ce sont des liens (listes lues sur le serveur) ; avec `onSelect`, des boutons (listes filtrées dans la page).
  */
 export function PaginationNav({
@@ -28,7 +29,7 @@ export function PaginationNav({
   className?: string;
 }) {
   const count = pageCount(total, pageSize);
-  if (count <= 1 && page <= 1) return null;
+  if (total === 0) return null;
   const current = Math.min(page, count);
 
   return (
