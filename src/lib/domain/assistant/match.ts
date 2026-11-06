@@ -74,7 +74,7 @@ export function findByName<T extends Named>(query: string, items: readonly T[]):
   if (prefix.length) return result(prefix.map((n) => n.item));
 
   const fuzzy = named.filter((n) =>
-    said.every((w) => n.words.some((x) => x.startsWith(w) || levenshtein(w, x) <= tolerance(w))),
+    said.every((w) => n.words.some((x) => x.startsWith(w) || levenshtein(w, x) <= (/\d/.test(w) ? 0 : tolerance(w)))),
   );
   return result(fuzzy.map((n) => n.item));
 }

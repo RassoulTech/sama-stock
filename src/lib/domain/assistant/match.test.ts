@@ -56,6 +56,10 @@ describe("findByName", () => {
     expect(findByName("awa ndiaye", customers)).toEqual({ kind: "one", item: customers[0] });
     expect(findByName("Awa", customers)).toEqual({ kind: "many", items: [customers[0], customers[1]] });
   });
+  it("never guesses a different size or quantity", () => {
+    expect(findByName("riz 2kg", products)).toEqual({ kind: "none" });
+    expect(findByName("ciment 60kg", products)).toEqual({ kind: "none" });
+  });
   it("keeps at most 5 candidates", () => {
     const many = Array.from({ length: 8 }, (_, i) => ({ id: `x${i}`, name: `Savon ${i}` }));
     const result = findByName("savon", many);
