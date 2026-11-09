@@ -31,6 +31,7 @@ export function AssistantPanel() {
   const [notice, setNotice] = useState<string | null>(null);
   const [replayUrl, setReplayUrl] = useState<string | null>(null);
   const pressed = useRef(false);
+  const mounted = useRef(false);
   const recording = useRef<{ rec: Recording; startedAt: number; timer: ReturnType<typeof setTimeout> } | null>(null);
   const player = useRef<HTMLAudioElement | null>(null);
 
@@ -38,7 +39,9 @@ export function AssistantPanel() {
   useEffect(() => {
     const rec = recording;
     const audio = player;
+    mounted.current = true;
     return () => {
+      mounted.current = false;
       if (rec.current) {
         clearTimeout(rec.current.timer);
         rec.current.rec.cancel();
@@ -74,6 +77,7 @@ export function AssistantPanel() {
     recording.current = null;
     clearTimeout(current.timer);
     const blob = await current.rec.stop();
+    if (!mounted.current) return;
     if (Date.now() - current.startedAt < MIN_RECORDING_MS || blob.size === 0) {
       setPhase("idle");
       setNotice("Je n'ai rien entendu. Garde le doigt appuyé pendant que tu parles.");
@@ -82,7 +86,9 @@ export function AssistantPanel() {
     setPhase("thinking");
     let audio: string;
     try {
-      audio = toBase64(await toWav16k(blob));
+      const wav = await toWav16k(blob);
+      if (!mounted.current) return;
+      audio = toBase64(wav);
     } catch {
       setPhase("idle");
       setNotice("Impossible de lire l'enregistrement. Réessaie.");
@@ -90,6 +96,7 @@ export function AssistantPanel() {
     }
     const history: HistoryItem[] = turns.slice(-10).map(({ role, text }) => ({ role, text }));
     const res = await askAssistant(audio, history);
+    if (!mounted.current) return;
     if (!res.ok) {
       setPhase("idle");
       setNotice(res.error);
@@ -108,6 +115,7 @@ export function AssistantPanel() {
     }
     setPhase("speaking");
     const voice = await wolofVoice(reply.texte);
+    if (!mounted.current) return;
     if (!voice) {
       setPhase("idle");
       setNotice("Voix wolof indisponible pour le moment : la réponse est écrite ci-dessus.");

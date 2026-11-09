@@ -27,10 +27,10 @@ const DONE: Record<Draft["action"], string> = {
 };
 
 /** Enregistre par l'action existante : mêmes droits, mêmes contrôles qu'à la main. */
-function submit(draft: Draft) {
+function submit(draft: Draft, clientRef: string) {
   switch (draft.action) {
     case "sale":
-      return createSale({ ...draft.payload, clientRef: crypto.randomUUID() });
+      return createSale({ ...draft.payload, clientRef });
     case "purchase":
       return createPurchase(draft.payload);
     case "order":
@@ -62,6 +62,7 @@ function Lines({ lines }: { lines: DraftLine[] }) {
 
 export function DraftCard({ draft }: { draft: Draft }) {
   const router = useRouter();
+  const [clientRef] = useState(() => crypto.randomUUID());
   const offline = useOfflineMode();
   const [state, setState] = useState<"idle" | "saving" | "done" | "cancelled">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +70,7 @@ export function DraftCard({ draft }: { draft: Draft }) {
   async function validate() {
     setState("saving");
     setError(null);
-    const res = await submit(draft).catch(() => ({ ok: false as const, error: "Pas de connexion : rien n'a été enregistré." }));
+    const res = await submit(draft, clientRef).catch(() => ({ ok: false as const, error: "Pas de connexion : rien n'a été enregistré." }));
     if (!res.ok) {
       setState("idle");
       setError(res.error);
