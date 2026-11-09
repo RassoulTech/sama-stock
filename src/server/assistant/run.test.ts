@@ -84,10 +84,12 @@ describe("runAssistant", () => {
   });
   it("runs the other calls first when repondre comes with them", async () => {
     const both: GeminiContent = { role: "model", parts: [...call("brouillon_paiement_client", {}).parts, ...final().parts] };
-    const { gemini } = scripted(both, final("C'est prêt, valide."));
+    const { gemini, requests } = scripted(both, final("C'est prêt, valide."));
     const reply = await runAssistant(input, deps(gemini));
     expect(reply.texte).toBe("C'est prêt, valide.");
     expect(reply.brouillon).toEqual(PAYMENT);
+    expect(requests[1].contents[2].parts.map((p) => p.functionResponse?.name)).toEqual(["brouillon_paiement_client", "repondre"]);
+    expect(requests[1].contents[2].parts[1].functionResponse?.response).toMatchObject({ ok: false });
   });
   it("gives up when the model never answers with a tool", async () => {
     const { gemini } = scripted({ role: "model", parts: [{ text: "hmm" }] });

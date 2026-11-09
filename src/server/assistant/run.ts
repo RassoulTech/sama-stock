@@ -67,12 +67,16 @@ export async function runAssistant(input: RunInput, deps: RunDeps): Promise<Assi
       return { ...parsed.data, brouillon: draft };
     }
 
+    // Chaque appel de la réponse du modèle reçoit sa functionResponse, dans le même ordre.
+    // « repondre » mêlé à d'autres appels est ignoré : sa réponse n'a pas encore vu les résultats.
     const responses: GeminiPart[] = [];
-    for (const { functionCall } of others) {
+    for (const { functionCall } of calls) {
       const { name } = functionCall;
       const args = functionCall.args ?? {};
       let response: Record<string, unknown>;
-      if (!allowed.has(name)) {
+      if (name === "repondre") {
+        response = { ok: false, message: "Réponse finale ignorée : réponds avec « repondre » après avoir lu les résultats des autres outils." };
+      } else if (!allowed.has(name)) {
         response = { erreur: "Outil non autorisé pour cet utilisateur." };
       } else if (isReadTool(name)) {
         response = await deps.read(name, args);
