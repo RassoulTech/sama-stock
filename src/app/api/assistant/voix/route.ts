@@ -16,7 +16,9 @@ function fail(error: string, status: number) {
 export async function POST(request: Request) {
   const app = await getContext();
   if (!app?.business) return fail("Votre session a expiré. Reconnectez-vous.", 401);
-  if (!(app as BusinessContext).business.assistantEnabled) return fail("L'assistant vocal n'est pas activé pour ce commerce.", 403);
+  const ctx = app as BusinessContext;
+  if (ctx.plan.status === "suspended") return fail("Ce commerce est suspendu. Contactez Sama Stock.", 403);
+  if (!ctx.business.assistantEnabled) return fail("L'assistant vocal n'est pas activé pour ce commerce.", 403);
   const base = process.env.ANTA_TTS_URL;
   if (!base) return fail("Voix wolof non configurée.", 503);
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: parsed.data.texte }),
       signal: AbortSignal.timeout(60_000),
+      redirect: "error",
     });
     const type = res.headers.get("content-type") ?? "";
     if (!res.ok || !type.startsWith("audio/")) return fail("Voix indisponible.", 502);
