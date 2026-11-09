@@ -64,13 +64,25 @@ export interface Recording {
 /** Démarre le micro. La promesse échoue si le micro est refusé ou absent. */
 export async function startRecording(): Promise<Recording> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
-  const recorder = new MediaRecorder(stream);
-  const chunks: Blob[] = [];
   const release = () => stream.getTracks().forEach((t) => t.stop());
-  recorder.ondataavailable = (e) => {
-    if (e.data.size) chunks.push(e.data);
+  const chunks: Blob[] = [];
+  let recorder: MediaRecorder;
+  try {
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (e) => {
+      if (e.data.size) chunks.push(e.data);
+    };
+    recorder.start();
+  } catch (error) {
+    release();
+    throw error;
+  }
+  // Un stop() en attente doit être réglé même si l'enregistreur tombe en panne.
+  let settle: (() => void) | null = null;
+  recorder.onerror = () => {
+    release();
+    settle?.();
   };
-  recorder.start();
   return {
     stop: () =>
       new Promise<Blob>((resolve) => {
@@ -78,6 +90,7 @@ export async function startRecording(): Promise<Recording> {
           release();
           resolve(new Blob(chunks, { type: recorder.mimeType }));
         };
+        settle = finish;
         recorder.onstop = finish;
         if (recorder.state === "inactive") finish();
         else recorder.stop();
