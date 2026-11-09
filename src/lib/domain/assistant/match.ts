@@ -10,14 +10,25 @@ export type MatchResult<T> = { kind: "one"; item: T } | { kind: "many"; items: T
 
 const MAX_CANDIDATES = 5;
 
-/** Minuscules, sans accents ni ponctuation, espaces simples : « Riz Parfumé (1kg) » → « riz parfume 1kg ». */
+const LIGATURES: Record<string, string> = { œ: "oe", Œ: "OE", æ: "ae", Æ: "AE", ŋ: "n", Ŋ: "N" };
+
+/** Unités dites à l'oral, collées au nombre qui les précède : « 50 kilos » → « 50kg ». */
+const UNITS: [RegExp, string][] = [
+  [/(\d) ?(?:kilogrammes?|kilos?|kg)(?![a-z0-9])/g, "$1kg"],
+  [/(\d) ?(?:litres?|l)(?![a-z0-9])/g, "$1l"],
+  [/(\d) ?(?:grammes?|gr|g)(?![a-z0-9])/g, "$1g"],
+];
+
+/** Minuscules, sans accents ni ponctuation, espaces simples : « Riz Parfumé (1 kg) » → « riz parfume 1kg ». */
 export function normalizeName(value: string): string {
-  return value
+  const base = value
+    .replace(/[œŒæÆŋŊ]/g, (c) => LIGATURES[c])
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+  return UNITS.reduce((text, [pattern, unit]) => text.replace(pattern, unit), base);
 }
 
 /** Nombre de lettres à ajouter, enlever ou changer pour passer d'un mot à l'autre. */

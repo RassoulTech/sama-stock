@@ -20,6 +20,33 @@ describe("normalizeName", () => {
   });
 });
 
+describe("normalizeName — ligatures et unités", () => {
+  it("maps ligatures", () => {
+    expect(normalizeName("Bœuf")).toBe("boeuf");
+    expect(normalizeName("Œuf")).toBe("oeuf");
+  });
+  it("joins numbers to their unit", () => {
+    expect(normalizeName("riz 1 kg")).toBe("riz 1kg");
+    expect(normalizeName("ciment 50 kilos")).toBe("ciment 50kg");
+    expect(normalizeName("sucre 50 kilogrammes")).toBe("sucre 50kg");
+    expect(normalizeName("huile 1 litres")).toBe("huile 1l");
+    expect(normalizeName("huile 1 l")).toBe("huile 1l");
+    expect(normalizeName("poudre 400 grammes")).toBe("poudre 400g");
+    expect(normalizeName("poudre 400 gr")).toBe("poudre 400g");
+  });
+});
+
+describe("findByName — unités dites à l'oral", () => {
+  it("finds products by spoken units", () => {
+    expect(findByName("riz 1 kg", products)).toEqual({ kind: "one", item: products[0] });
+    expect(findByName("ciment 50 kilos", products)).toEqual({ kind: "one", item: products[3] });
+    expect(findByName("huile 1 litre", products)).toEqual({ kind: "one", item: products[2] });
+  });
+  it("still finds nothing for another size", () => {
+    expect(findByName("riz 2kg", products)).toEqual({ kind: "none" });
+  });
+});
+
 describe("levenshtein", () => {
   it("counts single-letter edits", () => {
     expect(levenshtein("ciment", "ciment")).toBe(0);

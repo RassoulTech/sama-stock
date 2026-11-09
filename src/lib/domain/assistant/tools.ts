@@ -64,7 +64,7 @@ const object = (properties: Record<string, JsonSchema>, required: string[]): Jso
 
 function lines(price: "vente" | "achat" | null): JsonSchema {
   const properties: Record<string, JsonSchema> = {
-    produit: str("Nom du produit tel que dit par le commerçant"),
+    produit: str("Nom exact du produit dans le catalogue si tu le reconnais, sinon tel que dit par le commerçant"),
     quantite: { type: "number", description: "Quantité (décimales permises pour kg, litre, mètre)" },
   };
   if (price === "vente") properties.prix_unitaire = int("Prix unitaire en FCFA, seulement si le commerçant dit un autre prix que le catalogue");
@@ -77,7 +77,7 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
     stock_produit: {
       name: "stock_produit",
       description: "Quantité disponible et prix de vente d'un produit.",
-      parameters: object({ produit: str("Nom du produit") }, ["produit"]),
+      parameters: object({ produit: str("Nom exact du produit dans le catalogue si tu le reconnais, sinon tel que dit par le commerçant") }, ["produit"]),
     },
     resume_ventes: {
       name: "resume_ventes",
