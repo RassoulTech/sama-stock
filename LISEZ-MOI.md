@@ -94,8 +94,20 @@ Ces scénarios reprennent la section 9 du cahier des charges. Faites-les avec un
 
 ## Assistant vocal (wolof / français)
 
-1. **Clé gratuite Gemini** : sur https://aistudio.google.com/apikey, créez une clé et collez-la dans `.env.local` :
-   `GEMINI_API_KEY=…` (et dans les variables d'environnement Vercel pour la version en ligne).
+**⚠ Avant d'envoyer le code sur GitHub (donc avant le déploiement Vercel), appliquez d'abord la migration de la base** :
+lancez `npm run db:migrate` (ou double-cliquez sur `lancer.bat`, qui le fait). Sans cela, **toutes les pages du site en
+ligne plantent**, car la nouvelle colonne `assistant_enabled` est lue sur chaque page. Migrer en premier ne risque rien
+pour la version actuellement en ligne : elle ignore simplement cette colonne.
+
+Où mettre les réglages : sur l'ordinateur, dans `.env.local` (Next.js lit aussi `.env`, mais `.env.local` passe en
+premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settings → Environment Variables).
+- `GEMINI_API_KEY` : la clé Gemini (obligatoire).
+- `ANTA_TTS_URL` : l'adresse de la voix wolof (obligatoire pour les réponses en wolof).
+- `GEMINI_MODEL` : facultatif, pour changer de modèle Gemini.
+- `ASSISTANT_DAILY_LIMIT` : facultatif, nombre de demandes par commerce et par jour (60 par défaut).
+
+1. **Clé gratuite Gemini** : sur https://aistudio.google.com/apikey, créez une clé et collez-la dans `GEMINI_API_KEY`
+   (`.env.local` sur l'ordinateur, variables Vercel pour la version en ligne).
 2. **Voix wolof** : connecté à Hugging Face, ouvrez https://huggingface.co/spaces/ndaosaer/wolof-tts, puis cliquez sur
    **« Duplicate this Space »**. Copiez l'adresse de votre copie (`https://<compte>-wolof-tts.hf.space`) dans
    `ANTA_TTS_URL`. Elle s'endort après 48 h sans usage et met quelques minutes à se réveiller.
