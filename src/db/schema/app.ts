@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  date,
   index,
   integer,
   jsonb,
@@ -59,6 +60,8 @@ export const businesses = pgTable("businesses", {
   /** Mention libre en bas des documents (conditions de paiement, remerciements…). */
   documentFooter: text("document_footer"),
   quoteValidityDays: integer("quote_validity_days").notNull().default(15),
+  /** Assistant vocal (wolof / français) : activé commerce par commerce par l'administrateur. */
+  assistantEnabled: boolean("assistant_enabled").notNull().default(false),
   createdAt: createdAt(),
 });
 
@@ -665,4 +668,18 @@ export const appErrors = pgTable(
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
   (t) => [index("app_errors_last_seen_idx").on(t.lastSeenAt)],
+);
+
+/** Demandes faites à l'assistant vocal, par commerce et par jour (protège le quota gratuit de Gemini). */
+export const assistantUsage = pgTable(
+  "assistant_usage",
+  {
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    /** Jour à Dakar (= UTC), « 2026-11-05 ». */
+    day: date("day", { mode: "string" }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.businessId, t.day] })],
 );

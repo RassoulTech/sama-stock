@@ -99,6 +99,13 @@
       "when": 1793223254911,
       "tag": "0013_anti_essais",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794236346662,
+      "tag": "0014_assistant_vocal",
+      "breakpoints": true
     }
   ]
 }

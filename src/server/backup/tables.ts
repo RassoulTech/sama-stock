@@ -28,7 +28,7 @@ export type AdminTableName = keyof typeof ADMIN_TABLES;
 /** Ce que gère l'admin dans la ligne du commerce : gardé tel quel quand on restaure une boutique. */
 export const ADMIN_MANAGED_BUSINESS_KEYS = [
   "plan", "trialEndsAt", "periodEndsAt", "suspendedAt", "isDemo", "demoResetAt", "licensePack", "licenseActivatedAt",
-  "maintenanceEndsAt", "slug", "brandColor",
+  "maintenanceEndsAt", "slug", "brandColor", "assistantEnabled",
 ] as const;
 
 /** Colonnes date (les fichiers les gardent en texte ISO). */
