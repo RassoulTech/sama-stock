@@ -43,8 +43,8 @@ function submit(draft: Draft, clientRef: string) {
 function Lines({ lines }: { lines: DraftLine[] }) {
   return (
     <ul className="space-y-1">
-      {lines.map((l) => (
-        <li key={l.productId} className="flex items-start justify-between gap-3 text-sm">
+      {lines.map((l, i) => (
+        <li key={i} className="flex items-start justify-between gap-3 text-sm">
           <span>
             {formatQty(l.quantity, l.unit)} · {l.name}
             {l.short && (
@@ -92,6 +92,11 @@ export function DraftCard({ draft }: { draft: Draft }) {
             {draft.customer ? ` · ${draft.customer.name}` : ""}
           </p>
         )}
+        {draft.action === "sale" && draft.amountReceived < draft.total && (
+          <p>
+            Reçu {formatFCFA(draft.amountReceived)} · reste {formatFCFA(draft.total - draft.amountReceived)} à crédit
+          </p>
+        )}
         {draft.action === "purchase" && draft.supplier && <p>Fournisseur : {draft.supplier.name}</p>}
         {draft.action === "order" && (
           <p>
@@ -99,6 +104,12 @@ export function DraftCard({ draft }: { draft: Draft }) {
             {draft.deliveryFee > 0 ? ` · livraison ${formatFCFA(draft.deliveryFee)}` : ""}
           </p>
         )}
+        {draft.action === "order" && draft.payload.amountPaid > 0 && draft.payload.paymentMethod && (
+          <p>
+            Avance : {formatFCFA(draft.payload.amountPaid)} ({PAYMENT_METHODS[draft.payload.paymentMethod]})
+          </p>
+        )}
+        {draft.action === "order" && draft.payload.deliveryAddress && <p>Livraison : {draft.payload.deliveryAddress}</p>}
         {draft.action === "payment" && (
           <p>
             {draft.customer.name} · {PAYMENT_METHODS[draft.method]}
