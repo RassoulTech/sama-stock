@@ -211,6 +211,7 @@ function orderDraft(args: z.infer<typeof orderArgs>, catalog: DraftCatalog): Dra
   const lines = resolveLines(args.lignes, catalog.products, (_, p) => p.salePrice);
   const deliveryFee = args.frais_livraison ?? 0;
   const amountPaid = args.montant_paye ?? 0;
+  if (amountPaid > 0 && !args.paiement) throw new DraftRefusal("Dis comment le client a payé l'avance : espèces, Wave ou Orange Money.");
   return {
     action: "order",
     lines,
@@ -225,7 +226,7 @@ function orderDraft(args: z.infer<typeof orderArgs>, catalog: DraftCatalog): Dra
       deliveryFee,
       deliveryAddress: args.adresse ?? "",
       amountPaid,
-      paymentMethod: amountPaid > 0 ? (args.paiement ?? "cash") : null,
+      paymentMethod: amountPaid > 0 ? (args.paiement ?? null) : null,
     },
   };
 }
@@ -279,7 +280,17 @@ export function draftForModel(draft: Draft): Record<string, unknown> {
     case "purchase":
       return { action: "entree_stock", lignes, total: draft.total, fournisseur: draft.supplier?.name ?? null };
     case "order":
-      return { action: "commande", lignes, total: draft.total, frais_livraison: draft.deliveryFee, canal: draft.channel, client: draft.customer.name };
+      return {
+        action: "commande",
+        lignes,
+        total: draft.total,
+        frais_livraison: draft.deliveryFee,
+        canal: draft.channel,
+        client: draft.customer.name,
+        montant_paye: draft.payload.amountPaid,
+        paiement: draft.payload.paymentMethod,
+        adresse: draft.payload.deliveryAddress || null,
+      };
     case "payment":
       return { action: "paiement_client", montant: draft.amount, paiement: draft.method, client: draft.customer.name };
   }

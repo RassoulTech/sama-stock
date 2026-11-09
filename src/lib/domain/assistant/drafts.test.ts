@@ -114,6 +114,22 @@ describe("buildDraft — commande et paiement", () => {
       paymentMethod: null,
     });
   });
+  it("refuses an advance when the payment method is not said", () => {
+    const res = buildDraft("brouillon_commande", { client: "Moussa", canal: "whatsapp", lignes: [{ produit: "riz brise", quantite: 3 }], montant_paye: 1000 }, catalog, noCosts);
+    expect(res).toEqual({ ok: false, reason: "Dis comment le client a payé l'avance : espèces, Wave ou Orange Money." });
+  });
+  it("keeps the advance and its method, and tells the model about them", () => {
+    const res = buildDraft(
+      "brouillon_commande",
+      { client: "Moussa", canal: "whatsapp", lignes: [{ produit: "riz brise", quantite: 3 }], montant_paye: 1000, paiement: "wave", adresse: "Médina" },
+      catalog,
+      noCosts,
+    );
+    if (!res.ok || res.draft.action !== "order") throw new Error("commande attendue");
+    expect(res.draft.payload.amountPaid).toBe(1000);
+    expect(res.draft.payload.paymentMethod).toBe("wave");
+    expect(draftForModel(res.draft)).toMatchObject({ montant_paye: 1000, paiement: "wave", adresse: "Médina" });
+  });
   it("finds the paying customer by phone", () => {
     const res = buildDraft("brouillon_paiement_client", { client: "77 123 45 67", montant: 5000, paiement: "wave" }, catalog, noCosts);
     if (!res.ok || res.draft.action !== "payment") throw new Error("paiement attendu");
