@@ -9,8 +9,8 @@ const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 export interface GeminiPart {
   text?: string;
   inlineData?: { mimeType: string; data: string };
-  functionCall?: { name: string; args?: Record<string, unknown> };
-  functionResponse?: { name: string; response: Record<string, unknown> };
+  functionCall?: { id?: string; name: string; args?: Record<string, unknown> };
+  functionResponse?: { id?: string; name: string; response: Record<string, unknown> };
   /** À renvoyer tel quel au tour suivant (obligatoire pour Gemini 3 et 4). */
   thoughtSignature?: string;
   thought?: boolean;
@@ -35,6 +35,8 @@ export class GeminiError extends Error {
   constructor(
     readonly kind: GeminiErrorKind,
     message: string,
+    /** Code HTTP quand Gemini a répondu. */
+    readonly status?: number,
   ) {
     super(message);
     this.name = "GeminiError";
@@ -67,11 +69,11 @@ export function createGemini(options: { apiKey: string; model?: string; timeoutM
     } catch (error) {
       throw toGeminiError(error, "unavailable", "Gemini injoignable");
     }
-    if (res.status === 429) throw new GeminiError("quota", "Quota Gemini atteint.");
-    if (res.status >= 500) throw new GeminiError("unavailable", `Gemini indisponible (${res.status}).`);
+    if (res.status === 429) throw new GeminiError("quota", "Quota Gemini atteint.", res.status);
+    if (res.status >= 500) throw new GeminiError("unavailable", `Gemini indisponible (${res.status}).`, res.status);
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      throw new GeminiError("invalid", `Gemini a refusé la demande (${res.status}) : ${detail.slice(0, 500)}`);
+      throw new GeminiError("invalid", `Gemini a refusé la demande (${res.status}) : ${detail.slice(0, 500)}`, res.status);
     }
     let json: { candidates?: { content?: GeminiContent }[] };
     try {

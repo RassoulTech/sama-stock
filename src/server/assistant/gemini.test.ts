@@ -38,6 +38,9 @@ describe("createGemini", () => {
     });
     await expect(createGemini({ apiKey: "K", fetchImpl: broken })(request)).rejects.toMatchObject({ kind: "unavailable" });
   });
+  it("keeps the HTTP status on a refusal", async () => {
+    await expect(createGemini({ apiKey: "K", fetchImpl: fakeFetch(400, "bad") })(request)).rejects.toMatchObject({ kind: "invalid", status: 400 });
+  });
   it("maps other refusals and empty answers to invalid", async () => {
     await expect(createGemini({ apiKey: "K", fetchImpl: fakeFetch(400, "bad") })(request)).rejects.toMatchObject({ kind: "invalid" });
     await expect(createGemini({ apiKey: "K", fetchImpl: fakeFetch(200, { candidates: [] }) })(request)).rejects.toBeInstanceOf(GeminiError);

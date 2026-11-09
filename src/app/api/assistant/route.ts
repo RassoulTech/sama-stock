@@ -69,7 +69,8 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof AssistantError) return fail(error.message, 422);
     if (error instanceof GeminiError) {
-      if (error.kind !== "quota") console.error("[assistant]", error.kind, error.message);
+      // Jamais error.message : il peut contenir ce que Gemini a renvoyé (donc des extraits de la demande).
+      if (error.kind !== "quota") console.error("[assistant] gemini", error.kind, error.status ?? "-");
       return fail("L'assistant est saturé, réessaie dans une minute.", 503);
     }
     throw error;
