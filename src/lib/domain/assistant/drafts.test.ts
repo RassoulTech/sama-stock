@@ -69,6 +69,12 @@ describe("buildDraft — vente", () => {
     expect(res.ok).toBe(false);
     expect(!res.ok && res.reason).toContain("invalides");
   });
+  it("treats null optional values as absent", () => {
+    const res = buildDraft("brouillon_vente", { lignes: [{ produit: "riz parfume", quantite: 2, prix_unitaire: null }], paiement: "cash", client: null, montant_recu: null }, catalog, noCosts);
+    if (!res.ok || res.draft.action !== "sale") throw new Error("vente attendue");
+    expect(res.draft.total).toBe(1200);
+    expect(res.draft.payload).toEqual({ items: [{ productId: "p1", quantity: 2 }], paymentMethod: "cash", customerId: null, amountReceived: 1200 });
+  });
 });
 
 describe("buildDraft — entrée de stock", () => {
@@ -84,6 +90,12 @@ describe("buildDraft — entrée de stock", () => {
     if (!res.ok || res.draft.action !== "purchase") throw new Error("entrée attendue");
     expect(res.draft.payload).toEqual({ items: [{ productId: "p1", quantity: 10, unitCost: 450 }], supplierId: "s1" });
     expect(res.draft.total).toBe(4500);
+  });
+  it("ignores a null purchase price", () => {
+    const res = buildDraft("brouillon_entree_stock", { lignes: [{ produit: "riz parfume", quantite: 10, prix_achat: null }], fournisseur: null }, catalog, { costs: true });
+    if (!res.ok || res.draft.action !== "purchase") throw new Error("entrée attendue");
+    expect(res.draft.payload).toEqual({ items: [{ productId: "p1", quantity: 10 }], supplierId: null });
+    expect(res.draft.total).toBeNull();
   });
 });
 

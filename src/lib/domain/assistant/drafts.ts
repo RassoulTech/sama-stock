@@ -79,28 +79,32 @@ export type Draft =
 
 export type DraftResult = { ok: true; draft: Draft } | { ok: false; reason: string; candidates?: string[] };
 
+/** L'IA envoie parfois null ou "" pour un champ optionnel non dit : ça compte comme absent (sinon z.coerce fait 0). */
+const absent = (value: unknown) => (value === null || value === "" ? undefined : value);
+const optionalArg = <S extends z.ZodType>(schema: S) => z.preprocess(absent, schema.optional());
+
 const lineArg = z.object({
   produit: z.string().trim().min(1),
   quantite: z.coerce.number().positive().max(10_000_000),
-  prix_unitaire: z.coerce.number().int().min(0).optional(),
-  prix_achat: z.coerce.number().int().min(0).optional(),
+  prix_unitaire: optionalArg(z.coerce.number().int().min(0)),
+  prix_achat: optionalArg(z.coerce.number().int().min(0)),
 });
 const linesArg = z.array(lineArg).min(1).max(50);
 const saleArgs = z.object({
   lignes: linesArg,
   paiement: z.enum(SALE_METHODS),
-  client: z.string().trim().optional(),
-  montant_recu: z.coerce.number().int().min(0).optional(),
+  client: optionalArg(z.string().trim()),
+  montant_recu: optionalArg(z.coerce.number().int().min(0)),
 });
-const purchaseArgs = z.object({ lignes: linesArg, fournisseur: z.string().trim().optional() });
+const purchaseArgs = z.object({ lignes: linesArg, fournisseur: optionalArg(z.string().trim()) });
 const orderArgs = z.object({
   client: z.string().trim().min(1),
   canal: z.enum(ORDER_CHANNELS),
   lignes: linesArg,
-  frais_livraison: z.coerce.number().int().min(0).optional(),
-  adresse: z.string().trim().max(300).optional(),
-  montant_paye: z.coerce.number().int().min(0).optional(),
-  paiement: z.enum(PAYING_METHODS).optional(),
+  frais_livraison: optionalArg(z.coerce.number().int().min(0)),
+  adresse: optionalArg(z.string().trim().max(300)),
+  montant_paye: optionalArg(z.coerce.number().int().min(0)),
+  paiement: optionalArg(z.enum(PAYING_METHODS)),
 });
 const paymentArgs = z.object({
   client: z.string().trim().min(1),
