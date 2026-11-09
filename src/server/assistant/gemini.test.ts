@@ -42,4 +42,19 @@ describe("createGemini", () => {
     await expect(createGemini({ apiKey: "K", fetchImpl: fakeFetch(400, "bad") })(request)).rejects.toMatchObject({ kind: "invalid" });
     await expect(createGemini({ apiKey: "K", fetchImpl: fakeFetch(200, { candidates: [] }) })(request)).rejects.toBeInstanceOf(GeminiError);
   });
+  it("maps an unreadable 200 body to invalid", async () => {
+    const gemini = createGemini({ apiKey: "K", fetchImpl: fakeFetch(200, "not json {") });
+    await expect(gemini(request)).rejects.toMatchObject({ kind: "invalid" });
+  });
+  it("maps a timeout while reading the body to unavailable", async () => {
+    const timedOut = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new DOMException("The operation timed out.", "TimeoutError");
+      },
+      text: async () => "",
+    }) as unknown as Response);
+    await expect(createGemini({ apiKey: "K", fetchImpl: timedOut })(request)).rejects.toMatchObject({ kind: "unavailable" });
+  });
 });

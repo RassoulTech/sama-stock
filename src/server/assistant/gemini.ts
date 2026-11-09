@@ -41,6 +41,13 @@ export class GeminiError extends Error {
   }
 }
 
+/** Toute panne (abandon ou délai dépassé compris) devient une GeminiError ; le délai est toujours « unavailable ». */
+function toGeminiError(error: unknown, kind: GeminiErrorKind, label: string): GeminiError {
+  const name = (error as Error | undefined)?.name;
+  const timedOut = name === "AbortError" || name === "TimeoutError";
+  return new GeminiError(timedOut ? "unavailable" : kind, `${label} : ${(error as Error | undefined)?.message ?? String(error)}`);
+}
+
 export function createGemini(options: { apiKey: string; model?: string; timeoutMs?: number; fetchImpl?: typeof fetch }): GeminiCall {
   const { apiKey, model = DEFAULT_GEMINI_MODEL, timeoutMs = 30_000, fetchImpl = fetch } = options;
   return async ({ system, contents, tools }) => {
@@ -58,12 +65,20 @@ export function createGemini(options: { apiKey: string; model?: string; timeoutM
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
-      throw new GeminiError("unavailable", `Gemini injoignable : ${(error as Error).message}`);
+      throw toGeminiError(error, "unavailable", "Gemini injoignable");
     }
     if (res.status === 429) throw new GeminiError("quota", "Quota Gemini atteint.");
     if (res.status >= 500) throw new GeminiError("unavailable", `Gemini indisponible (${res.status}).`);
-    if (!res.ok) throw new GeminiError("invalid", `Gemini a refusé la demande (${res.status}) : ${(await res.text()).slice(0, 500)}`);
-    const json = (await res.json()) as { candidates?: { content?: GeminiContent }[] };
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      throw new GeminiError("invalid", `Gemini a refusé la demande (${res.status}) : ${detail.slice(0, 500)}`);
+    }
+    let json: { candidates?: { content?: GeminiContent }[] };
+    try {
+      json = (await res.json()) as typeof json;
+    } catch (error) {
+      throw toGeminiError(error, "invalid", "Réponse Gemini illisible");
+    }
     const parts = json.candidates?.[0]?.content?.parts;
     if (!parts?.length) throw new GeminiError("invalid", "Réponse vide de Gemini.");
     return { role: "model", parts };
