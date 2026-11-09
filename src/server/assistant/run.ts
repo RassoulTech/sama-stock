@@ -32,10 +32,13 @@ export interface RunDeps {
   draft: (name: DraftToolName, args: Record<string, unknown>) => Promise<DraftResult> | DraftResult;
 }
 
+const MAX_TEXT = 800;
+/** Un texte trop long est coupé plutôt que refusé : sinon le panneau reste bloqué sur « Je n'ai pas compris ». */
+const clipped = (value: string) => value.trim().slice(0, MAX_TEXT);
 const finalArgs = z.object({
-  transcription: z.string().trim().default(""),
+  transcription: z.string().default("").transform(clipped),
   langue: z.enum(LANGS),
-  texte: z.string().trim().min(1).max(800),
+  texte: z.string().transform(clipped).pipe(z.string().min(1)),
 });
 
 type CallPart = GeminiPart & { functionCall: NonNullable<GeminiPart["functionCall"]> };
@@ -91,7 +94,7 @@ export async function runAssistant(input: RunInput, deps: RunDeps): Promise<Assi
       } else {
         response = { erreur: "Outil inconnu." };
       }
-      responses.push({ functionResponse: { name, response } });
+      responses.push({ functionResponse: { ...(functionCall.id ? { id: functionCall.id } : {}), name, response } });
     }
     contents.push(content, { role: "user", parts: responses });
   }

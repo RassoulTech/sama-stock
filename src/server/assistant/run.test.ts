@@ -103,4 +103,17 @@ describe("runAssistant", () => {
     const { gemini } = scripted(call("repondre", { transcription: "x", langue: "en", texte: "Hello" }));
     await expect(runAssistant(input, deps(gemini))).rejects.toBeInstanceOf(AssistantError);
   });
+  it("truncates a long transcription and answer to 800 characters", async () => {
+    const long = "a".repeat(1000);
+    const { gemini } = scripted(call("repondre", { transcription: long, langue: "fr", texte: long }));
+    const reply = await runAssistant(input, deps(gemini));
+    expect(reply.transcription).toHaveLength(800);
+    expect(reply.texte).toHaveLength(800);
+  });
+  it("echoes the id of a function call in its response", async () => {
+    const withId: GeminiContent = { role: "model", parts: [{ functionCall: { id: "c1", name: "stock_produit", args: { produit: "riz" } } }] };
+    const { gemini, requests } = scripted(withId, final());
+    await runAssistant(input, deps(gemini));
+    expect(requests[1].contents[2].parts[0].functionResponse).toMatchObject({ id: "c1", name: "stock_produit" });
+  });
 });
