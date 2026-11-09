@@ -31,6 +31,8 @@ export function AssistantPanel() {
   const [notice, setNotice] = useState<string | null>(null);
   const [replayUrl, setReplayUrl] = useState<string | null>(null);
   const pressed = useRef(false);
+  const starting = useRef(false);
+  const list = useRef<HTMLDivElement | null>(null);
   const mounted = useRef(false);
   const recording = useRef<{ rec: Recording; startedAt: number; timer: ReturnType<typeof setTimeout> } | null>(null);
   const player = useRef<HTMLAudioElement | null>(null);
@@ -52,26 +54,39 @@ export function AssistantPanel() {
     };
   }, []);
 
+  // La liste défile jusqu'au dernier message.
+  useEffect(() => {
+    if (list.current) list.current.scrollTop = list.current.scrollHeight;
+  }, [turns]);
+
   function addTurns(...items: Omit<Turn, "id">[]) {
     setTurns((t) => [...t, ...items.map((item) => ({ ...item, id: crypto.randomUUID() }))]);
   }
 
   async function start() {
-    if (phase !== "idle" || recording.current) return;
+    if (phase !== "idle" || recording.current || starting.current) return;
+    starting.current = true;
     setNotice(null);
     player.current?.pause();
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     try {
       const rec = await startRecording();
+      if (!mounted.current) {
+        rec.cancel();
+        return;
+      }
       recording.current = { rec, startedAt: Date.now(), timer: setTimeout(() => void stop(), MAX_RECORDING_MS) };
       setPhase("recording");
       if (!pressed.current) void stop();
     } catch {
-      setNotice("Le micro est bloqué. Autorise-le : touche le cadenas à côté de l'adresse, puis Micro → Autoriser.");
+      if (mounted.current) setNotice("Le micro est bloqué. Autorise-le : touche le cadenas à côté de l'adresse, puis Micro → Autoriser.");
+    } finally {
+      starting.current = false;
     }
   }
 
   async function stop() {
+    pressed.current = false;
     const current = recording.current;
     if (!current) return;
     recording.current = null;
@@ -94,7 +109,7 @@ export function AssistantPanel() {
       setNotice("Impossible de lire l'enregistrement. Réessaie.");
       return;
     }
-    const history: HistoryItem[] = turns.slice(-10).map(({ role, text }) => ({ role, text }));
+    const history: HistoryItem[] = turns.slice(-10).map(({ role, text }) => ({ role, text: text.slice(0, 800) }));
     const res = await askAssistant(audio, history);
     if (!mounted.current) return;
     if (!res.ok) {
@@ -143,7 +158,7 @@ export function AssistantPanel() {
 
   return (
     <div className="flex max-h-[70dvh] flex-col gap-4 px-4 pb-6">
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+      <div ref={list} className="min-h-0 flex-1 space-y-3 overflow-y-auto">
         {turns.map((t) => (
           <div key={t.id} className={cn("max-w-[85%]", t.role === "user" ? "ml-auto text-right" : "")}>
             <p className={cn("inline-block rounded-2xl px-3 py-2 text-sm", t.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
