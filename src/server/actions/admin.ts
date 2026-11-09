@@ -137,7 +137,7 @@ export async function adminSetAssistant(businessId: string, enabled: boolean) {
   });
 }
 
-const infoSchema =z.object({
+const infoSchema = z.object({
   name: z.string().trim().min(2, "Donnez le nom du commerce.").max(80),
   activity: z.enum(Object.keys(ACTIVITIES) as [Activity, ...Activity[]], { message: "Choisissez l'activité." }),
   phone: z
