@@ -93,17 +93,17 @@ async function main() {
   let wolof = 0;
   let wolofPassed = 0;
   let totalMs = 0;
+  let timed = 0;
   console.log(`Modèle : ${model} — ${files.length} notes\n`);
 
   for (const file of files) {
     const exp = expected[file];
-    const contents: GeminiContent[] = [
-      { role: "user", parts: [{ inlineData: { mimeType: "audio/wav", data: await toWavBase64(path.join(dir, file)) } }, { text: "Note vocale du commerçant ci-dessus. Réponds à sa demande avec les outils, puis termine par « repondre »." }] },
-    ];
+    const contents: GeminiContent[] = [];
     let decision: { name: string; args: Record<string, unknown> } | null = null;
     let final: Record<string, unknown> | null = null;
     let firstMs = 0;
     try {
+      contents.push({ role: "user", parts: [{ inlineData: { mimeType: "audio/wav", data: await toWavBase64(path.join(dir, file)) } }, { text: "Note vocale du commerçant ci-dessus. Réponds à sa demande avec les outils, puis termine par « repondre »." }] });
       for (let i = 0; i < 4 && !final; i++) {
         const started = Date.now();
         const content = await gemini({ system, contents, tools });
@@ -132,6 +132,7 @@ async function main() {
       continue;
     }
     totalMs += firstMs;
+    timed++;
 
     const problems: string[] = [];
     if (!exp) problems.push("absent de attendu.json");
@@ -160,7 +161,7 @@ async function main() {
     console.log("");
   }
 
-  const avg = files.length ? totalMs / files.length / 1000 : 0;
+  const avg = timed ? totalMs / timed / 1000 : 0;
   console.log(`Réussite : ${passed}/${files.length} — wolof : ${wolofPassed}/${wolof} — 1er appel moyen : ${avg.toFixed(1)} s`);
   console.log(passed >= 8 && wolofPassed >= 5 && avg < 8 ? "→ Critères atteints." : "→ Critères NON atteints.");
 }
