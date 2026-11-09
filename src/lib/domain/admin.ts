@@ -20,6 +20,7 @@ export const ADMIN_ACTIONS = {
   info: "Infos du commerce",
   restore: "Restauration",
   backup: "Sauvegarde",
+  assistant: "Assistant vocal",
 } as const;
 
 /** Moyens de paiement d'une licence ou d'une maintenance. */

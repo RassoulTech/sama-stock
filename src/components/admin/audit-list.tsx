@@ -11,6 +11,7 @@ import {
   KeyRound,
   Link2,
   LogOut,
+  Mic,
   NotebookPen,
   Palette,
   Store,
@@ -44,6 +45,7 @@ const ICONS: Record<AdminAction, { icon: LucideIcon; tone: string }> = {
   info: { icon: Store, tone: "bg-muted text-muted-foreground" },
   restore: { icon: History, tone: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   backup: { icon: DatabaseBackup, tone: "bg-accent text-primary" },
+  assistant: { icon: Mic, tone: "bg-accent text-primary" },
 };
 
 export interface AuditEntry {

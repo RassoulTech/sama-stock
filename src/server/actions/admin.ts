@@ -120,7 +120,24 @@ export async function adminSetSuspended(businessId: string, suspended: boolean) 
   });
 }
 
-const infoSchema = z.object({
+export async function adminSetAssistant(businessId: string, enabled: boolean) {
+  return runAction(async () => {
+    const ctx = await requireSuperAdminAction();
+    await load(businessId);
+    await db.transaction(async (tx) => {
+      await tx.update(businesses).set({ assistantEnabled: enabled }).where(eq(businesses.id, businessId));
+      await logAdmin(tx, ctx, {
+        action: "assistant",
+        businessId,
+        summary: enabled ? "Assistant vocal activé" : "Assistant vocal désactivé",
+      });
+    });
+    revalidatePath("/admin", "layout");
+    return null;
+  });
+}
+
+const infoSchema =z.object({
   name: z.string().trim().min(2, "Donnez le nom du commerce.").max(80),
   activity: z.enum(Object.keys(ACTIVITIES) as [Activity, ...Activity[]], { message: "Choisissez l'activité." }),
   phone: z

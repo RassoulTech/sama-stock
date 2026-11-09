@@ -119,7 +119,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
           {licence ? (
             <>
               <LicenseCard detail={licence} />
-              <AdminActions businessId={b.id} licensed suspended={s.status === "suspended"} />
+              <AdminActions businessId={b.id} licensed suspended={s.status === "suspended"} assistantEnabled={b.assistantEnabled} />
             </>
           ) : (
             <Card>
@@ -143,7 +143,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
                     </div>
                   </div>
                 </div>
-                <AdminActions businessId={b.id} licensed={false} suspended={s.status === "suspended"} />
+                <AdminActions businessId={b.id} licensed={false} suspended={s.status === "suspended"} assistantEnabled={b.assistantEnabled} />
               </CardContent>
             </Card>
           )}

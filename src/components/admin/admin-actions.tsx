@@ -1,18 +1,28 @@
 "use client";
 
-import { Ban, CalendarPlus, CheckCircle2, TimerOff } from "lucide-react";
+import { Ban, CalendarPlus, CheckCircle2, Mic, TimerOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { Button } from "@/components/ui/button";
-import { adminExpireNow, adminExtend, adminSetSuspended } from "@/server/actions/admin";
+import { adminExpireNow, adminExtend, adminSetAssistant, adminSetSuspended } from "@/server/actions/admin";
 
 /**
  * Actions sur un commerce en essai gratuit : prolonger l'essai, l'arrêter, suspendre.
  * La licence se vend avec « Vendre une licence » (elle n'expire jamais).
  */
-export function AdminActions({ businessId, licensed, suspended }: { businessId: string; licensed: boolean; suspended: boolean }) {
+export function AdminActions({
+  businessId,
+  licensed,
+  suspended,
+  assistantEnabled,
+}: {
+  businessId: string;
+  licensed: boolean;
+  suspended: boolean;
+  assistantEnabled: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -78,6 +88,26 @@ export function AdminActions({ businessId, licensed, suspended }: { businessId: 
             action={() => adminSetSuspended(businessId, true)}
           />
         )}
+      </section>
+      <section className="space-y-3 rounded-xl border p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <Mic className="size-4 text-primary" /> Assistant vocal (wolof / français)
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {assistantEnabled
+            ? "Activé : le bouton micro apparaît dans l'application de ce commerce."
+            : "Désactivé. Le quota gratuit de l'IA est partagé : activez-le seulement pour les commerces testeurs."}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          onClick={() =>
+            run(() => adminSetAssistant(businessId, !assistantEnabled), assistantEnabled ? "Assistant vocal désactivé" : "Assistant vocal activé")
+          }
+        >
+          {assistantEnabled ? "Désactiver l'assistant" : "Activer l'assistant"}
+        </Button>
       </section>
     </div>
   );

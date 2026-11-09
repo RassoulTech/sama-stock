@@ -24,6 +24,7 @@ export const listAllBusinesses = cache(async () => {
       trialEndsAt: businesses.trialEndsAt,
       periodEndsAt: businesses.periodEndsAt,
       suspendedAt: businesses.suspendedAt,
+      assistantEnabled: businesses.assistantEnabled,
       licensePack: businesses.licensePack,
       maintenanceEndsAt: businesses.maintenanceEndsAt,
       licenseActivatedAt: businesses.licenseActivatedAt,
