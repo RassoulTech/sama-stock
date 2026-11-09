@@ -70,7 +70,7 @@ export function DraftCard({ draft }: { draft: Draft }) {
   async function validate() {
     setState("saving");
     setError(null);
-    const res = await submit(draft, clientRef).catch(() => ({ ok: false as const, error: "Pas de connexion : rien n'a été enregistré." }));
+    const res = await submit(draft, clientRef).catch(() => ({ ok: false as const, error: "Connexion perdue : vérifie dans l'application avant de réessayer." }));
     if (!res.ok) {
       setState("idle");
       setError(res.error);
