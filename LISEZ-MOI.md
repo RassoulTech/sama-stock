@@ -91,3 +91,20 @@ Ces scénarios reprennent la section 9 du cahier des charges. Faites-les avec un
 - **Paiement de l'abonnement :** réel, par Wave ou Orange Money via SasPay. Le client paie exactement le prix de la formule ; les frais SasPay sont retirés de votre part. Les paiements en espèces s'enregistrent depuis l'administration (fiche du commerce).
 - **Les données** sont enregistrées dans la base Neon du projet `sama-stock`, partagée entre l'ordinateur et le site en ligne.
 - **Après une mise à jour du code**, supprimez le dossier `.next` avant de relancer `lancer.bat`, pour que l'application soit reconstruite.
+
+## Assistant vocal (wolof / français)
+
+1. **Clé gratuite Gemini** : sur https://aistudio.google.com/apikey, créez une clé et collez-la dans `.env.local` :
+   `GEMINI_API_KEY=…` (et dans les variables d'environnement Vercel pour la version en ligne).
+2. **Voix wolof** : connecté à Hugging Face, ouvrez https://huggingface.co/spaces/ndaosaer/wolof-tts, puis cliquez sur
+   **« Duplicate this Space »**. Copiez l'adresse de votre copie (`https://<compte>-wolof-tts.hf.space`) dans
+   `ANTA_TTS_URL`. Elle s'endort après 48 h sans usage et met quelques minutes à se réveiller.
+3. **Activation** : dans l'administration, ouvrez la fiche du commerce, puis **« Activer l'assistant »**. Le bouton
+   micro apparaît dans son application.
+4. **Utilisation** : appuyez sur le micro, gardez le doigt appuyé et parlez, puis relâchez. Une vente, une entrée de
+   stock, une commande ou un paiement n'est enregistré qu'après **Valider**.
+
+Limites :
+- 60 demandes par commerce et par jour (`ASSISTANT_DAILY_LIMIT`).
+- Offre gratuite de Gemini : Google peut utiliser ces échanges, donc à réserver aux commerces testeurs.
+- La voix Anta ne doit pas être utilisée dans une version payante. Il faudra d'abord la réentraîner sur un modèle libre.
