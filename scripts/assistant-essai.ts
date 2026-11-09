@@ -107,7 +107,11 @@ async function main() {
       for (let i = 0; i < 4 && !final; i++) {
         const started = Date.now();
         const content = await gemini({ system, contents, tools });
-        if (i === 0) firstMs = Date.now() - started;
+        if (i === 0) {
+          firstMs = Date.now() - started;
+          totalMs += firstMs;
+          timed++;
+        }
         const found = calls(content);
         const others = found.filter((c) => c.functionCall.name !== "repondre");
         if (!decision) decision = { name: (others[0] ?? found[0])?.functionCall.name ?? "(aucun)", args: (others[0] ?? found[0])?.functionCall.args ?? {} };
@@ -131,8 +135,6 @@ async function main() {
       if (exp?.langue === "wo") wolof++;
       continue;
     }
-    totalMs += firstMs;
-    timed++;
 
     const problems: string[] = [];
     if (!exp) problems.push("absent de attendu.json");
