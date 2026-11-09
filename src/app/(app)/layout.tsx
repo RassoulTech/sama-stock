@@ -5,6 +5,7 @@ import { DemoBanner } from "@/components/demo/demo-banner";
 import { OfflineBanner } from "@/components/offline/offline-banner";
 import { OfflineProvider } from "@/components/offline/offline-provider";
 import { AppProvider, type ClientAppInfo } from "@/components/shell/app-provider";
+import { AssistantButton } from "@/components/assistant/assistant-button";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { LocationSwitcher } from "@/components/shell/location-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -190,6 +191,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:px-6 lg:px-8 lg:pt-7 lg:pb-12 print:p-0">{children}</main>
           </div>
           <BottomNav items={menu} />
+          {ctx.business.assistantEnabled && <AssistantButton />}
         </div>
       </OfflineProvider>
     </AppProvider>
