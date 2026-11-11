@@ -88,14 +88,16 @@ export default async function ProduitsPage({
             }
           />
         ) : (
-          <ProductList
-            products={products}
-            categories={categories}
-            showCost={ctx.can("costs.view")}
-            initialState={initialState}
-            initialQuery={param(params, "q")?.slice(0, 60) ?? ""}
-            initialCategory={initialCategory}
-          />
+          <div data-assistant="produits.liste">
+            <ProductList
+              products={products}
+              categories={categories}
+              showCost={ctx.can("costs.view")}
+              initialState={initialState}
+              initialQuery={param(params, "q")?.slice(0, 60) ?? ""}
+              initialCategory={initialCategory}
+            />
+          </div>
         )}
       </div>
     </>

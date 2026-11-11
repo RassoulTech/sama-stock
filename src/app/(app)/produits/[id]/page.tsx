@@ -128,7 +128,7 @@ export default async function ProduitPage({ params }: { params: Promise<{ id: st
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm text-muted-foreground">Disponible · {current.locationName}</p>
-                    <p className="amount mt-1 text-4xl font-bold">
+                    <p className="amount mt-1 text-4xl font-bold" data-assistant="produit.stock">
                       {formatQty(current.available, product.unit)}
                     </p>
                   </div>

@@ -156,7 +156,7 @@ export default async function VentesPage({ searchParams }: { searchParams: Promi
       />
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <StatCard label="Chiffre d'affaires" value={formatFCFA(revenue)} icon={Wallet} />
+        <StatCard label="Chiffre d'affaires" value={formatFCFA(revenue)} icon={Wallet} cible="ventes.total" />
         <StatCard label="Ventes validées" value={summary.valid} icon={ShoppingBag} tone="neutral" />
         <StatCard
           label="Encaissé"

@@ -125,7 +125,9 @@ export function MobileHome({
               {today.count} vente{today.count > 1 ? "s" : ""}
             </span>
           </div>
-          <p className="amount relative mt-2 text-[2.25rem] leading-none font-bold">{formatFCFA(today.revenue)}</p>
+          <p className="amount relative mt-2 text-[2.25rem] leading-none font-bold" data-assistant="tdb.chiffre">
+            {formatFCFA(today.revenue)}
+          </p>
 
           {(basket !== null || weekAverage !== null) && (
             <dl className="relative mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 text-sm">

@@ -17,6 +17,7 @@ export function StatCard({
   tone = "primary",
   href,
   className,
+  cible,
 }: {
   label: string;
   value: React.ReactNode;
@@ -25,6 +26,8 @@ export function StatCard({
   tone?: keyof typeof TONES;
   href?: string;
   className?: string;
+  /** Cible de l'assistant (« montre-moi »). */
+  cible?: string;
 }) {
   const body = (
     <>
@@ -53,10 +56,12 @@ export function StatCard({
     className,
   );
   return href ? (
-    <Link href={href} className={classes}>
+    <Link href={href} className={classes} data-assistant={cible}>
       {body}
     </Link>
   ) : (
-    <div className={classes}>{body}</div>
+    <div className={classes} data-assistant={cible}>
+      {body}
+    </div>
   );
 }

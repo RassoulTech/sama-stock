@@ -112,7 +112,7 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
           }
         />
       ) : (
-        <ul className="surface divide-y overflow-hidden">
+        <ul className="surface divide-y overflow-hidden" data-assistant="commandes.liste">
           {orders.map((o) => (
             <li key={o.id}>
               <Link href={`/commandes/${o.id}`} className="flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted/50 sm:px-5">

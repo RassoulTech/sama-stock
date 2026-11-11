@@ -209,6 +209,7 @@ export default async function DashboardPage() {
         {today && (
           <StatCard
             className="max-lg:hidden"
+            cible="tdb.chiffre"
             label={seller ? "Mes ventes du jour" : "Aujourd'hui"}
             value={formatFCFA(today.revenue)}
             hint={`${today.count} vente${today.count > 1 ? "s" : ""}`}

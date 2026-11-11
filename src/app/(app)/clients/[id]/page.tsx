@@ -92,7 +92,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">{debt > 0 ? "Reste à payer" : "Situation"}</p>
-                <p className={`num mt-1 text-3xl font-semibold ${debt > 0 ? "text-destructive" : "text-success"}`}>
+                <p className={`num mt-1 text-3xl font-semibold ${debt > 0 ? "text-destructive" : "text-success"}`} data-assistant="client.solde">
                   {debt > 0 ? formatFCFA(debt) : "À jour"}
                 </p>
               </div>
