@@ -63,8 +63,16 @@ export async function ensureDemo(plan: DemoPlan): Promise<{ email: string; busin
     const [fresh] = await tx
       .select({ id: businesses.id })
       .from(businesses)
-      // Une démo d'avant les licences (sans licence) est recréée
-      .where(and(eq(businesses.ownerId, ownerId), eq(businesses.isDemo, true), gte(businesses.demoResetAt, validSince), isNotNull(businesses.licensePack)));
+      // Une démo d'avant les licences (sans licence) ou d'avant l'assistant vocal est recréée
+      .where(
+        and(
+          eq(businesses.ownerId, ownerId),
+          eq(businesses.isDemo, true),
+          gte(businesses.demoResetAt, validSince),
+          isNotNull(businesses.licensePack),
+          eq(businesses.assistantEnabled, true),
+        ),
+      );
     if (fresh) return { email: spec.owner.email, businessId: fresh.id };
 
     // Remise à zéro : tout ce que les visiteurs ont modifié disparaît (suppression en cascade)

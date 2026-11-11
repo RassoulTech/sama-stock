@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return fail("Enregistrement invalide. Réessaie.", 400);
 
-  const quota = await consumeAssistantQuota(ctx.business.id);
+  const quota = await consumeAssistantQuota(ctx.business.id, { isDemo: ctx.business.isDemo });
   if (!quota.allowed) return fail("Limite du jour atteinte, réessaie demain.", 429);
 
   const products = await listProducts(ctx);

@@ -72,6 +72,8 @@ export async function seedDemoBusiness(tx: Tx, spec: DemoSpec, ownerId: string, 
     maintenanceEndsAt: addMonths(createdAt, MAINTENANCE_INCLUDED_MONTHS),
     ownerId,
     isDemo: true,
+    // La démo montre l'assistant vocal (limité à 20 demandes par jour et par boutique de démo)
+    assistantEnabled: true,
     demoResetAt: new Date(NOW),
     createdAt,
   });
