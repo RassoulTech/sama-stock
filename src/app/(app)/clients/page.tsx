@@ -20,8 +20,9 @@ export default async function ClientsPage() {
 
   const addButton = !ctx.plan.readOnly && (
     <CustomerDialog
+      pilote
       trigger={
-        <Button>
+        <Button data-assistant="client.nouveau">
           <Plus /> Nouveau client
         </Button>
       }

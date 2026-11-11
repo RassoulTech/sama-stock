@@ -26,8 +26,9 @@ export default async function FournisseursPage({ searchParams }: { searchParams:
 
   const addButton = canManage && (
     <SupplierDialog
+      pilote
       trigger={
-        <Button>
+        <Button data-assistant="fournisseur.nouveau">
           <Plus /> Nouveau fournisseur
         </Button>
       }

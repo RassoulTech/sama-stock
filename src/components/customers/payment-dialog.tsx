@@ -4,6 +4,8 @@ import { HandCoins, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import type { ResultatPilote } from "@/components/assistant/pilote/types";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { FormError, FormField, SuffixInput } from "@/components/shared/form-field";
 import { PaymentMethodPicker } from "@/components/shared/payment-method-picker";
 import { Button } from "@/components/ui/button";
@@ -30,17 +32,39 @@ export function PaymentDialog({ customerId, customerName, debt }: { customerId: 
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function save(): Promise<ResultatPilote> {
     setError(null);
-    startTransition(async () => {
-      const res = await recordCustomerPayment({ customerId, amount: Number(amount), method, note });
-      if (!res.ok) return setError(res.error);
-      toast.success("Remboursement enregistré");
-      setOpen(false);
-      router.refresh();
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const res = await recordCustomerPayment({ customerId, amount: Number(amount), method, note });
+        if (!res.ok) {
+          setError(res.error);
+          resolve({ ok: false, message: res.error });
+          return;
+        }
+        toast.success("Remboursement enregistré");
+        setOpen(false);
+        resolve({ ok: true, message: "Remboursement enregistré" });
+        router.refresh();
+      });
     });
   }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    void save();
+  }
+
+  // L'assistant vocal ouvre et remplit le remboursement avec les mêmes fonctions que la main du commerçant
+  usePiloteEcran("paiement", {
+    ouvrir: () => {
+      setOpen(true);
+      setAmount(debt);
+    },
+    montant: (n) => setAmount(n),
+    methode: (m) => setMethod(m),
+    enregistrer: () => save(),
+  });
 
   return (
     <Dialog
@@ -51,7 +75,7 @@ export function PaymentDialog({ customerId, customerName, debt }: { customerId: 
       }}
     >
       <DialogTrigger asChild>
-        <Button>
+        <Button data-assistant="paiement.ouvrir">
           <HandCoins /> Enregistrer un remboursement
         </Button>
       </DialogTrigger>
@@ -64,6 +88,7 @@ export function PaymentDialog({ customerId, customerName, debt }: { customerId: 
           <FormField label="Montant reçu" htmlFor="pay-amount">
             <SuffixInput
               id="pay-amount"
+              data-assistant="paiement.montant"
               suffix="FCFA"
               min={1}
               max={debt}
@@ -88,6 +113,7 @@ export function PaymentDialog({ customerId, customerName, debt }: { customerId: 
               value={method}
               onChange={setMethod}
               methods={PAYING_METHODS}
+              cible="paiement.methode"
             />
           </FormField>
           <FormField label="Note (facultative)" htmlFor="pay-note">
@@ -95,7 +121,7 @@ export function PaymentDialog({ customerId, customerName, debt }: { customerId: 
           </FormField>
           <FormError message={error} />
           <DialogFooter>
-            <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+            <Button type="submit" disabled={pending} className="w-full sm:w-auto" data-assistant="paiement.valider">
               {pending && <Loader2 className="animate-spin" />}
               Valider
             </Button>
