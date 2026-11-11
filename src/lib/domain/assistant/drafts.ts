@@ -100,7 +100,7 @@ export type Draft =
   | { action: "product"; name: string; unit: UnitId; salePrice: number; costPrice: number | null; category: { id: string | null; name: string } | null; initialStock: number; reference: string }
   | { action: "price"; product: PartyRef; oldSalePrice: number; salePrice: number | null; costPrice: number | null }
   | { action: "customer"; name: string; phone: string; address: string }
-  | { action: "supplier"; name: string; phone: string; note: string };;
+  | { action: "supplier"; name: string; phone: string; note: string };;
 
 export type DraftResult = { ok: true; draft: Draft } | { ok: false; reason: string; candidates?: string[] };
 
