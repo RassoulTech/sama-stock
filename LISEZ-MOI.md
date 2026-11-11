@@ -102,42 +102,44 @@ pour la version actuellement en ligne : elle ignore simplement cette colonne.
 Où mettre les réglages : sur l'ordinateur, dans `.env.local` (Next.js lit aussi `.env`, mais `.env.local` passe en
 premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settings → Environment Variables).
 - `GEMINI_API_KEY` : la clé Gemini (obligatoire).
-- `ANTA_TTS_URL` : l'adresse de la voix wolof (obligatoire pour les réponses en wolof).
-- `GEMINI_MODEL` : facultatif, pour changer de modèle Gemini.
-- `ASSISTANT_DAILY_LIMIT` : facultatif, nombre de demandes par commerce et par jour (60 par défaut).
+- `GEMINI_LIVE_MODEL` / `GEMINI_LIVE_VOICE` : facultatifs, modèle et voix du dialogue en direct
+  (`gemini-3.1-flash-live-preview` et `Kore` par défaut).
+- `ASSISTANT_DAILY_LIMIT` : facultatif, nombre de conversations par commerce et par jour (60 par défaut).
 
 1. **Clé gratuite Gemini** : sur https://aistudio.google.com/apikey, créez une clé et collez-la dans `GEMINI_API_KEY`
    (`.env.local` sur l'ordinateur, variables Vercel pour la version en ligne).
-2. **Voix wolof** : `ANTA_TTS_URL` pointe aujourd'hui (2026-11-11) sur la voix publique
-   `https://ndaosaer-wolof-tts.hf.space` (gratuite, environ 17 s par phrase, réservée aux essais : elle appartient à
-   quelqu'un d'autre et sa licence interdit un usage payant). Pour avoir sa propre copie, il faut l'abonnement
-   Hugging Face PRO : ouvrez https://huggingface.co/spaces/ndaosaer/wolof-tts, **« Duplicate this Space »**, puis mettez
-   l'adresse de la copie (`https://<compte>-wolof-tts.hf.space`) dans `ANTA_TTS_URL`.
-   La voix s'endort après 48 h sans usage et met quelques minutes à se réveiller : la tâche planifiée
-   `/api/assistant/reveil` (chaque matin à 6 h) la garde éveillée, et le téléphone la réveille aussi à l'ouverture de
-   l'assistant. Les phrases du parcours (« Ndax ma bind ko ? »…) sont des fichiers prêts dans `public/assistant/voix/` ;
-   pour les refaire (après un changement de texte dans `src/lib/domain/assistant/phrases.ts`) :
-   `npx tsx scripts/phrases-voix.ts`.
-3. **Activation** : dans l'administration, ouvrez la fiche du commerce, puis **« Activer l'assistant »**. Le bouton
+2. **Activation** : dans l'administration, ouvrez la fiche du commerce, puis **« Activer l'assistant »**. Le bouton
    micro apparaît dans son application.
-4. **Utilisation** : appuyez sur le micro, gardez le doigt appuyé et parlez, puis relâchez.
+3. **Utilisation** : un toucher sur le micro ouvre la **conversation à la voix**. On parle normalement, en wolof ou en
+   français ; l'assistant entend la fin de la phrase, **répond à voix haute** (première voix en moins d'une seconde) et
+   relance (« Am na leneen ? »). Pas de texte à lire : une bulle montre seulement s'il écoute, parle ou travaille.
+   **Terminer** ferme la conversation (elle se ferme aussi après 90 s sans parole). Toucher le rond coupe sa parole.
 
-**Mode pilote** : pour une tâche, l'assistant la fait sur les vrais écrans, devant le commerçant. Le panneau se réduit
-en une bulle, un doigt se pose sur chaque champ et les valeurs apparaissent une à une. Sur le bouton final, il demande
-« Ndax ma bind ko ? » / « Je l'enregistre ? » : **Oui** / **Non** à l'écran, ou « waaw » / « déedéet » à la voix. Une
-correction dite à voix haute (« dafa am ñett kilo ») refait la tâche corrigée. **Rien n'est enregistré sans ce oui** ;
-c'est le vrai bouton de l'écran qui enregistre, avec ses contrôles habituels. Le bouton **Arrêter**, ou toucher l'écran,
-reprend la main ; ce qui est rempli reste affiché.
+**Comment ça marche** : le téléphone demande à `POST /api/assistant/session` une clé temporaire (usage unique, 15 min)
+qui fige le modèle, la voix, les consignes, le catalogue et les outils autorisés pour ce rôle ; puis il parle
+directement avec Google (Gemini Live). Quand l'assistant a besoin d'un chiffre ou d'une tâche, le téléphone fait
+exécuter l'outil par `POST /api/assistant/outil`, qui revérifie les droits. La vraie clé Google ne quitte jamais le
+serveur. Le son est débloqué dans le toucher du micro : la voix sort aussi sur iPhone.
+
+**Mode pilote** : pour une tâche, l'assistant la fait sur les vrais écrans pendant la conversation. Un doigt se pose sur
+chaque champ et les valeurs apparaissent une à une ; l'assistant se tait pendant ce temps, puis demande « Ndax ma bind
+ko ? » / « C'est prêt, je l'enregistre ? ». On répond « waaw » / « oui » à la voix (ou **Oui** / **Non** dans la bulle) ;
+une correction dite à voix haute (« dafa am ñett kilo ») refait la tâche corrigée. **Rien n'est enregistré sans ce
+oui** ; c'est le vrai bouton de l'écran qui enregistre, avec ses contrôles habituels, et l'assistant annonce le résultat.
+Toucher l'écran pendant une tâche reprend la main ; ce qui est rempli reste affiché.
 
 - Tâches : vente à la caisse, entrée de stock, sortie de stock (perte ou sortie), commande en ligne, état d'une
   commande, remboursement d'un client, nouveau produit, changement de prix, nouveau client, nouveau fournisseur.
 - « Montre-moi » : tableau de bord, rapports, stock bas, ruptures, ventes (et ventes à crédit), commandes, fiche d'un
-  client ou d'un produit ; le doigt montre le chiffre pendant que l'assistant répond.
+  client ou d'un produit ; l'assistant dit les chiffres et l'écran suit.
 - Pour les développeurs : chaque écran se branche avec `usePiloteEcran` (`src/components/assistant/pilote/`) et marque
   ses champs avec `data-assistant="…"`. Le test `cibles.test.ts` échoue si un écran perd une cible utilisée par une
-  recette.
+  recette. Le dialogue est dans `src/components/assistant/direct/` ; pour suivre une conversation dans la console,
+  tapez `window.__journalAssistant = []` avant de toucher le micro.
 
 Limites :
-- 60 demandes par commerce et par jour (`ASSISTANT_DAILY_LIMIT`).
-- Offre gratuite de Gemini : Google peut utiliser ces échanges, donc à réserver aux commerces testeurs.
-- La voix Anta ne doit pas être utilisée dans une version payante. Il faudra d'abord la réentraîner sur un modèle libre.
+- 60 conversations par commerce et par jour (`ASSISTANT_DAILY_LIMIT`) ; 20 dans les boutiques de démonstration.
+- Offre gratuite de Gemini : nombre de conversations limité, et Google peut utiliser ces échanges ; à passer en offre
+  payante avant d'ouvrir à tous les commerces.
+- Voix wolof de Google : compréhensible, accent à juger sur le terrain. L'ancienne voix Anta (`ANTA_TTS_URL`,
+  `/api/assistant/voix`, phrases prêtes) n'est plus utilisée par l'application : trop lente pour un dialogue (17 s).
