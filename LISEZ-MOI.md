@@ -108,9 +108,12 @@ premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settin
 
 1. **Clé gratuite Gemini** : sur https://aistudio.google.com/apikey, créez une clé et collez-la dans `GEMINI_API_KEY`
    (`.env.local` sur l'ordinateur, variables Vercel pour la version en ligne).
-2. **Voix wolof** : connecté à Hugging Face, ouvrez https://huggingface.co/spaces/ndaosaer/wolof-tts, puis cliquez sur
-   **« Duplicate this Space »**. Copiez l'adresse de votre copie (`https://<compte>-wolof-tts.hf.space`) dans
-   `ANTA_TTS_URL`. Elle s'endort après 48 h sans usage et met quelques minutes à se réveiller : la tâche planifiée
+2. **Voix wolof** : `ANTA_TTS_URL` pointe aujourd'hui (2026-11-11) sur la voix publique
+   `https://ndaosaer-wolof-tts.hf.space` (gratuite, environ 17 s par phrase, réservée aux essais : elle appartient à
+   quelqu'un d'autre et sa licence interdit un usage payant). Pour avoir sa propre copie, il faut l'abonnement
+   Hugging Face PRO : ouvrez https://huggingface.co/spaces/ndaosaer/wolof-tts, **« Duplicate this Space »**, puis mettez
+   l'adresse de la copie (`https://<compte>-wolof-tts.hf.space`) dans `ANTA_TTS_URL`.
+   La voix s'endort après 48 h sans usage et met quelques minutes à se réveiller : la tâche planifiée
    `/api/assistant/reveil` (chaque matin à 6 h) la garde éveillée, et le téléphone la réveille aussi à l'ouverture de
    l'assistant. Les phrases du parcours (« Ndax ma bind ko ? »…) sont des fichiers prêts dans `public/assistant/voix/` ;
    pour les refaire (après un changement de texte dans `src/lib/domain/assistant/phrases.ts`) :
