@@ -9,6 +9,7 @@ import { isLicensePack, LICENSE_PACKS } from "@/lib/domain/plans";
 import { formatDate, formatFCFA } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { adminCancelLicenseSale } from "@/server/actions/licences";
+import { DeleteLicenseButton } from "./delete-license-button";
 import { balanceOf, type getLicenseSale } from "@/server/queries/licences";
 import { ShareDocumentButton } from "@/components/documents/share-document";
 import { licenceShare } from "@/server/services/licence-documents";
@@ -128,6 +129,7 @@ export function LicenseCard({ detail }: { detail: Detail }) {
               successMessage="Licence annulée"
               action={adminCancelLicenseSale.bind(null, sale.id)}
             />
+            <DeleteLicenseButton saleId={sale.id} number={sale.number} active={sale.status === "active"} />
           </span>
         </div>
       </CardContent>

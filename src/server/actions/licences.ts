@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db, type Tx } from "@/db";
 import { account, businesses, licensePayments, licenseSales, locations, members, user } from "@/db/schema";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
+import { confirmationMatches } from "@/lib/domain/admin-delete";
 import { brandLabel, DEFAULT_BRAND, normalizeBrand } from "@/lib/domain/brand";
 import { isValidSlug } from "@/lib/domain/slug";
 import { addMonths, computePlanState, LICENSE_PACKS, MAINTENANCE_INCLUDED_MONTHS, MAINTENANCE_PERIOD_MONTHS, type LicensePackId } from "@/lib/domain/plans";
@@ -258,6 +259,31 @@ export async function adminCancelLicenseSale(saleId: string) {
       await tx.update(licenseSales).set({ status: "annulee", cancelledAt: new Date() }).where(eq(licenseSales.id, saleId));
       await tx.update(businesses).set({ licensePack: null, maintenanceEndsAt: null }).where(eq(businesses.id, sale.businessId));
       await logAdmin(tx, ctx, { action: "license_cancel", businessId: sale.businessId, summary: `Licence ${sale.number} annulée` });
+    });
+    revalidatePath("/admin", "layout");
+    return null;
+  });
+}
+
+/**
+ * Suppression définitive d'une vente de licence et de tous ses paiements (après avoir retapé son numéro).
+ * Si elle est encore active, le commerce perd d'abord sa licence, comme pour une annulation.
+ */
+export async function adminDeleteLicenseSale(saleId: string, confirmation: string) {
+  return runAction(async () => {
+    const ctx = await requireSuperAdminAction();
+    const sale = await loadSale(saleId);
+    if (!confirmationMatches(confirmation, sale.number)) throw new ActionError("Le numéro retapé ne correspond pas à cette licence.");
+    await db.transaction(async (tx) => {
+      if (sale.status === "active") {
+        await tx.update(businesses).set({ licensePack: null, maintenanceEndsAt: null }).where(eq(businesses.id, sale.businessId));
+      }
+      await tx.delete(licenseSales).where(eq(licenseSales.id, saleId));
+      await logAdmin(tx, ctx, {
+        action: "license_delete",
+        businessId: sale.businessId,
+        summary: `Licence ${sale.number} supprimée définitivement, avec ses paiements`,
+      });
     });
     revalidatePath("/admin", "layout");
     return null;

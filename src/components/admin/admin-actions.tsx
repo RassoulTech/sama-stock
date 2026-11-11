@@ -1,12 +1,12 @@
 "use client";
 
-import { Ban, CalendarPlus, CheckCircle2, Mic, TimerOff } from "lucide-react";
+import { Ban, CalendarPlus, CheckCircle2, Mic, TimerOff, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { Button } from "@/components/ui/button";
-import { adminExpireNow, adminExtend, adminSetAssistant, adminSetSuspended } from "@/server/actions/admin";
+import { adminDeleteBusiness, adminExpireNow, adminExtend, adminSetAssistant, adminSetSuspended } from "@/server/actions/admin";
 
 /**
  * Actions sur un commerce en essai gratuit : prolonger l'essai, l'arrêter, suspendre.
@@ -14,11 +14,13 @@ import { adminExpireNow, adminExtend, adminSetAssistant, adminSetSuspended } fro
  */
 export function AdminActions({
   businessId,
+  businessName,
   licensed,
   suspended,
   assistantEnabled,
 }: {
   businessId: string;
+  businessName: string;
   licensed: boolean;
   suspended: boolean;
   assistantEnabled: boolean;
@@ -108,6 +110,29 @@ export function AdminActions({
         >
           {assistantEnabled ? "Désactiver l'assistant" : "Activer l'assistant"}
         </Button>
+      </section>
+      <section className="space-y-3 rounded-xl border border-destructive/30 p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold text-destructive">
+          <Trash2 className="size-4" /> Supprimer définitivement
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Efface le commerce et tout son contenu : produits, stock, ventes, clients, commandes, factures, équipe, licence et paiements. Impossible à annuler.
+        </p>
+        <ConfirmAction
+          trigger={
+            <Button variant="destructive" size="sm">
+              <Trash2 /> Supprimer ce commerce
+            </Button>
+          }
+          title={`Supprimer « ${businessName} » définitivement ?`}
+          description="Tout le contenu du commerce est effacé et ne pourra pas être récupéré (les sauvegardes déjà faites en gardent une copie jusqu'à leur expiration). Les comptes des membres de l'équipe restent : supprimez-les à part si besoin."
+          confirmText={businessName}
+          confirmLabel="Supprimer définitivement"
+          destructive
+          successMessage="Commerce supprimé"
+          redirectTo="/admin/commerces"
+          action={(typed) => adminDeleteBusiness(businessId, typed)}
+        />
       </section>
     </div>
   );

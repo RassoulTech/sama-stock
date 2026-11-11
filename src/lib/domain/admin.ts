@@ -21,6 +21,9 @@ export const ADMIN_ACTIONS = {
   restore: "Restauration",
   backup: "Sauvegarde",
   assistant: "Assistant vocal",
+  business_delete: "Commerce supprimé",
+  user_delete: "Utilisateur supprimé",
+  license_delete: "Licence supprimée",
 } as const;
 
 /** Moyens de paiement d'une licence ou d'une maintenance. */

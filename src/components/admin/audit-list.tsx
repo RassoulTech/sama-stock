@@ -16,6 +16,7 @@ import {
   Palette,
   Store,
   TimerOff,
+  Trash2,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -46,6 +47,9 @@ const ICONS: Record<AdminAction, { icon: LucideIcon; tone: string }> = {
   restore: { icon: History, tone: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
   backup: { icon: DatabaseBackup, tone: "bg-accent text-primary" },
   assistant: { icon: Mic, tone: "bg-accent text-primary" },
+  business_delete: { icon: Trash2, tone: "bg-destructive/10 text-destructive" },
+  user_delete: { icon: Trash2, tone: "bg-destructive/10 text-destructive" },
+  license_delete: { icon: Trash2, tone: "bg-destructive/10 text-destructive" },
 };
 
 export interface AuditEntry {

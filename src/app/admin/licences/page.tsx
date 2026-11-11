@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminStat } from "@/components/admin/admin-stat";
 import { ContactButtons } from "@/components/admin/contact-buttons";
+import { DeleteLicenseButton } from "@/components/admin/licence/delete-license-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Pagination } from "@/components/shared/pagination";
@@ -180,6 +181,7 @@ export default async function AdminLicensesPage({ searchParams }: { searchParams
                         <span className="hidden sm:inline">Facture</span>
                       </Link>
                     </Button>
+                    <DeleteLicenseButton saleId={s.id} number={s.number} active={!cancelled} compact />
                   </span>
                 </div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">

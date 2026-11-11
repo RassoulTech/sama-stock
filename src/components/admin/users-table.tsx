@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Mail, ShieldCheck } from "lucide-react";
+import { LogOut, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ClientPagination, usePaged } from "@/components/shared/client-pagination";
@@ -11,7 +11,7 @@ import { matchesSearch, SearchInput } from "@/components/shared/search-input";
 import { Button } from "@/components/ui/button";
 import { isRole, ROLE_LABELS } from "@/lib/domain/permissions";
 import { formatDate, formatDateTime, initials } from "@/lib/format";
-import { adminRevokeUserSessions } from "@/server/actions/admin";
+import { adminDeleteUser, adminRevokeUserSessions } from "@/server/actions/admin";
 
 export interface AdminUserRow {
   id: string;
@@ -124,6 +124,22 @@ export function UsersTable({ rows, initialQuery = "" }: { rows: AdminUserRow[]; 
                     destructive
                     successMessage="Utilisateur déconnecté de tous ses appareils"
                     action={() => adminRevokeUserSessions(u.id)}
+                  />
+                )}
+                {!u.isCurrent && !u.isAdmin && (
+                  <ConfirmAction
+                    trigger={
+                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" aria-label={`Supprimer le compte ${u.email}`}>
+                        <Trash2 />
+                      </Button>
+                    }
+                    title={`Supprimer le compte de ${u.name || u.email} ?`}
+                    description="Le compte, ses connexions et ses accès aux commerces sont effacés définitivement. L'historique des commerces (ventes, mouvements) reste, sans son nom. Le propriétaire d'un commerce ne peut pas être supprimé : supprimez d'abord le commerce."
+                    confirmText={u.email}
+                    confirmLabel="Supprimer définitivement"
+                    destructive
+                    successMessage="Compte supprimé"
+                    action={(typed) => adminDeleteUser(u.id, typed)}
                   />
                 )}
               </div>

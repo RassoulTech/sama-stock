@@ -5,11 +5,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { businesses, businessNotes, session, user } from "@/db/schema";
+import { confirmationMatches, userDeletionBlocker } from "@/lib/domain/admin-delete";
 import { computePlanState } from "@/lib/domain/plans";
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
 import { formatDate, normalizePhone } from "@/lib/format";
 import { ActionError, parse, runAction } from "../action";
-import { getSession, requireSuperAdminAction } from "../context";
+import { getSession, isSuperAdminEmail, requireSuperAdminAction } from "../context";
 import { logAdmin } from "../services/admin-audit";
 
 async function load(id: string) {
@@ -97,6 +98,52 @@ export async function adminRevokeUserSessions(userId: string) {
         targetUserId: userId,
         summary: `${target?.email ?? "Un utilisateur"} a été déconnecté de tous ses appareils`,
       });
+    });
+    revalidatePath("/admin", "layout");
+    return null;
+  });
+}
+
+/**
+ * Suppression définitive d'un compte (après avoir retapé son e-mail) : ses connexions et ses accès partent avec lui ;
+ * l'historique des commerces reste, sans son nom. Jamais soi-même, un administrateur ni le propriétaire d'un commerce.
+ */
+export async function adminDeleteUser(userId: string, confirmation: string) {
+  return runAction(async () => {
+    const ctx = await requireSuperAdminAction();
+    const [target] = await db.select({ email: user.email }).from(user).where(eq(user.id, userId));
+    if (!target) throw new ActionError("Utilisateur introuvable.");
+    const owned = await db.select({ name: businesses.name }).from(businesses).where(eq(businesses.ownerId, userId));
+    const blocker = userDeletionBlocker({
+      isSelf: ctx.user.id === userId,
+      isSuperAdmin: isSuperAdminEmail(target.email),
+      ownedBusinesses: owned.map((b) => b.name),
+    });
+    if (blocker) throw new ActionError(blocker);
+    if (!confirmationMatches(confirmation, target.email)) throw new ActionError("L'e-mail retapé ne correspond pas à ce compte.");
+    await db.transaction(async (tx) => {
+      await logAdmin(tx, ctx, { action: "user_delete", targetUserId: userId, summary: `Compte ${target.email} supprimé définitivement` });
+      await tx.delete(user).where(eq(user.id, userId));
+    });
+    revalidatePath("/admin", "layout");
+    return null;
+  });
+}
+
+/**
+ * Suppression définitive d'un commerce et de tout son contenu (après avoir retapé son nom). Les comptes de l'équipe restent.
+ * Les démos se recréent chaque jour : elles ne se suppriment pas.
+ */
+export async function adminDeleteBusiness(businessId: string, confirmation: string) {
+  return runAction(async () => {
+    const ctx = await requireSuperAdminAction();
+    const b = await load(businessId);
+    if (b.isDemo) throw new ActionError("Les boutiques de démonstration se recréent chaque jour : elles ne se suppriment pas.");
+    if (!confirmationMatches(confirmation, b.name)) throw new ActionError("Le nom retapé ne correspond pas à ce commerce.");
+    await db.transaction(async (tx) => {
+      // Le journal garde la trace (son lien vers le commerce s'efface avec lui)
+      await logAdmin(tx, ctx, { action: "business_delete", businessId, summary: `Commerce « ${b.name} » supprimé définitivement avec tout son contenu` });
+      await tx.delete(businesses).where(eq(businesses.id, businessId));
     });
     revalidatePath("/admin", "layout");
     return null;
