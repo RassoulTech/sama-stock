@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { voixPrete } from "@/server/assistant/voix";
 import { getContext, type BusinessContext } from "@/server/context";
 
 /** La voix Anta (serveur gratuit) peut mettre jusqu'à 60 s, surtout au réveil. */
@@ -38,4 +39,13 @@ export async function POST(request: Request) {
   } catch {
     return fail("Voix indisponible.", 504);
   }
+}
+
+/** Réveil de la voix, demandé par le téléphone à l'ouverture de l'assistant (il n'attend pas la réponse). */
+export async function GET() {
+  const app = await getContext();
+  if (!app?.business) return fail("Votre session a expiré. Reconnectez-vous.", 401);
+  const base = process.env.ANTA_TTS_URL;
+  if (!base) return NextResponse.json({ configuree: false, pret: false }, { headers: NO_STORE });
+  return NextResponse.json({ configuree: true, pret: await voixPrete(base, 5_000) }, { headers: NO_STORE });
 }

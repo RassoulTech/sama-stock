@@ -66,6 +66,6 @@ function isPrefetch(request: NextRequest): boolean {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest|robots.txt|sitemap.xml|opengraph-image|.*\\.(?:png|svg|jpg|jpeg|webp|ico|txt|xml|mp4|webm|mp3|woff2)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|icon|apple-icon|manifest.webmanifest|robots.txt|sitemap.xml|opengraph-image|.*\\.(?:png|svg|jpg|jpeg|webp|ico|txt|xml|mp4|webm|mp3|wav|woff2)$).*)",
   ],
 };
