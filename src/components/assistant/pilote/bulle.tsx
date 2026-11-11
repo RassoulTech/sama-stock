@@ -50,8 +50,17 @@ export function BulleAssistant() {
           {a.notice && <p className="mt-1 text-sm text-destructive">{a.notice}</p>}
         </div>
         {a.actif ? (
-          <Button type="button" size="sm" variant="outline" onClick={a.terminer} aria-label="Terminer la conversation">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={a.terminer}
+            aria-label="Terminer la conversation"
+            aria-keyshortcuts="Escape"
+            title="Terminer (Échap ou Ctrl + Espace)"
+          >
             <PhoneOff /> Terminer
+            <kbd className="ml-1 hidden rounded border px-1 font-sans text-[0.625rem] text-muted-foreground lg:inline">Échap</kbd>
           </Button>
         ) : (
           <button type="button" aria-label="Fermer" onClick={a.fermerStatut} className="rounded-full p-1 text-muted-foreground">

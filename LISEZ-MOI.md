@@ -114,6 +114,7 @@ premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settin
    français ; l'assistant entend la fin de la phrase, **répond à voix haute** (première voix en moins d'une seconde) et
    relance (« Am na leneen ? »). Pas de texte à lire : une bulle montre seulement s'il écoute, parle ou travaille.
    **Terminer** ferme la conversation (elle se ferme aussi après 90 s sans parole). Toucher le rond coupe sa parole.
+   Sur ordinateur, **Ctrl + Espace** ouvre ou ferme la conversation, et **Échap** la ferme.
 
 **Comment ça marche** : le téléphone demande à `POST /api/assistant/session` une clé temporaire (usage unique, 15 min)
 qui fige le modèle, la voix, les consignes, le catalogue et les outils autorisés pour ce rôle ; puis il parle
