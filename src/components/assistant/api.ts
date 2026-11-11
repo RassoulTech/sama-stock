@@ -5,14 +5,28 @@ export type AskResult = { ok: true; reply: AssistantReply } | { ok: false; error
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
-export async function askAssistant(audio: string, history: HistoryItem[]): Promise<AskResult> {
+export async function askAssistant(audio: string, history: HistoryItem[], attente: string | null = null): Promise<AskResult> {
   try {
-    const res = await fetch("/api/assistant", { method: "POST", headers: JSON_HEADERS, body: JSON.stringify({ audio, history }) });
+    const res = await fetch("/api/assistant", {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify({ audio, history, ...(attente ? { attente } : {}) }),
+    });
     const data = (await res.json().catch(() => null)) as (AssistantReply & { error?: string }) | null;
     if (!res.ok || !data) return { ok: false, error: data?.error ?? "L'assistant ne répond pas. Réessaie." };
     return { ok: true, reply: data };
   } catch {
     return { ok: false, error: "Pas de connexion internet." };
+  }
+}
+
+/** Réveille la voix wolof (le serveur gratuit s'endort) ; on n'attend pas sa réponse pour continuer. */
+export async function reveillerVoix(): Promise<{ configuree: boolean; pret: boolean } | null> {
+  try {
+    const res = await fetch("/api/assistant/voix", { method: "GET" });
+    return res.ok ? ((await res.json()) as { configuree: boolean; pret: boolean }) : null;
+  } catch {
+    return null;
   }
 }
 
