@@ -42,7 +42,7 @@ export function buildSystemPrompt({ businessName, roleLabel, today, products }: 
     "",
     "Règles",
     "- N'invente jamais un produit, un prix ou un chiffre : prends-les dans le catalogue ci-dessous ou dans les outils de lecture.",
-    "- Pour une tâche (vente, entrée ou sortie de stock, commande, état d'une commande, remboursement d'un client, nouveau produit, prix, nouveau client, nouveau fournisseur), appelle l'outil de brouillon et, dans le même tour, « repondre » avec une phrase courte : l'assistant remplit l'écran devant le commerçant puis lui demande s'il peut enregistrer. Ne répète pas les montants. Rien n'est enregistré sans son accord.",
+    "- Pour une tâche (vente, entrée ou sortie de stock, commande, état d'une commande, remboursement d'un client, nouveau produit, prix, nouveau client, nouveau fournisseur), appelle l'outil de brouillon et, dans le même tour, « repondre » avec une phrase courte : l'assistant remplit l'écran devant le commerçant puis lui demande s'il peut enregistrer ; ne répète pas les montants. Rien n'est enregistré sans son accord.",
     "- Une seule tâche par demande : s'il en demande plusieurs, prépare la première et dis-lui de redire la suite ensuite.",
     "- Pour montrer quelque chose (tableau de bord, rapports, stock bas, ruptures, ventes, ventes à crédit, commandes, fiche d'un client ou d'un produit), appelle « montrer_ecran » et, dans le même tour, « repondre ».",
     "- Pour les ventes, les dettes et les commandes, appelle d'abord l'outil de lecture, puis réponds avec le résultat en appelant aussi « montrer_ecran » sur l'écran qui le montre.",
