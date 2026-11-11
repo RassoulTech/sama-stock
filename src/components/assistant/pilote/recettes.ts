@@ -14,7 +14,8 @@ const si = (condition: unknown, ...etapes: Etape[]): Etape[] => (condition ? eta
 /** Les étapes que le téléphone joue pour une mission ; le bouton final vient toujours après « confirmer ». */
 export function etapesPour(mission: Mission): Etape[] {
   if (mission.type === "ecran") {
-    return [ouvrir(mission.ecran.url, `J'ouvre ${mission.ecran.titre}…`), { type: "montrer", cible: mission.ecran.cible, texte: mission.ecran.titre }];
+    const { url, titre, cible } = mission.ecran;
+    return [ouvrir(url, `J'ouvre ${titre}…`), ...(cible ? [{ type: "montrer" as const, cible, texte: titre }] : [])];
   }
   return etapesTache(mission.tache);
 }

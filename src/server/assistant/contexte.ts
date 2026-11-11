@@ -5,6 +5,7 @@ import { buildEcran, type EcranAccess } from "@/lib/domain/assistant/ecrans";
 import { allowedTools, type ToolName } from "@/lib/domain/assistant/tools";
 import { getContext, type BusinessContext } from "../context";
 import type { ProductRow } from "../queries/products";
+import { listSales } from "../queries/sales";
 import type { OutilDeps } from "./outils";
 import { createReaders, loadDraftCatalog } from "./readers";
 
@@ -51,6 +52,14 @@ export function dependancesOutils(ctx: BusinessContext, products: ProductRow[]):
   return {
     read: createReaders(ctx, products),
     draft: async (name, args) => buildDraft(name, args, await charger(), { costs }),
-    ecran: async (args) => buildEcran(args, await charger(), access),
+    ecran: async (args) => {
+      const catalogue = await charger();
+      // La dernière vente n'est cherchée que lorsqu'on la demande
+      const derniereVente =
+        args.ecran === "derniere_vente"
+          ? ((await listSales(ctx, { from: null, to: null }, { limit: 1, offset: 0 })).map((v) => ({ id: v.id, number: String(v.number) }))[0] ?? null)
+          : undefined;
+      return buildEcran(args, { ...catalogue, derniereVente }, access);
+    },
   };
 }

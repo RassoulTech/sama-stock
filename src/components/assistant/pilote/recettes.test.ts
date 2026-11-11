@@ -143,4 +143,9 @@ describe("etapesPour — écrans", () => {
       { type: "montrer", cible: "ventes.total", texte: "Ventes" },
     ]);
   });
+  it("only opens a page that has nothing to point at", () => {
+    expect(etapesPour({ type: "ecran", ecran: { ecran: "fournisseurs", url: "/fournisseurs", cible: "", titre: "Fournisseurs" } })).toEqual([
+      { type: "ouvrir", url: "/fournisseurs", texte: "J'ouvre Fournisseurs…" },
+    ]);
+  });
 });

@@ -1,4 +1,5 @@
 import "server-only";
+import { resumeCatalogue } from "@/lib/domain/assistant/catalogue";
 import type { DraftCatalog } from "@/lib/domain/assistant/drafts";
 import { findByName } from "@/lib/domain/assistant/match";
 import { isOrderStatus } from "@/lib/domain/orders";
@@ -17,6 +18,8 @@ import { listSuppliers } from "../queries/stock";
 export function createReaders(ctx: BusinessContext, products: ProductRow[]) {
   return async function read(name: ReadToolName, args: Record<string, unknown>): Promise<Record<string, unknown>> {
     switch (name) {
+      case "resume_catalogue":
+        return resumeCatalogue(products.filter((p) => !p.archived), { costs: ctx.can("costs.view") });
       case "stock_produit": {
         const match = findByName(String(args.produit ?? ""), products);
         if (match.kind === "none") return { trouve: false, message: "Produit introuvable dans le catalogue." };

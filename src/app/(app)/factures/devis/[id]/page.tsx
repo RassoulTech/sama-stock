@@ -42,6 +42,7 @@ export default async function DevisPage({ params }: { params: Promise<{ id: stri
         <DocumentView doc={doc} logo={ctx.business.logo} paid={null} />
         <div className="space-y-3">
           <ShareDocumentButton
+            assistant
             pdfUrl={pdfPath("devis", doc.id)}
             verifyUrl={verifyUrl("devis", doc.id)}
             fileName={`${doc.number}.pdf`}

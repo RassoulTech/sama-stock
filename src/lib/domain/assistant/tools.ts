@@ -5,7 +5,7 @@ import { ORDER_CHANNELS, PAYING_METHODS, SALE_METHODS } from "@/lib/domain/sales
 import { EXIT_REASONS, LOSS_REASONS } from "@/lib/domain/stock";
 import { UNITS, type UnitId } from "@/lib/format";
 
-export const READ_TOOLS = ["stock_produit", "resume_ventes", "clients_debiteurs", "commandes_en_cours"] as const;
+export const READ_TOOLS = ["stock_produit", "resume_ventes", "resume_catalogue", "clients_debiteurs", "commandes_en_cours"] as const;
 
 export const DRAFT_TOOLS = [
   "brouillon_vente",
@@ -30,8 +30,38 @@ export const STATUS_TARGETS = ["preparing", "shipping", "delivered", "cancelled"
 export const UNIT_IDS = UNITS.map((u) => u.id) as [UnitId, ...UnitId[]];
 export type ReadToolName = (typeof READ_TOOLS)[number];
 export type DraftToolName = (typeof DRAFT_TOOLS)[number];
-export const ECRANS = ["tableau_de_bord", "rapports", "stock_bas", "ruptures", "ventes", "ventes_credit", "commandes", "client", "produit"] as const;
-export type SpecialToolName = "montrer_ecran" | "confirmer";
+export const ECRANS = [
+  "tableau_de_bord",
+  "rapports",
+  "produits",
+  "stock_bas",
+  "ruptures",
+  "ventes",
+  "ventes_credit",
+  "derniere_vente",
+  "vendre",
+  "commandes",
+  "nouvelle_commande",
+  "clients",
+  "client",
+  "produit",
+  "nouveau_produit",
+  "fournisseurs",
+  "stock",
+  "entree_stock",
+  "sortie_stock",
+  "inventaire",
+  "transfert",
+  "historique_stock",
+  "factures",
+  "equipe",
+  "parametres",
+  "licence",
+] as const;
+/** Outils joués par le téléphone lui-même (lecture de l'écran, appui sur un bouton, envoi WhatsApp) : ils ne passent pas par le serveur. */
+export const OUTILS_ECRAN = ["lire_ecran", "cliquer", "envoyer_whatsapp"] as const;
+export type OutilEcran = (typeof OUTILS_ECRAN)[number];
+export type SpecialToolName = "montrer_ecran" | "confirmer" | OutilEcran;
 export type ToolName = ReadToolName | DraftToolName | SpecialToolName | "repondre";
 
 export const LANGS = ["wo", "fr"] as const;
@@ -63,7 +93,7 @@ export function isDraftTool(name: string): name is DraftToolName {
  */
 export function allowedTools(access: ToolAccess, opts: { attente?: boolean; direct?: boolean } = {}): ToolName[] {
   const tools: ToolName[] = ["resume_ventes", "montrer_ecran"];
-  if (access.can("products.view")) tools.push("stock_produit");
+  if (access.can("products.view")) tools.push("stock_produit", "resume_catalogue");
   if (access.can("customers.manage")) tools.push("clients_debiteurs");
   if (access.can("orders.manage")) tools.push("commandes_en_cours");
   if (!access.readOnly) {
@@ -75,6 +105,8 @@ export function allowedTools(access: ToolAccess, opts: { attente?: boolean; dire
     if (access.can("products.manage")) tools.push("brouillon_produit", "brouillon_prix");
     if (access.can("suppliers.manage")) tools.push("brouillon_fournisseur");
   }
+  // Dialogue en direct : l'assistant se sert de l'écran comme une personne (lire, cliquer, envoyer un reçu)
+  if (opts.direct) tools.push(...OUTILS_ECRAN);
   if (opts.attente || opts.direct) tools.push("confirmer");
   if (!opts.direct) tools.push("repondre");
   return tools;
@@ -234,15 +266,35 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
     },
     montrer_ecran: {
       name: "montrer_ecran",
-      description: "Ouvre un écran de l'application devant le commerçant et montre du doigt le chiffre ou la liste demandés.",
+      description: "Ouvre une page de l'application devant le commerçant (et montre du doigt le chiffre principal quand il y en a un).",
       parameters: object(
         {
-          ecran: oneOf(ECRANS, "tableau_de_bord, rapports, stock_bas, ruptures, ventes, ventes_credit (ventes à crédit), commandes, client (fiche d'un client), produit (fiche d'un produit)"),
+          ecran: oneOf(
+            ECRANS,
+            "tableau_de_bord ; rapports ; produits (liste du catalogue) ; stock_bas ; ruptures ; ventes ; ventes_credit ; derniere_vente (le reçu de la dernière vente) ; vendre (la caisse) ; commandes ; nouvelle_commande ; clients ; client (fiche, avec nom) ; produit (fiche, avec nom) ; nouveau_produit ; fournisseurs ; stock ; entree_stock ; sortie_stock ; inventaire ; transfert ; historique_stock ; factures ; equipe ; parametres ; licence",
+          ),
           periode: oneOf(PERIODS, "Période pour les ventes ou les rapports"),
           nom: str("Nom du client ou du produit, pour ouvrir sa fiche"),
         },
         ["ecran"],
       ),
+    },
+    resume_catalogue: {
+      name: "resume_catalogue",
+      description: "État du catalogue : nombre de produits, en stock, stock bas, ruptures (avec les noms) et valeur du stock.",
+    },
+    lire_ecran: {
+      name: "lire_ecran",
+      description: "Lit ce qui est affiché à l'écran en ce moment (page, chiffres, listes, fenêtre ouverte), pour en parler au commerçant ou décider quoi faire.",
+    },
+    cliquer: {
+      name: "cliquer",
+      description: "Appuie sur un bouton, un onglet ou un lien visible à l'écran, désigné par son texte. Un bouton qui enregistre, envoie, paie, annule ou supprime demande d'abord l'accord du commerçant.",
+      parameters: object({ libelle: str("Texte du bouton ou du lien tel qu'il est écrit à l'écran (lis l'écran avant si besoin)") }, ["libelle"]),
+    },
+    envoyer_whatsapp: {
+      name: "envoyer_whatsapp",
+      description: "Envoie sur WhatsApp le PDF du document ouvert à l'écran : reçu de vente, facture ou devis (ouvre-le avant, par exemple derniere_vente pour le reçu de la dernière vente).",
     },
     confirmer: {
       name: "confirmer",

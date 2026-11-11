@@ -67,8 +67,14 @@ export interface PiloteFiche {
   enregistrer(): Promise<ResultatPilote>;
 }
 
+/** Reçu, facture ou devis ouvert à l'écran : l'envoi sur WhatsApp (à appeler dans un toucher du commerçant). */
+export interface PiloteDocument {
+  envoyer(): Promise<ResultatPilote>;
+}
+
 export interface Pilotes {
   vente: PiloteVente;
+  document: PiloteDocument;
   "vente.encaisser": PiloteEncaisser;
   entree: PiloteEntree;
   sortie: PiloteSortie;

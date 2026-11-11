@@ -3,6 +3,7 @@
 import { Check, Download, FileText, Loader2, MessageCircle, Share2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { waLink } from "@/lib/whatsapp";
@@ -21,6 +22,7 @@ export function ShareDocumentButton({
   label = "Envoyer le PDF",
   size = "lg",
   className,
+  assistant = false,
 }: {
   pdfUrl: string;
   verifyUrl: string;
@@ -30,10 +32,46 @@ export function ShareDocumentButton({
   label?: string;
   size?: "sm" | "default" | "lg";
   className?: string;
+  /** L'assistant vocal peut envoyer ce document (une seule page de document à la fois). */
+  assistant?: boolean;
 }) {
   const fileRef = useRef<File | null>(null);
   const [pending, setPending] = useState(false);
   const [desktopOpen, setDesktopOpen] = useState(false);
+  const [desktopDone, setDesktopDone] = useState(false);
+  const share = { pdfUrl, verifyUrl, fileName, phone, message };
+
+  // L'assistant appelle l'envoi depuis le toucher du commerçant sur sa bulle (le téléphone l'exige pour un fichier)
+  usePiloteEcran(
+    "document",
+    {
+      envoyer: async () => {
+        if (!isPhone()) {
+          const opened = downloadAndOpenWhatsApp(share);
+          setDesktopDone(true);
+          setDesktopOpen(true);
+          return opened
+            ? { ok: true, message: "WhatsApp est ouvert et le PDF est téléchargé : il reste à glisser le fichier dans la discussion." }
+            : { ok: false, message: "Le navigateur a bloqué WhatsApp : autorise les fenêtres pour ce site." };
+        }
+        if (canShare()) {
+          const file = fileRef.current ?? (await loadFile(pdfUrl, fileName));
+          if (file && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file], text: message });
+              return { ok: true, message: "Le PDF est parti par le partage du téléphone." };
+            } catch (error) {
+              if (error instanceof DOMException && error.name === "AbortError") return { ok: false, message: "Envoi annulé." };
+            }
+          }
+        }
+        return openTab(waLink(phone, `${message}\n\n${verifyUrl}`))
+          ? { ok: true, message: "WhatsApp est ouvert avec le message et le lien du document." }
+          : { ok: false, message: "Le navigateur a bloqué WhatsApp : autorise les fenêtres pour ce site." };
+      },
+    },
+    assistant,
+  );
 
   // Sur téléphone, le PDF est préparé à l'avance : le partage doit partir tout de suite après le toucher
   useEffect(() => {
@@ -59,24 +97,21 @@ export function ShareDocumentButton({
       }
     }
     // Téléphone sans partage de fichier : le message et le lien du document
-    const opened = window.open(waLink(phone, `${message}\n\n${verifyUrl}`), "_blank", "noopener,noreferrer");
-    if (!opened) toast.error("Autorisez l'ouverture de WhatsApp dans votre navigateur.");
+    if (!openTab(waLink(phone, `${message}\n\n${verifyUrl}`))) toast.error("Autorisez l'ouverture de WhatsApp dans votre navigateur.");
   }
 
   return (
     <>
-      <Button type="button" size={size} onClick={send} disabled={pending} className={className ?? "w-full bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]"}>
+      <Button
+        type="button"
+        size={size}
+        onClick={send}
+        disabled={pending}
+        data-assistant={assistant ? "document.envoyer" : undefined}
+        className={className ?? "w-full bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]"}>
         {pending ? <Loader2 className="animate-spin" /> : <MessageCircle />} {label}
       </Button>
-      <DesktopShareDialog
-        open={desktopOpen}
-        onOpenChange={setDesktopOpen}
-        pdfUrl={pdfUrl}
-        verifyUrl={verifyUrl}
-        fileName={fileName}
-        phone={phone}
-        message={message}
-      />
+      <DesktopShareDialog open={desktopOpen} onOpenChange={setDesktopOpen} done={desktopDone} onDone={setDesktopDone} {...share} />
     </>
   );
 }
@@ -84,6 +119,8 @@ export function ShareDocumentButton({
 function DesktopShareDialog({
   open,
   onOpenChange,
+  done,
+  onDone,
   pdfUrl,
   verifyUrl,
   fileName,
@@ -92,13 +129,15 @@ function DesktopShareDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Le PDF est téléchargé et WhatsApp ouvert : il reste la dernière étape. */
+  done: boolean;
+  onDone: (done: boolean) => void;
   pdfUrl: string;
   verifyUrl: string;
   fileName: string;
   phone: string | null | undefined;
   message: string;
 }) {
-  const [done, setDone] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [systemShare, setSystemShare] = useState(false);
   const fileRef = useRef<File | null>(null);
@@ -118,16 +157,8 @@ function DesktopShareDialog({
   }, [open, pdfUrl, fileName]);
 
   function downloadAndOpen() {
-    // WhatsApp d'abord, dans le même geste : sinon le navigateur bloque la nouvelle fenêtre
-    const opened = window.open(waLink(phone, `${message}\n\n${verifyUrl}`), "_blank", "noopener,noreferrer");
-    const a = document.createElement("a");
-    a.href = `${pdfUrl}?telecharger=1`;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    if (!opened) toast.error("Autorisez l'ouverture de WhatsApp dans votre navigateur.");
-    setDone(true);
+    if (!downloadAndOpenWhatsApp({ pdfUrl, verifyUrl, fileName, phone, message })) toast.error("Autorisez l'ouverture de WhatsApp dans votre navigateur.");
+    onDone(true);
   }
 
   async function shareWithApp() {
@@ -149,7 +180,7 @@ function DesktopShareDialog({
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
-        if (!next) setDone(false);
+        if (!next) onDone(false);
       }}
     >
       <DialogContent className="sm:max-w-md">
@@ -212,6 +243,30 @@ export function DownloadPdfButton({ pdfUrl, label = "Télécharger le PDF" }: { 
       </a>
     </Button>
   );
+}
+
+/**
+ * Ouvre un onglet et dit s'il s'est ouvert. (Avec « noopener », le navigateur rend toujours null : on coupe le lien
+ * vers cette page après coup.)
+ */
+function openTab(url: string): boolean {
+  const tab = window.open(url, "_blank");
+  if (!tab) return false;
+  tab.opener = null;
+  return true;
+}
+
+/** Sur ordinateur : la discussion WhatsApp avec le message, et le PDF téléchargé à côté. */
+function downloadAndOpenWhatsApp(d: { pdfUrl: string; verifyUrl: string; fileName: string; phone: string | null | undefined; message: string }): boolean {
+  // WhatsApp d'abord, dans le même geste : sinon le navigateur bloque la nouvelle fenêtre
+  const opened = openTab(waLink(d.phone, `${d.message}\n\n${d.verifyUrl}`));
+  const a = document.createElement("a");
+  a.href = `${d.pdfUrl}?telecharger=1`;
+  a.download = d.fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  return opened;
 }
 
 /** Téléphone ou tablette : la fenêtre de partage du système propose WhatsApp avec le fichier. */

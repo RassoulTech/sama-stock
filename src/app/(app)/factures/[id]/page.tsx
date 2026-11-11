@@ -42,6 +42,7 @@ export default async function FacturePage({ params }: { params: Promise<{ id: st
         <div className="space-y-3">
           {!cancelled && (
             <ShareDocumentButton
+              assistant
               pdfUrl={pdfPath("facture", doc.id)}
               verifyUrl={verifyUrl("facture", doc.id)}
               fileName={`${doc.number}.pdf`}

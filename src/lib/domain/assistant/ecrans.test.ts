@@ -45,3 +45,22 @@ describe("missionForModel", () => {
     expect(text).toBe('{"action":"nouveau_client","nom":"Fatou Sall","telephone":null,"adresse":null}');
   });
 });
+
+describe("buildEcran — toutes les pages", () => {
+  it("opens simple pages without a finger", () => {
+    expect(buildEcran({ ecran: "fournisseurs" }, catalog, all)).toEqual({ ok: true, ecran: { ecran: "fournisseurs", url: "/fournisseurs", cible: "", titre: "Fournisseurs" } });
+    expect(buildEcran({ ecran: "vendre" }, catalog, all)).toMatchObject({ ok: true, ecran: { url: "/vendre" } });
+    expect(buildEcran({ ecran: "inventaire" }, catalog, all)).toMatchObject({ ok: true, ecran: { url: "/stock/inventaire" } });
+    expect(buildEcran({ ecran: "produits" }, catalog, all)).toMatchObject({ ok: true, ecran: { url: "/produits", cible: "produits.liste" } });
+  });
+  it("respects the access of simple pages", () => {
+    expect(buildEcran({ ecran: "clients" }, catalog, { ...all, customers: false })).toEqual({ ok: false, reason: "Tu n'as pas accès aux clients." });
+  });
+  it("opens the last sale when there is one", () => {
+    expect(buildEcran({ ecran: "derniere_vente" }, { ...catalog, derniereVente: { id: "v9", number: "V-0042" } }, all)).toEqual({
+      ok: true,
+      ecran: { ecran: "derniere_vente", url: "/ventes/v9", cible: "", titre: "Vente V-0042" },
+    });
+    expect(buildEcran({ ecran: "derniere_vente" }, { ...catalog, derniereVente: null }, all)).toEqual({ ok: false, reason: "Aucune vente enregistrée pour l'instant." });
+  });
+});

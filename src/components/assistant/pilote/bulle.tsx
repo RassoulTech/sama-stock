@@ -1,7 +1,7 @@
 // src/components/assistant/pilote/bulle.tsx
 "use client";
 
-import { Check, PhoneOff, Square, X } from "lucide-react";
+import { Check, MessageCircle, PhoneOff, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { STATUTS, useAssistant } from "../assistant-provider";
@@ -9,7 +9,8 @@ import { Doigt } from "./doigt";
 
 /**
  * Bulle de la conversation : un rond qui vit avec la voix (écoute, parle, regarde, remplit), « Terminer », et pendant
- * l'accord le résumé de la tâche avec Oui / Non. Aucun fil de discussion écrit : on parle avec l'assistant.
+ * l'accord le résumé de la tâche avec Oui / Non, et le bouton vert d'envoi WhatsApp quand le téléphone exige un toucher.
+ * Aucun fil de discussion écrit : on parle avec l'assistant.
  */
 export function BulleAssistant() {
   const a = useAssistant();
@@ -77,6 +78,11 @@ export function BulleAssistant() {
             Non
           </Button>
         </div>
+      )}
+      {a.geste && (
+        <Button size="lg" className="mt-3 w-full bg-[#25D366] text-[#0b1310] hover:bg-[#1fb857]" onClick={a.faireGeste}>
+          <MessageCircle /> {a.geste}
+        </Button>
       )}
       {a.phase === "pilote" && (
         <Button variant="outline" size="sm" className="mt-3 w-full" onClick={a.arreterTache}>

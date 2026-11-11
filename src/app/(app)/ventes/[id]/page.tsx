@@ -130,6 +130,7 @@ export default async function VentePage({
           )}
           {sale.status === "completed" && (
             <ShareDocumentButton
+              assistant
               pdfUrl={pdfPath("recu", sale.id)}
               verifyUrl={verifyUrl("recu", sale.id)}
               fileName={`Recu-${sale.number}.pdf`}

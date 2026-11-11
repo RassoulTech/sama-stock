@@ -47,6 +47,9 @@ describe("buildSystemPrompt", () => {
     expect(text).toContain("Ne dis jamais « je t'affiche »");
     expect(text).toContain("Ndax ma bind ko ?");
     expect(text).toContain("appelle « confirmer »");
+    expect(text).toContain("« lire_ecran »");
+    expect(text).toContain("« cliquer »");
+    expect(text).toContain("« envoyer_whatsapp »");
     expect(text).not.toContain("repondre");
     expect(text).toContain("(aucun produit enregistré)");
   });

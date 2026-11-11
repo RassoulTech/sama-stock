@@ -131,8 +131,14 @@ Toucher l'écran pendant une tâche reprend la main ; ce qui est rempli reste af
 
 - Tâches : vente à la caisse, entrée de stock, sortie de stock (perte ou sortie), commande en ligne, état d'une
   commande, remboursement d'un client, nouveau produit, changement de prix, nouveau client, nouveau fournisseur.
-- « Montre-moi » : tableau de bord, rapports, stock bas, ruptures, ventes (et ventes à crédit), commandes, fiche d'un
-  client ou d'un produit ; l'assistant dit les chiffres et l'écran suit.
+- « Va sur… » : l'assistant ouvre n'importe quelle page (produits, caisse, clients, fournisseurs, stock, inventaire,
+  factures, équipe, paramètres, reçu de la dernière vente…), **lit l'écran** et dit l'essentiel (« combien de produits
+  j'ai ? » : nombre, stock bas, ruptures, valeur du stock).
+- Il **appuie sur les boutons** comme le commerçant (onglets, filtres, liens, « Nouvelle vente »…). Un bouton qui
+  enregistre, envoie, annule ou supprime n'est touché qu'après son oui. Il ne tape rien en dehors des tâches ci-dessus.
+- **WhatsApp** : « envoie le reçu sur WhatsApp » ouvre la vente puis affiche un gros bouton vert dans la bulle ; le
+  commerçant le touche et le PDF part (le téléphone exige un vrai toucher pour envoyer un fichier). Marche aussi pour
+  une facture ou un devis ouvert.
 - Pour les développeurs : chaque écran se branche avec `usePiloteEcran` (`src/components/assistant/pilote/`) et marque
   ses champs avec `data-assistant="…"`. Le test `cibles.test.ts` échoue si un écran perd une cible utilisée par une
   recette. Le dialogue est dans `src/components/assistant/direct/` ; pour suivre une conversation dans la console,
