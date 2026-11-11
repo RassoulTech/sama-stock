@@ -39,14 +39,3 @@ export async function wolofVoice(texte: string): Promise<Blob | null> {
     return null;
   }
 }
-
-/** Voix française du téléphone (gratuite, immédiate). Sans voix française installée, le navigateur choisit. */
-export function speakFrench(texte: string): void {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-  const utterance = new SpeechSynthesisUtterance(texte);
-  utterance.lang = "fr-FR";
-  const voice = window.speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith("fr"));
-  if (voice) utterance.voice = voice;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(utterance);
-}
