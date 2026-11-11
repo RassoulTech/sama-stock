@@ -2,6 +2,7 @@
 
 import { Check, Minus, PackageSearch, Pencil, Percent, Plus, ShoppingCart, Trash2, X } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import type { CustomerOption } from "@/components/customers/customer-dialog";
 import { ProductThumb } from "@/components/products/product-thumb";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -122,7 +123,7 @@ export function PosScreen({
     setQty(id, (cart.get(id) ?? 0) + 1);
   }
 
-  function checkout(result: CheckoutResult) {
+  function checkout(result: CheckoutResult): Promise<string | null> {
     setError(null);
     const customer = result.customerId ? (customers.find((c) => c.id === result.customerId) ?? null) : null;
     const draft: SaleDraft = {
@@ -140,19 +141,49 @@ export function PosScreen({
       amountReceived: result.amountReceived,
       customer: customer && { id: customer.id, name: customer.name, phone: customer.phone },
     };
-    startTransition(async () => {
-      const failure = await submit(draft);
-      if (failure) {
-        setError(failure);
-        return;
-      }
-      setCheckoutOpen(false);
-      setCartOpen(false);
-      clearCart();
-      setDiscount("");
-      setShowDiscount(false);
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const failure = await submit(draft);
+        if (failure) {
+          setError(failure);
+          resolve(failure);
+          return;
+        }
+        setCheckoutOpen(false);
+        setCartOpen(false);
+        clearCart();
+        setDiscount("");
+        setShowDiscount(false);
+        resolve(null);
+      });
     });
   }
+
+  // L'assistant vocal remplit la caisse avec les mêmes fonctions que les doigts du vendeur (jamais en correction)
+  usePiloteEcran(
+    "vente",
+    {
+      vider: () => {
+        clearCart();
+        setDiscount("");
+        setShowDiscount(false);
+        setQ("");
+        setCategory("all");
+        setError(null);
+      },
+      ajouterProduit: (id, quantite) => {
+        setQ("");
+        setCategory("all");
+        setQty(id, quantite);
+      },
+      prixNegocie: (id, prix) => setPrice(id, prix),
+      ouvrirEncaisser: () => {
+        setError(null);
+        setCheckoutOpen(true);
+      },
+    },
+    !initial,
+  );
 
   const cartPanel = (
     <div className="flex h-full flex-col">
@@ -292,6 +323,7 @@ export function PosScreen({
           variant="saffron"
           className="w-full"
           disabled={itemCount === 0}
+          data-assistant="vente.encaisser"
           onClick={() => {
             setError(null);
             setCheckoutOpen(true);
@@ -340,6 +372,7 @@ export function PosScreen({
                       type="button"
                       disabled={out || maxed}
                       onClick={() => add(p.id)}
+                      data-assistant={`vente.produit.${p.id}`}
                       className={cn(
                         "group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border bg-card text-left shadow-[0_1px_2px_rgb(11_19_16/0.04),0_10px_28px_-20px_rgb(11_19_16/0.2)] transition-[border-color,box-shadow,transform] duration-150 hover:border-primary/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 motion-reduce:active:scale-100",
                         inCart > 0 && "border-primary ring-2 ring-primary/20",
@@ -400,6 +433,7 @@ export function PosScreen({
           <button
             type="button"
             onClick={() => setCartOpen(true)}
+            data-assistant="vente.encaisser"
             className="flex h-14 w-full items-center justify-between rounded-full bg-primary pr-5 pl-2 text-primary-foreground shadow-[0_16px_32px_-14px_var(--primary)] transition-transform active:scale-[0.99]"
           >
             <span className="flex items-center gap-2.5 font-semibold">

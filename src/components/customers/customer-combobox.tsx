@@ -17,6 +17,7 @@ export function CustomerCombobox({
   onCreated,
   invalid,
   allowCreate = true,
+  cible,
 }: {
   customers: CustomerOption[];
   value: string | null;
@@ -25,6 +26,8 @@ export function CustomerCombobox({
   invalid?: boolean;
   /** Sans internet, on ne peut que choisir un client déjà enregistré. */
   allowCreate?: boolean;
+  /** Cible de l'assistant sur le bouton de choix. */
+  cible?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -40,6 +43,7 @@ export function CustomerCombobox({
               variant="outline"
               role="combobox"
               aria-expanded={open}
+              data-assistant={cible}
               aria-invalid={invalid || undefined}
               className={cn("flex-1 justify-between font-medium", !selected && "text-muted-foreground")}
             >

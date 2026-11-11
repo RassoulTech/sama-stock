@@ -18,10 +18,13 @@ export function PaymentMethodPicker<M extends PaymentMethod>({
   value,
   onChange,
   methods,
+  cible,
 }: {
   value: M;
   onChange: (method: M) => void;
   methods: readonly M[];
+  /** Préfixe des cibles de l'assistant : chaque bouton porte `<cible>.<méthode>`. */
+  cible?: string;
 }) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Mode de paiement">
@@ -34,6 +37,7 @@ export function PaymentMethodPicker<M extends PaymentMethod>({
             type="button"
             role="radio"
             aria-checked={active}
+            data-assistant={cible ? `${cible}.${m}` : undefined}
             onClick={() => onChange(m)}
             className={cn(
               "relative flex h-12 items-center gap-2 rounded-xl border bg-card px-3 text-sm font-semibold transition-colors hover:border-primary/40",

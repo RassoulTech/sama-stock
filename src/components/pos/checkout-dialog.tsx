@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { CustomerCombobox } from "@/components/customers/customer-combobox";
 import type { CustomerOption } from "@/components/customers/customer-dialog";
 import { FormError, FormField, SuffixInput } from "@/components/shared/form-field";
@@ -53,7 +54,7 @@ interface CheckoutProps {
   total: number;
   customers: CustomerOption[];
   onCustomerCreated: (c: CustomerOption) => void;
-  onConfirm: (result: CheckoutResult) => void;
+  onConfirm: (result: CheckoutResult) => Promise<string | null>;
   pending: boolean;
   error: string | null;
   /** Sans internet, pas de création de client. */
@@ -99,14 +100,32 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
     if (m !== "credit" && received === "") setReceived(total);
   }
 
-  function confirm() {
+  function confirm(): Promise<string | null> {
     if (needsCustomer && !customerId) {
-      setLocalError("Choisissez le client qui doit le reste.");
-      return;
+      const message = "Choisissez le client qui doit le reste.";
+      setLocalError(message);
+      return Promise.resolve(message);
     }
     setLocalError(null);
-    onConfirm({ paymentMethod: method, amountReceived: amount, customerId });
+    return onConfirm({ paymentMethod: method, amountReceived: amount, customerId });
   }
+
+  usePiloteEcran(
+    "vente.encaisser",
+    {
+      paiement: (m) => changeMethod(m),
+      montantRecu: (montant) => setReceived(montant),
+      client: (id) => {
+        setCustomerId(id);
+        setLocalError(null);
+      },
+      enregistrer: async () => {
+        const failure = await confirm();
+        return failure ? { ok: false, message: failure } : { ok: true, message: "Vente enregistrée" };
+      },
+    },
+    !defaults,
+  );
 
   return (
     <>
@@ -131,13 +150,14 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
 
       <div className="space-y-5">
         <FormField label="Mode de paiement">
-          <PaymentMethodPicker value={method} onChange={changeMethod} methods={ALL_METHODS} />
+          <PaymentMethodPicker value={method} onChange={changeMethod} methods={ALL_METHODS} cible="vente.paiement" />
         </FormField>
 
         {method !== "credit" && (
           <FormField label="Montant reçu" htmlFor="received">
             <SuffixInput
               id="received"
+              data-assistant="vente.montant-recu"
               suffix="FCFA"
               min={0}
               step={1}
@@ -185,12 +205,13 @@ function CheckoutForm({ total, customers, onCustomerCreated, onConfirm, pending,
             onCreated={onCustomerCreated}
             invalid={Boolean(localError)}
             allowCreate={allowCustomerCreate}
+            cible="vente.client"
           />
           {!allowCustomerCreate && <p className="text-xs text-muted-foreground">Sans internet, choisissez un client déjà enregistré.</p>}
         </FormField>
 
         <FormError message={localError ?? error} />
-        <Button type="button" size="lg" variant="saffron" className="w-full" disabled={pending} onClick={confirm}>
+        <Button type="button" size="lg" variant="saffron" className="w-full" disabled={pending} onClick={() => void confirm()} data-assistant="vente.valider">
           {pending && <Loader2 className="animate-spin" />}
           {defaults ? "Valider la correction" : "Valider la vente"}
         </Button>
