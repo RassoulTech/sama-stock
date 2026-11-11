@@ -117,7 +117,7 @@ export function AssistantPanel() {
       setNotice(res.error);
       return;
     }
-    addTurns({ role: "user", text: res.reply.transcription || "…" }, { role: "assistant", text: res.reply.texte, draft: isCardDraft(res.reply.brouillon) ? res.reply.brouillon : null });
+    addTurns({ role: "user", text: res.reply.transcription || "…" }, { role: "assistant", text: res.reply.texte, draft: res.reply.mission?.type === "tache" && isCardDraft(res.reply.mission.tache) ? res.reply.mission.tache : null });
     await speak(res.reply);
   }
 

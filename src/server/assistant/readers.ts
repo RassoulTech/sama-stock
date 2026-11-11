@@ -1,12 +1,13 @@
 import "server-only";
 import type { DraftCatalog } from "@/lib/domain/assistant/drafts";
 import { findByName } from "@/lib/domain/assistant/match";
+import { isOrderStatus } from "@/lib/domain/orders";
 import { PERIODS, periodRange, type Period, type ReadToolName } from "@/lib/domain/assistant/tools";
 import type { BusinessContext } from "../context";
 import { salesSummary } from "../queries/analytics";
 import { listCustomers } from "../queries/customers";
 import { listOrders } from "../queries/orders";
-import type { ProductRow } from "../queries/products";
+import { listCategories, type ProductRow } from "../queries/products";
 import { listSuppliers } from "../queries/stock";
 
 /**
@@ -60,20 +61,22 @@ export function createReaders(ctx: BusinessContext, products: ProductRow[]) {
   };
 }
 
-/** Catalogue servant à vérifier les brouillons. Il reste sur le serveur : les téléphones servent seulement à retrouver un client. */
+/** Catalogue servant à vérifier les brouillons et les écrans. Il reste sur le serveur. */
 export async function loadDraftCatalog(ctx: BusinessContext, products: ProductRow[]): Promise<DraftCatalog> {
-  const [customers, suppliers] = await Promise.all([listCustomers(ctx.business.id), listSuppliers(ctx.business.id)]);
+  const [customers, suppliers, categories, orders] = await Promise.all([
+    listCustomers(ctx.business.id),
+    listSuppliers(ctx.business.id),
+    listCategories(ctx.business.id),
+    ctx.can("orders.manage") ? listOrders(ctx, "open", {}, { limit: 50, offset: 0 }) : Promise.resolve([]),
+  ]);
   const costs = ctx.can("costs.view");
   return {
-    products: products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      unit: p.unit,
-      salePrice: p.salePrice,
-      costPrice: costs ? p.costPrice : null,
-      available: p.available,
-    })),
-    customers: customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone })),
+    products: products.map((p) => ({ id: p.id, name: p.name, unit: p.unit, salePrice: p.salePrice, costPrice: costs ? p.costPrice : null, available: p.available })),
+    customers: customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone, debt: c.debt })),
     suppliers: suppliers.map((s) => ({ id: s.id, name: s.name, phone: s.phone })),
+    categories: categories.map((c) => ({ id: c.id, name: c.name })),
+    openOrders: orders.flatMap((o) =>
+      isOrderStatus(o.status) ? [{ id: o.id, number: String(o.number), customerName: o.customerName ?? "", status: o.status }] : [],
+    ),
   };
 }

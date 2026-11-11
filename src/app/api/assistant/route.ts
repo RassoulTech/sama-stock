@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { buildDraft, type DraftCatalog } from "@/lib/domain/assistant/drafts";
+import { buildEcran } from "@/lib/domain/assistant/ecrans";
 import { buildSystemPrompt } from "@/lib/domain/assistant/prompt";
 import { allowedTools, toolDeclarations } from "@/lib/domain/assistant/tools";
 import { ROLE_LABELS } from "@/lib/domain/permissions";
@@ -24,6 +25,8 @@ const bodySchema = z.object({
     .array(z.object({ role: z.enum(["user", "assistant"]), text: z.string().max(800) }))
     .max(10)
     .default([]),
+  /** Tâche remplie à l'écran qui attend le « oui » (missionForModel). */
+  attente: z.string().max(3000).optional(),
 });
 
 function fail(error: string, status: number) {
@@ -48,20 +51,32 @@ export async function POST(request: Request) {
   const [quota, products] = await Promise.all([consumeAssistantQuota(ctx.business.id, { isDemo: ctx.business.isDemo }), listProducts(ctx)]);
   if (!quota.allowed) return fail("Limite du jour atteinte, réessaie demain.", 429);
   const costs = ctx.can("costs.view");
+  const attente = parsed.data.attente ?? null;
   const tools = toolDeclarations(
-    allowedTools({ can: ctx.can, modulePos: ctx.business.modulePos, moduleOrders: ctx.business.moduleOrders }),
+    allowedTools(
+      { can: ctx.can, modulePos: ctx.business.modulePos, moduleOrders: ctx.business.moduleOrders, readOnly: ctx.plan.readOnly },
+      { attente: Boolean(attente) },
+    ),
     { costs },
   );
   const system = buildSystemPrompt({ businessName: ctx.business.name, roleLabel: ROLE_LABELS[ctx.role], today: new Date(), products });
   let catalog: Promise<DraftCatalog> | null = null;
+  const loadCatalog = () => (catalog ??= loadDraftCatalog(ctx, products));
+  const access = {
+    reports: ctx.can("reports.view") && ctx.plan.limits.advancedReports,
+    products: ctx.can("products.view"),
+    orders: ctx.can("orders.manage") && ctx.business.moduleOrders,
+    customers: ctx.can("customers.manage"),
+  };
 
   try {
     const reply = await runAssistant(
-      { system, history: parsed.data.history, audio: { mimeType: "audio/wav", data: parsed.data.audio }, tools },
+      { system, history: parsed.data.history, audio: { mimeType: "audio/wav", data: parsed.data.audio }, tools, attente },
       {
         gemini: createGemini({ apiKey, models: parseModels(process.env.GEMINI_MODEL) }),
         read: createReaders(ctx, products),
-        draft: async (name, args) => buildDraft(name, args, await (catalog ??= loadDraftCatalog(ctx, products)), { costs }),
+        draft: async (name, args) => buildDraft(name, args, await loadCatalog(), { costs }),
+        ecran: async (args) => buildEcran(args, await loadCatalog(), access),
       },
     );
     return NextResponse.json(reply, { headers: NO_STORE });

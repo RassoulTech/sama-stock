@@ -34,19 +34,21 @@ const input: RunInput = {
   system: "SYS",
   history: [],
   audio: { mimeType: "audio/wav", data: "QUJD" },
-  tools: toolDeclarations(["stock_produit", "brouillon_paiement_client", "repondre"], { costs: false }),
+  tools: toolDeclarations(["stock_produit", "brouillon_paiement_client", "montrer_ecran", "confirmer", "repondre"], { costs: false }),
 };
+const SCREEN = { ecran: "tableau_de_bord" as const, url: "/tableau-de-bord", cible: "tdb.chiffre", titre: "Tableau de bord" };
 const deps = (gemini: GeminiCall) => ({
   gemini,
   read: vi.fn(async () => ({ disponible: 40 })),
   draft: vi.fn(() => ({ ok: true as const, draft: PAYMENT })),
+  ecran: vi.fn(() => ({ ok: true as const, ecran: SCREEN })),
 });
 
 describe("runAssistant", () => {
   it("returns the final answer, sending the audio and the instruction", async () => {
     const { gemini, requests } = scripted(final("Bonjour !"));
     const reply = await runAssistant(input, deps(gemini));
-    expect(reply).toEqual({ transcription: "il me reste combien de riz", langue: "fr", texte: "Bonjour !", brouillon: null });
+    expect(reply).toEqual({ transcription: "il me reste combien de riz", langue: "fr", texte: "Bonjour !", mission: null, confirmation: null });
     expect(requests[0].contents[0].parts).toEqual([{ inlineData: input.audio }, { text: USER_INSTRUCTION }]);
   });
   it("puts the previous exchanges before the audio", async () => {
@@ -65,14 +67,14 @@ describe("runAssistant", () => {
   it("returns the draft prepared during the turn", async () => {
     const { gemini, requests } = scripted(call("brouillon_paiement_client", { client: "awa", montant: 5000, paiement: "wave" }), final("Valide pour enregistrer."));
     const reply = await runAssistant(input, deps(gemini));
-    expect(reply.brouillon).toEqual(PAYMENT);
+    expect(reply.mission).toEqual({ type: "tache", tache: PAYMENT });
     expect(requests[1].contents[2].parts[0].functionResponse?.response).toMatchObject({ ok: true, brouillon: { action: "paiement_client", client: "Awa Ndiaye" } });
   });
   it("passes a refused draft back to the model, without draft", async () => {
     const { gemini, requests } = scripted(call("brouillon_paiement_client", { client: "awa" }), final("Quel montant ?"));
     const d = { ...deps(gemini), draft: vi.fn(() => ({ ok: false as const, reason: "Montant manquant.", candidates: ["Awa Ndiaye", "Awa Diop"] })) };
     const reply = await runAssistant(input, d);
-    expect(reply.brouillon).toBeNull();
+    expect(reply.mission).toBeNull();
     expect(requests[1].contents[2].parts[0].functionResponse?.response).toEqual({ ok: false, raison: "Montant manquant.", candidats: ["Awa Ndiaye", "Awa Diop"] });
   });
   it("refuses a tool that was not offered to this role", async () => {
@@ -87,7 +89,7 @@ describe("runAssistant", () => {
     const { gemini, requests } = scripted(both);
     const reply = await runAssistant(input, deps(gemini));
     expect(reply.texte).toBe("C'est prêt, valide.");
-    expect(reply.brouillon).toEqual(PAYMENT);
+    expect(reply.mission).toEqual({ type: "tache", tache: PAYMENT });
     expect(requests).toHaveLength(1);
   });
   it("asks again when the draft that came with repondre is refused", async () => {
@@ -96,7 +98,7 @@ describe("runAssistant", () => {
     const d = { ...deps(gemini), draft: vi.fn(() => ({ ok: false as const, reason: "Client introuvable." })) };
     const reply = await runAssistant(input, d);
     expect(reply.texte).toBe("Quel client ?");
-    expect(reply.brouillon).toBeNull();
+    expect(reply.mission).toBeNull();
     expect(requests[1].contents[2].parts.map((p) => p.functionResponse?.name)).toEqual(["brouillon_paiement_client", "repondre"]);
     expect(requests[1].contents[2].parts[1].functionResponse?.response).toMatchObject({ ok: false });
   });
@@ -131,5 +133,37 @@ describe("runAssistant", () => {
     const { gemini, requests } = scripted(withId, final());
     await runAssistant(input, deps(gemini));
     expect(requests[1].contents[2].parts[0].functionResponse).toMatchObject({ id: "c1", name: "stock_produit" });
+  });
+});
+
+describe("runAssistant — écrans et accord", () => {
+  it("shows a screen in a single call when montrer_ecran comes with repondre", async () => {
+    const both: GeminiContent = { role: "model", parts: [...call("montrer_ecran", { ecran: "tableau_de_bord" }).parts, ...final("Voilà ton tableau de bord.").parts] };
+    const { gemini, requests } = scripted(both);
+    const reply = await runAssistant(input, deps(gemini));
+    expect(requests).toHaveLength(1);
+    expect(reply.mission).toEqual({ type: "ecran", ecran: SCREEN });
+  });
+  it("returns the user's agreement", async () => {
+    const both: GeminiContent = { role: "model", parts: [...call("confirmer", { reponse: "oui" }).parts, ...final("Je l'enregistre.").parts] };
+    const { gemini } = scripted(both);
+    const reply = await runAssistant({ ...input, attente: '{"action":"paiement_client"}' }, deps(gemini));
+    expect(reply).toMatchObject({ confirmation: "oui", mission: null });
+  });
+  it("puts the waiting task before the audio", async () => {
+    const { gemini, requests } = scripted(final("D'accord."));
+    await runAssistant({ ...input, attente: '{"action":"paiement_client"}' }, deps(gemini));
+    const parts = requests[0].contents[0].parts;
+    expect(parts[0].text).toContain('Tâche remplie à l\'écran, en attente de l\'accord du commerçant : {"action":"paiement_client"}');
+    expect(parts[1].inlineData).toBeDefined();
+  });
+  it("asks again when the screen is refused", async () => {
+    const d = deps(scripted().gemini);
+    const { gemini, requests } = scripted(call("montrer_ecran", { ecran: "client" }), final("Quel client ?"));
+    d.gemini = gemini;
+    d.ecran.mockReturnValueOnce({ ok: false, reason: "Dis le nom du client." } as never);
+    const reply = await runAssistant(input, d);
+    expect(requests).toHaveLength(2);
+    expect(reply.mission).toBeNull();
   });
 });
