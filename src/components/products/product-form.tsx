@@ -4,6 +4,8 @@ import { AlertTriangle, Loader2, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import type { ResultatPilote } from "@/components/assistant/pilote/types";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { FormError, FormField, SuffixInput } from "@/components/shared/form-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -74,6 +76,10 @@ export function ProductForm({
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    void save();
+  }
+
+  function save(): Promise<ResultatPilote> {
     setError(null);
     const payload = {
       name: values.name,
@@ -90,22 +96,43 @@ export function ProductForm({
       imageData: isEdit && !imageTouched ? undefined : (values.imageData ?? ""),
     };
     if (categoryChoice === NEW_CATEGORY && !newCategory.trim()) {
-      setError("Donnez un nom à la nouvelle catégorie.");
-      return;
+      const message = "Donnez un nom à la nouvelle catégorie.";
+      setError(message);
+      return Promise.resolve({ ok: false, message });
     }
-    startTransition(async () => {
-      const res = isEdit ? await updateProduct(productId!, payload) : await createProduct(payload);
-      if (!res.ok) {
-        setError(res.error);
-        // Stock changé entre-temps : on relit la quantité en rayon pour le prochain essai
-        if (isEdit) router.refresh();
-        return;
-      }
-      toast.success(isEdit ? "Produit mis à jour" : "Produit ajouté");
-      router.push(`/produits/${res.data.id}`);
-      router.refresh();
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const res = isEdit ? await updateProduct(productId!, payload) : await createProduct(payload);
+        if (!res.ok) {
+          setError(res.error);
+          // Stock changé entre-temps : on relit la quantité en rayon pour le prochain essai
+          if (isEdit) router.refresh();
+          resolve({ ok: false, message: res.error });
+          return;
+        }
+        const message = isEdit ? "Produit mis à jour" : "Produit ajouté";
+        toast.success(message);
+        resolve({ ok: true, message });
+        router.push(`/produits/${res.data.id}`);
+        router.refresh();
+      });
     });
   }
+
+  // L'assistant vocal remplit la fiche avec les mêmes fonctions que la main du commerçant
+  usePiloteEcran("produit", {
+    champ: (cle, valeur) => setValues((prev) => ({ ...prev, [cle]: valeur })),
+    unite: (u) => set("unit", u as ProductFormValues["unit"]),
+    categorie: (id, nouvelle) => {
+      if (id) setCategoryChoice(id);
+      else if (nouvelle) {
+        setCategoryChoice(NEW_CATEGORY);
+        setNewCategory(nouvelle);
+      } else setCategoryChoice(NO_CATEGORY);
+    },
+    stockInitial: (n) => setInitialStock(n),
+    enregistrer: () => save(),
+  });
 
   return (
     <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
@@ -121,6 +148,7 @@ export function ProductForm({
           <FormField label="Nom du produit" htmlFor="name">
             <Input
               id="name"
+              data-assistant="produit.nom"
               required
               minLength={2}
               value={values.name}
@@ -131,7 +159,7 @@ export function ProductForm({
           <div className="grid gap-5 sm:grid-cols-2">
             <FormField label="Catégorie">
               <Select value={categoryChoice} onValueChange={setCategoryChoice}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" data-assistant="produit.categorie">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,7 +184,7 @@ export function ProductForm({
             </FormField>
             <FormField label="Unité de vente">
               <Select value={values.unit} onValueChange={(v) => set("unit", v)}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" data-assistant="produit.unite">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,6 +200,7 @@ export function ProductForm({
           <FormField label="Référence (facultative)" htmlFor="reference" hint="Code interne ou code fournisseur.">
             <Input
               id="reference"
+              data-assistant="produit.reference"
               value={values.reference}
               onChange={(e) => set("reference", e.target.value)}
               placeholder="Ex. CIM-50"
@@ -186,6 +215,7 @@ export function ProductForm({
             <FormField label="Prix d'achat" htmlFor="costPrice" hint="Ce que vous payez au fournisseur, par unité.">
               <SuffixInput
                 id="costPrice"
+                data-assistant="produit.prix-achat"
                 suffix="FCFA"
                 min={0}
                 step={1}
@@ -198,6 +228,7 @@ export function ProductForm({
             <FormField label="Prix de vente" htmlFor="salePrice">
               <SuffixInput
                 id="salePrice"
+                data-assistant="produit.prix-vente"
                 suffix="FCFA"
                 required
                 min={0}
@@ -266,6 +297,7 @@ export function ProductForm({
               <FormField label="Stock de départ" htmlFor="initialStock" hint="Quantité que vous avez aujourd'hui.">
                 <SuffixInput
                   id="initialStock"
+                  data-assistant="produit.stock-initial"
                   suffix={unitLabel(values.unit, 2)}
                   min={0}
                   step={step}
@@ -279,7 +311,7 @@ export function ProductForm({
           </CardContent>
         </Card>
         <FormError message={error} />
-        <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        <Button type="submit" size="lg" className="w-full" disabled={pending} data-assistant="produit.valider">
           {pending && <Loader2 className="animate-spin" />}
           {isEdit ? "Enregistrer les modifications" : "Ajouter le produit"}
         </Button>
