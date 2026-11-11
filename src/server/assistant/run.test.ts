@@ -82,14 +82,30 @@ describe("runAssistant", () => {
     expect(d.draft).not.toHaveBeenCalled();
     expect(requests[1].contents[2].parts[0].functionResponse?.response).toEqual({ erreur: "Outil non autorisé pour cet utilisateur." });
   });
-  it("runs the other calls first when repondre comes with them", async () => {
-    const both: GeminiContent = { role: "model", parts: [...call("brouillon_paiement_client", {}).parts, ...final().parts] };
-    const { gemini, requests } = scripted(both, final("C'est prêt, valide."));
+  it("answers in a single call when a valid draft comes with repondre", async () => {
+    const both: GeminiContent = { role: "model", parts: [...call("brouillon_paiement_client", {}).parts, ...final("C'est prêt, valide.").parts] };
+    const { gemini, requests } = scripted(both);
     const reply = await runAssistant(input, deps(gemini));
     expect(reply.texte).toBe("C'est prêt, valide.");
     expect(reply.brouillon).toEqual(PAYMENT);
+    expect(requests).toHaveLength(1);
+  });
+  it("asks again when the draft that came with repondre is refused", async () => {
+    const both: GeminiContent = { role: "model", parts: [...call("brouillon_paiement_client", {}).parts, ...final().parts] };
+    const { gemini, requests } = scripted(both, final("Quel client ?"));
+    const d = { ...deps(gemini), draft: vi.fn(() => ({ ok: false as const, reason: "Client introuvable." })) };
+    const reply = await runAssistant(input, d);
+    expect(reply.texte).toBe("Quel client ?");
+    expect(reply.brouillon).toBeNull();
     expect(requests[1].contents[2].parts.map((p) => p.functionResponse?.name)).toEqual(["brouillon_paiement_client", "repondre"]);
     expect(requests[1].contents[2].parts[1].functionResponse?.response).toMatchObject({ ok: false });
+  });
+  it("asks again when a read tool comes with repondre (its answer has not seen the result)", async () => {
+    const both: GeminiContent = { role: "model", parts: [...call("stock_produit", { produit: "riz" }).parts, ...final().parts] };
+    const { gemini, requests } = scripted(both, final("Il te reste 40 kilos."));
+    const reply = await runAssistant(input, deps(gemini));
+    expect(reply.texte).toBe("Il te reste 40 kilos.");
+    expect(requests).toHaveLength(2);
   });
   it("gives up when the model never answers with a tool", async () => {
     const { gemini } = scripted({ role: "model", parts: [{ text: "hmm" }] });

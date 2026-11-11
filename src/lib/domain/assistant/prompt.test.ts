@@ -20,6 +20,16 @@ describe("buildSystemPrompt", () => {
     expect(text).toContain("ñaari junni");
     expect(text).toContain("repondre");
   });
+  it("asks for the draft and the final answer in the same turn, without amounts", () => {
+    const text = buildSystemPrompt({ ...base, products: [] });
+    expect(text).toContain("dans le même tour");
+    expect(text).toContain("ne répète pas les montants");
+  });
+  it("answers stock and price questions from the catalogue in one turn, and reads the rest first", () => {
+    const text = buildSystemPrompt({ ...base, products: [] });
+    expect(text).toContain("Pour le stock ou le prix d'un produit du catalogue, réponds directement");
+    expect(text).toContain("Pour les ventes, les dettes et les commandes, appelle d'abord l'outil de lecture");
+  });
   it("never leaks a purchase price passed by mistake", () => {
     const products = [{ name: "Savon", unit: "piece", salePrice: 250, available: 3, costPrice: 987654 }];
     expect(buildSystemPrompt({ ...base, products })).not.toContain("987654");

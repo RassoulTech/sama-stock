@@ -4,15 +4,15 @@ import { buildDraft, type DraftCatalog } from "@/lib/domain/assistant/drafts";
 import { buildSystemPrompt } from "@/lib/domain/assistant/prompt";
 import { allowedTools, toolDeclarations } from "@/lib/domain/assistant/tools";
 import { ROLE_LABELS } from "@/lib/domain/permissions";
-import { createGemini, GeminiError } from "@/server/assistant/gemini";
+import { createGemini, GeminiError, parseModels } from "@/server/assistant/gemini";
 import { createReaders, loadDraftCatalog } from "@/server/assistant/readers";
 import { AssistantError, runAssistant } from "@/server/assistant/run";
 import { consumeAssistantQuota } from "@/server/assistant/usage";
 import { getContext, type BusinessContext } from "@/server/context";
 import { listProducts } from "@/server/queries/products";
 
-/** Au plus 4 appels à Gemini de 30 s chacun. */
-export const maxDuration = 120;
+/** Les appels à Gemini tiennent dans REQUEST_BUDGET_MS (60 s, secours compris) ; le reste est une marge pour la base. */
+export const maxDuration = 90;
 
 const NO_STORE = { "Cache-Control": "no-store" };
 /** 30 s de WAV 16 kHz mono ≈ 960 Ko ≈ 1,3 Mo en base64. */
@@ -44,10 +44,9 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return fail("Enregistrement invalide. Réessaie.", 400);
 
-  const quota = await consumeAssistantQuota(ctx.business.id, { isDemo: ctx.business.isDemo });
+  // Le compteur et le catalogue en même temps (deux allers-retours vers la base au lieu de deux à la suite)
+  const [quota, products] = await Promise.all([consumeAssistantQuota(ctx.business.id, { isDemo: ctx.business.isDemo }), listProducts(ctx)]);
   if (!quota.allowed) return fail("Limite du jour atteinte, réessaie demain.", 429);
-
-  const products = await listProducts(ctx);
   const costs = ctx.can("costs.view");
   const tools = toolDeclarations(
     allowedTools({ can: ctx.can, modulePos: ctx.business.modulePos, moduleOrders: ctx.business.moduleOrders }),
@@ -60,7 +59,7 @@ export async function POST(request: Request) {
     const reply = await runAssistant(
       { system, history: parsed.data.history, audio: { mimeType: "audio/wav", data: parsed.data.audio }, tools },
       {
-        gemini: createGemini({ apiKey, model: process.env.GEMINI_MODEL || undefined }),
+        gemini: createGemini({ apiKey, models: parseModels(process.env.GEMINI_MODEL) }),
         read: createReaders(ctx, products),
         draft: async (name, args) => buildDraft(name, args, await (catalog ??= loadDraftCatalog(ctx, products)), { costs }),
       },

@@ -70,16 +70,15 @@ export async function runAssistant(input: RunInput, deps: RunDeps): Promise<Assi
       return { ...parsed.data, brouillon: draft };
     }
 
-    // Chaque appel de la réponse du modèle reçoit sa functionResponse, dans le même ordre.
-    // « repondre » mêlé à d'autres appels est ignoré : sa réponse n'a pas encore vu les résultats.
-    const responses: GeminiPart[] = [];
-    for (const { functionCall } of calls) {
-      const { name } = functionCall;
-      const args = functionCall.args ?? {};
+    // Les appels du tour (sauf « repondre ») sont exécutés ; on note s'il ne s'agissait que de brouillons valides
+    const results = new Map<CallPart, Record<string, unknown>>();
+    let onlyValidDrafts = true;
+    for (const part of others) {
+      const { name } = part.functionCall;
+      const args = part.functionCall.args ?? {};
       let response: Record<string, unknown>;
-      if (name === "repondre") {
-        response = { ok: false, message: "Réponse finale ignorée : réponds avec « repondre » après avoir lu les résultats des autres outils." };
-      } else if (!allowed.has(name)) {
+      let validDraft = false;
+      if (!allowed.has(name)) {
         response = { erreur: "Outil non autorisé pour cet utilisateur." };
       } else if (isReadTool(name)) {
         response = await deps.read(name, args);
@@ -87,6 +86,7 @@ export async function runAssistant(input: RunInput, deps: RunDeps): Promise<Assi
         const result = await deps.draft(name, args);
         if (result.ok) {
           draft = result.draft;
+          validDraft = true;
           response = { ok: true, brouillon: draftForModel(result.draft), message: "Brouillon affiché : le commerçant doit appuyer sur Valider." };
         } else {
           response = { ok: false, raison: result.reason, ...(result.candidates ? { candidats: result.candidates } : {}) };
@@ -94,8 +94,30 @@ export async function runAssistant(input: RunInput, deps: RunDeps): Promise<Assi
       } else {
         response = { erreur: "Outil inconnu." };
       }
-      responses.push({ functionResponse: { ...(functionCall.id ? { id: functionCall.id } : {}), name, response } });
+      if (!validDraft) onlyValidDrafts = false;
+      results.set(part, response);
     }
+
+    // Chemin rapide : brouillon(s) valide(s) + réponse finale dans le même tour → pas de second appel.
+    // (La carte affiche les montants exacts ; la phrase n'avait rien à lire d'autre.)
+    const finalCall = calls.find((c) => c.functionCall.name === "repondre");
+    if (finalCall && onlyValidDrafts) {
+      const parsed = finalArgs.safeParse(finalCall.functionCall.args ?? {});
+      if (parsed.success) return { ...parsed.data, brouillon: draft };
+    }
+
+    // Sinon chaque appel reçoit sa functionResponse, dans le même ordre ; « repondre » est ignoré
+    // (sa phrase n'a pas encore vu les résultats d'une lecture ou d'un brouillon refusé).
+    const responses: GeminiPart[] = calls.map((part) => ({
+      functionResponse: {
+        ...(part.functionCall.id ? { id: part.functionCall.id } : {}),
+        name: part.functionCall.name,
+        response:
+          part.functionCall.name === "repondre"
+            ? { ok: false, message: "Réponse finale ignorée : réponds avec « repondre » après avoir lu les résultats des autres outils." }
+            : results.get(part)!,
+      },
+    }));
     contents.push(content, { role: "user", parts: responses });
   }
   throw new AssistantError();
