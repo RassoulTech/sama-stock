@@ -110,11 +110,29 @@ premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settin
    (`.env.local` sur l'ordinateur, variables Vercel pour la version en ligne).
 2. **Voix wolof** : connecté à Hugging Face, ouvrez https://huggingface.co/spaces/ndaosaer/wolof-tts, puis cliquez sur
    **« Duplicate this Space »**. Copiez l'adresse de votre copie (`https://<compte>-wolof-tts.hf.space`) dans
-   `ANTA_TTS_URL`. Elle s'endort après 48 h sans usage et met quelques minutes à se réveiller.
+   `ANTA_TTS_URL`. Elle s'endort après 48 h sans usage et met quelques minutes à se réveiller : la tâche planifiée
+   `/api/assistant/reveil` (chaque matin à 6 h) la garde éveillée, et le téléphone la réveille aussi à l'ouverture de
+   l'assistant. Les phrases du parcours (« Ndax ma bind ko ? »…) sont des fichiers prêts dans `public/assistant/voix/` ;
+   pour les refaire (après un changement de texte dans `src/lib/domain/assistant/phrases.ts`) :
+   `npx tsx scripts/phrases-voix.ts`.
 3. **Activation** : dans l'administration, ouvrez la fiche du commerce, puis **« Activer l'assistant »**. Le bouton
    micro apparaît dans son application.
-4. **Utilisation** : appuyez sur le micro, gardez le doigt appuyé et parlez, puis relâchez. Une vente, une entrée de
-   stock, une commande ou un paiement n'est enregistré qu'après **Valider**.
+4. **Utilisation** : appuyez sur le micro, gardez le doigt appuyé et parlez, puis relâchez.
+
+**Mode pilote** : pour une tâche, l'assistant la fait sur les vrais écrans, devant le commerçant. Le panneau se réduit
+en une bulle, un doigt se pose sur chaque champ et les valeurs apparaissent une à une. Sur le bouton final, il demande
+« Ndax ma bind ko ? » / « Je l'enregistre ? » : **Oui** / **Non** à l'écran, ou « waaw » / « déedéet » à la voix. Une
+correction dite à voix haute (« dafa am ñett kilo ») refait la tâche corrigée. **Rien n'est enregistré sans ce oui** ;
+c'est le vrai bouton de l'écran qui enregistre, avec ses contrôles habituels. Le bouton **Arrêter**, ou toucher l'écran,
+reprend la main ; ce qui est rempli reste affiché.
+
+- Tâches : vente à la caisse, entrée de stock, sortie de stock (perte ou sortie), commande en ligne, état d'une
+  commande, remboursement d'un client, nouveau produit, changement de prix, nouveau client, nouveau fournisseur.
+- « Montre-moi » : tableau de bord, rapports, stock bas, ruptures, ventes (et ventes à crédit), commandes, fiche d'un
+  client ou d'un produit ; le doigt montre le chiffre pendant que l'assistant répond.
+- Pour les développeurs : chaque écran se branche avec `usePiloteEcran` (`src/components/assistant/pilote/`) et marque
+  ses champs avec `data-assistant="…"`. Le test `cibles.test.ts` échoue si un écran perd une cible utilisée par une
+  recette.
 
 Limites :
 - 60 demandes par commerce et par jour (`ASSISTANT_DAILY_LIMIT`).

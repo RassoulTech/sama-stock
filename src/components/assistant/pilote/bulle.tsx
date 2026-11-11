@@ -19,7 +19,8 @@ export function BulleAssistant() {
       role="status"
       aria-live="polite"
       style={{ pointerEvents: "auto" }}
-      className="fixed inset-x-3 bottom-24 z-[60] mx-auto max-w-md rounded-2xl border bg-background/95 p-3 shadow-2xl backdrop-blur lg:bottom-6 print:hidden"
+      // En haut sur téléphone : en bas, elle cacherait la barre du panier et la barre de navigation
+      className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[60] mx-auto max-w-md rounded-2xl border bg-background/95 p-3 shadow-2xl backdrop-blur lg:top-auto lg:bottom-6 print:hidden"
     >
       <div className="flex items-start gap-3">
         <div

@@ -97,7 +97,7 @@ Le serveur ajoute alors l'outil `confirmer { reponse: "oui" | "non" }` et le rap
 - « waaw », « oui », « bind ko », « def ko » ▶ `confirmer oui` ;
 - « déedéet », « non », « bayyil » ▶ `confirmer non` ;
 - une correction (« dafa am ñett kilo », « c'est Awa le client ») ▶ un nouveau brouillon du même type ; le téléphone
-  rejoue seulement les différences sur l'écran déjà ouvert, puis redemande.
+  rejoue la mission corrigée sur l'écran déjà ouvert (le formulaire est vidé puis rempli à nouveau), puis redemande.
 
 Le bouton Oui et le bouton Non restent toujours disponibles : la voix est un raccourci, jamais la seule voie.
 
@@ -198,8 +198,8 @@ fonctions, et ses cibles `data-assistant`.
 Adaptations nécessaires du code existant (sans changer ce que voit le commerçant qui travaille à la main) :
 
 - **Résultat de l'enregistrement** : les gestionnaires des boutons finals rendent `{ ok, message }` au pilote (la
-  caisse : `PosScreen.checkout` et `OnlinePos.submit` ; une vente mise en file hors ligne compte comme réussie avec le
-  message « Vente gardée, elle partira au retour du réseau »).
+  caisse : `PosScreen.checkout` ; une vente mise en file hors ligne au moment d'enregistrer suit le chemin actuel et
+  affiche le reçu hors ligne).
 - **Fenêtres ouvertes par le pilote** : `PaymentDialog`, `CustomerDialog`, `SupplierDialog` et la fenêtre
   d'encaissement acceptent une ouverture contrôlée.
 - **Plusieurs éléments pour une cible** (ex. « Encaisser » dans le panneau large et dans la barre « Voir le panier »
@@ -207,10 +207,12 @@ Adaptations nécessaires du code existant (sans changer ce que voit le commerça
 - **Conversation gardée** : l'état de l'assistant (fil, mission, phase) monte dans un `AssistantProvider` du layout
   `(app)`, à côté de `AssistantButton`. Fermer le panneau ou changer de page ne perd plus rien.
 - **Fenêtres modales** : le panneau actuel est une `Sheet` modale (la page derrière est bloquée). Pendant une mission
-  il se ferme et laisse place à la bulle. Les composants `ui/dialog`, `ui/sheet` et `ui/alert-dialog` ignorent les
-  touches sur la bulle (`onPointerDownOutside` / `onInteractOutside`), pour que Oui / Non / Arrêter restent
-  utilisables pendant que la fenêtre d'encaissement ou de paiement est ouverte. Bulle au-dessus des fenêtres
-  (z-index 60), doigt au-dessus de tout et sans capter les touches (z-index 70, `pointer-events: none`).
+  il se ferme et laisse place à la bulle. Les composants `ui/dialog` et `ui/sheet` ignorent les touches sur la bulle
+  (`onPointerDownOutside` / `onInteractOutside`), pour que Oui / Non / Arrêter restent utilisables pendant que la
+  fenêtre d'encaissement ou de paiement est ouverte ; `ui/alert-dialog` n'est jamais ouvert par l'assistant et ne se
+  ferme pas sur un toucher extérieur. Bulle au-dessus des fenêtres (z-index 60), en haut de l'écran sur téléphone (en
+  bas, elle cacherait la barre du panier), doigt au-dessus de tout et sans capter les touches (z-index 70,
+  `pointer-events: none`).
 - **Hors ligne** : le bouton de l'assistant est déjà désactivé hors connexion ; une vente lancée en ligne qui tombe
   hors ligne au moment d'enregistrer suit le chemin actuel (file d'attente).
 
