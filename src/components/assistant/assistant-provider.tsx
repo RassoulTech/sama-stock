@@ -4,48 +4,40 @@
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { dansLaBulle } from "@/components/ui/garde-bulle";
-import { missionForModel, type Mission } from "@/lib/domain/assistant/mission";
-import type { AssistantReply, HistoryItem } from "@/lib/domain/assistant/reply";
-import type { Lang } from "@/lib/domain/assistant/tools";
-import { askAssistant, reveillerVoix } from "./api";
+import type { Mission } from "@/lib/domain/assistant/mission";
+import { executerOutilServeur } from "./api";
+import { creerConversation, type Conversation, type EtatConversation } from "./direct/conversation";
+import type { AppelOutil } from "./direct/protocole";
 import { jouer, type FinMission, type ReponseAccord } from "./pilote/moteur";
 import { etapesPour } from "./pilote/recettes";
 import { creerScene, type PositionDoigt } from "./pilote/scene-dom";
-import { MAX_RECORDING_MS, MIN_RECORDING_MS, startRecording, toBase64, toWav16k, type Recording } from "./recorder";
-import { creerVoix } from "./voix";
 
-export type Phase = "idle" | "recording" | "thinking" | "speaking" | "pilote" | "confirmation";
+export type Phase = "repos" | "connexion" | "ecoute" | "parle" | "outil" | "pilote" | "confirmation";
 
 export const STATUTS: Record<Phase, string> = {
-  idle: "Garde le doigt appuyé et parle, en wolof ou en français.",
-  recording: "Je t'écoute… relâche quand tu as fini.",
-  thinking: "Je réfléchis…",
-  speaking: "Je te réponds…",
+  repos: "Touche le micro pour parler avec l'assistant.",
+  connexion: "Je me prépare…",
+  ecoute: "Je t'écoute…",
+  parle: "Je te réponds…",
+  outil: "Je regarde…",
   pilote: "Je fais la tâche à l'écran…",
   confirmation: "Je l'enregistre ?",
 };
 
-export interface Turn {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-}
-
 interface AssistantValue {
-  ouvert: boolean;
-  setOuvert: (ouvert: boolean) => void;
+  /** Une conversation est en cours. */
+  actif: boolean;
   phase: Phase;
-  turns: Turn[];
   notice: string | null;
   statut: string | null;
   resume: string | null;
   doigt: PositionDoigt | null;
   touche: number;
-  rejouer: (() => void) | null;
-  appuyer: () => void;
-  relacher: () => void;
+  demarrer: () => void;
+  terminer: () => void;
+  couperParole: () => void;
   accord: (oui: boolean) => void;
-  arreter: () => void;
+  arreterTache: () => void;
   fermerStatut: () => void;
 }
 
@@ -57,56 +49,48 @@ export function useAssistant(): AssistantValue {
   return value;
 }
 
-/** Après une mission, le résultat reste dans la bulle quelques secondes. */
+/** Après une tâche, son résultat reste dans la bulle quelques secondes. */
 const STATUT_MS = 5_000;
-/** Un réveil de la voix au plus toutes les 10 minutes. */
-const REVEIL_MS = 10 * 60_000;
 
-/** État de l'assistant pour toute l'application : il survit à la fermeture du panneau et aux changements de page. */
+const PHASE_DE: Record<EtatConversation, Phase> = { connexion: "connexion", ecoute: "ecoute", parle: "parle", outil: "outil" };
+
+/**
+ * Dialogue vocal pour toute l'application : on parle, l'assistant répond à voix haute, fait les tâches à l'écran
+ * (mode pilote) et relance la conversation. Il survit aux changements de page.
+ */
 export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [ouvert, setOuvertEtat] = useState(false);
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [actif, setActif] = useState(false);
+  const [phase, setPhase] = useState<Phase>("repos");
   const [notice, setNotice] = useState<string | null>(null);
   const [statut, setStatut] = useState<string | null>(null);
   const [resume, setResume] = useState<string | null>(null);
   const [doigt, setDoigt] = useState<PositionDoigt | null>(null);
   const [touche, setTouche] = useState(0);
-  const [rejouer, setRejouer] = useState<(() => void) | null>(null);
-  const [voix] = useState(creerVoix);
 
-  const langue = useRef<Lang>("fr");
-  const turnsRef = useRef<Turn[]>([]);
-  const pressed = useRef(false);
-  const starting = useRef(false);
-  const recording = useRef<{ rec: Recording; startedAt: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const contexteAudio = useRef<AudioContext | null>(null);
+  const conversation = useRef<Conversation | null>(null);
   const controle = useRef<AbortController | null>(null);
   const attente = useRef<{ mission: Mission; resoudre: (reponse: ReponseAccord) => void } | null>(null);
   const missionCourante = useRef<Mission | null>(null);
-  const dernierReveil = useRef(0);
-  const voixEnReveil = useRef(false);
+  const piloteEnCours = useRef(false);
+  /** Appel de brouillon qui attend que le formulaire soit rempli pour recevoir sa réponse. */
+  const appelBrouillon = useRef<{ id: string; name: string; reponse: Record<string, unknown> } | null>(null);
+  /** Appel « confirmer » qui attend le résultat du bouton final. */
+  const appelConfirmation = useRef<{ id: string; name: string } | null>(null);
   const minuterie = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Départ de l'application : conversation et tâche arrêtées.
   useEffect(() => {
-    turnsRef.current = turns;
-  }, [turns]);
-
-  // Départ de l'application : micro libéré, voix coupée, mission arrêtée.
-  useEffect(() => {
-    const rec = recording;
+    const conv = conversation;
     const c = controle;
     return () => {
-      if (rec.current) {
-        clearTimeout(rec.current.timer);
-        rec.current.rec.cancel();
-      }
       c.current?.abort();
-      voix.couper();
+      conv.current?.terminer();
     };
-  }, [voix]);
+  }, []);
 
-  // Toucher la page pendant une mission = reprendre la main (la bulle ne compte pas).
+  // Toucher la page pendant une tâche = reprendre la main (la bulle ne compte pas).
   useEffect(() => {
     if (phase !== "pilote" && phase !== "confirmation") return;
     const surToucher = (event: PointerEvent) => {
@@ -116,14 +100,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener("pointerdown", surToucher, true);
   }, [phase]);
 
-  function montrerStatut(texte: string | null, garder = false) {
+  function montrerStatut(texte: string | null) {
     if (minuterie.current) clearTimeout(minuterie.current);
     setStatut(texte);
-    if (texte && !garder) minuterie.current = setTimeout(() => setStatut(null), STATUT_MS);
-  }
-
-  function addTurns(...items: Omit<Turn, "id">[]) {
-    setTurns((t) => [...t, ...items.map((item) => ({ ...item, id: crypto.randomUUID() }))]);
+    if (texte) minuterie.current = setTimeout(() => setStatut(null), STATUT_MS);
   }
 
   const scene = useMemo(
@@ -132,11 +112,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         router,
         deplacerDoigt: setDoigt,
         toucher: () => setTouche((n) => n + 1),
-        statut: (texte) => {
-          if (minuterie.current) clearTimeout(minuterie.current);
-          setStatut(texte);
-        },
-        dire: (cle) => void voix.phrase(cle, langue.current),
+        statut: () => {},
+        // L'assistant parle lui-même : pas de phrase enregistrée à jouer
+        dire: () => {},
         demander: (texte, signal) =>
           new Promise<ReponseAccord>((resolve) => {
             const finir = (reponse: ReponseAccord) => {
@@ -149,33 +127,65 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
             attente.current = { mission: missionCourante.current!, resoudre: finir };
             setResume(texte);
             setPhase("confirmation");
+            // Le formulaire est prêt : l'assistant reçoit enfin la réponse de son brouillon et demande l'accord
+            const appel = appelBrouillon.current;
+            appelBrouillon.current = null;
+            if (appel) {
+              conversation.current?.repondreOutil(appel.id, appel.name, {
+                ...appel.reponse,
+                message: "Le formulaire est rempli à l'écran. Demande maintenant au commerçant s'il peut enregistrer.",
+              });
+            }
             signal.addEventListener("abort", () => finir({ type: "non" }), { once: true });
           }),
       }),
-    [router, voix],
+    [router],
   );
 
-  async function parler(texte: string, l: Lang) {
-    setRejouer(null);
-    const resultat = await voix.dire(texte, l);
-    if (resultat.etat === "bloque") setRejouer(() => resultat.rejouer);
-    if (resultat.etat === "indisponible") {
-      setNotice(
-        voixEnReveil.current
-          ? "La voix wolof se réveille, elle revient dans quelques minutes : la réponse est écrite."
-          : "Voix wolof indisponible pour le moment : la réponse est écrite.",
-      );
+  /** Annonce le résultat d'une tâche à l'assistant, qui le dira à voix haute. */
+  function rendreResultat(fin: FinMission) {
+    let message: string | null = null;
+    let ok = true;
+    switch (fin.etat) {
+      case "enregistre":
+        message = fin.message;
+        montrerStatut(fin.message);
+        break;
+      case "refuse":
+        message = fin.message;
+        ok = false;
+        montrerStatut(fin.message);
+        break;
+      case "laisse":
+        message = "D'accord, l'écran reste rempli, rien n'est enregistré.";
+        break;
+      case "arrete":
+        ok = false;
+        message =
+          fin.raison === "reprise"
+            ? "Le commerçant a repris la main à l'écran ; rien n'est enregistré."
+            : "L'écran n'a pas répondu ; rien n'est enregistré.";
+        montrerStatut(fin.raison === "reprise" ? "Tu as repris la main." : "L'écran ne répond pas : rien n'est enregistré.");
+        break;
+      case "montre":
+      case "corrige":
+        return;
     }
+    const confirmation = appelConfirmation.current;
+    const brouillon = appelBrouillon.current;
+    appelConfirmation.current = null;
+    appelBrouillon.current = null;
+    if (confirmation) conversation.current?.repondreOutil(confirmation.id, confirmation.name, { ok, message });
+    else if (brouillon) conversation.current?.repondreOutil(brouillon.id, brouillon.name, { ok: false, raison: message });
+    else conversation.current?.noter(`(${message} Dis-le au commerçant en une phrase et demande s'il veut autre chose.)`);
   }
 
-  async function lancer(mission: Mission, texte: string): Promise<void> {
-    setOuvertEtat(false);
-    setNotice(null);
+  async function lancer(mission: Mission): Promise<void> {
+    piloteEnCours.current = true;
     setPhase("pilote");
     missionCourante.current = mission;
     const c = new AbortController();
     controle.current = c;
-    if (mission.type === "tache") void voix.phrase("je-m-en-occupe", langue.current);
     let fin: FinMission;
     try {
       fin = await jouer(etapesPour(mission), scene, c.signal);
@@ -184,138 +194,110 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
     controle.current = null;
     setDoigt(null);
-    if (fin.etat === "corrige") return lancer(fin.mission, texte);
+    if (fin.etat === "corrige") return lancer(fin.mission);
     missionCourante.current = null;
-    switch (fin.etat) {
-      case "enregistre":
-        montrerStatut(fin.message);
-        addTurns({ role: "assistant", text: `✓ ${fin.message}` });
-        break;
-      case "refuse":
-        montrerStatut(fin.message);
-        setNotice(fin.message);
-        break;
-      case "laisse":
-        montrerStatut("D'accord, l'écran reste rempli : tu peux corriger et enregistrer toi-même.");
-        break;
-      case "arrete":
-        if (fin.raison === "reprise") {
-          void voix.phrase("reprise", langue.current);
-          montrerStatut("Tu as repris la main.");
+    piloteEnCours.current = false;
+    rendreResultat(fin);
+    setPhase(conversation.current ? "ecoute" : "repos");
+  }
+
+  async function surOutils(appels: AppelOutil[]) {
+    for (const appel of appels) {
+      const conv = conversation.current;
+      if (appel.name === "confirmer") {
+        if (attente.current) {
+          appelConfirmation.current = { id: appel.id, name: appel.name };
+          attente.current.resoudre({ type: appel.args.reponse === "oui" ? "oui" : "non" });
         } else {
-          void voix.phrase("souci", langue.current);
-          montrerStatut("L'écran ne répond pas : rien n'est enregistré.");
+          conv?.repondreOutil(appel.id, appel.name, { ok: false, raison: "Aucune tâche n'attend d'accord à l'écran." });
         }
-        break;
-      case "montre":
-        montrerStatut(texte);
-        setPhase("speaking");
-        await parler(texte, langue.current);
-        break;
+        continue;
+      }
+      const resultat = await executerOutilServeur(appel.name, appel.args);
+      if (!resultat.ok) {
+        conv?.repondreOutil(appel.id, appel.name, { ok: false, raison: resultat.error });
+        continue;
+      }
+      const { reponse, mission } = resultat;
+      if (mission?.type === "tache") {
+        if (attente.current) {
+          // Correction dite à voix haute : la tâche corrigée est rejouée sur l'écran déjà ouvert
+          appelBrouillon.current = { id: appel.id, name: appel.name, reponse };
+          attente.current.resoudre({ type: "correction", mission });
+        } else if (piloteEnCours.current) {
+          conv?.repondreOutil(appel.id, appel.name, { ok: false, raison: "Une tâche est déjà en train de se remplir à l'écran : termine-la d'abord." });
+        } else {
+          appelBrouillon.current = { id: appel.id, name: appel.name, reponse };
+          void lancer(mission);
+        }
+        continue;
+      }
+      conv?.repondreOutil(appel.id, appel.name, reponse);
+      if (mission?.type === "ecran" && !piloteEnCours.current) void lancer(mission);
     }
-    setPhase("idle");
   }
 
-  async function traiter(reply: AssistantReply) {
-    langue.current = reply.langue;
-    addTurns({ role: "user", text: reply.transcription || "…" }, { role: "assistant", text: reply.texte });
-    const enAttente = attente.current;
-    if (enAttente) {
-      if (reply.confirmation) return enAttente.resoudre({ type: reply.confirmation });
-      if (reply.mission?.type === "tache") return enAttente.resoudre({ type: "correction", mission: reply.mission });
-      setPhase("confirmation");
-      void parler(reply.texte, reply.langue);
-      return;
+  function surOutilsAnnules(ids: string[]) {
+    // Le commerçant a parlé pendant que l'écran se remplissait : la tâche en cours est abandonnée
+    if (appelBrouillon.current && ids.includes(appelBrouillon.current.id)) {
+      appelBrouillon.current = null;
+      controle.current?.abort();
     }
-    if (reply.mission) return lancer(reply.mission, reply.texte);
-    setPhase("speaking");
-    await parler(reply.texte, reply.langue);
-    setPhase("idle");
+    if (appelConfirmation.current && ids.includes(appelConfirmation.current.id)) appelConfirmation.current = null;
   }
 
-  async function demarrer() {
-    if (recording.current || starting.current || phase === "thinking" || phase === "pilote") return;
-    starting.current = true;
+  function demarrer() {
+    if (conversation.current) return;
+    // Le son est débloqué ici, dans le toucher lui-même : sinon l'iPhone (et d'autres) refusent la voix plus tard.
+    const contexte = contexteAudio.current ?? new AudioContext();
+    contexteAudio.current = contexte;
+    void contexte.resume();
+    const silence = contexte.createBufferSource();
+    silence.buffer = contexte.createBuffer(1, 1, 22_050);
+    silence.connect(contexte.destination);
+    silence.start();
+    const sessionAudio = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (sessionAudio) sessionAudio.type = "play-and-record";
+
+    setActif(true);
     setNotice(null);
-    voix.couper();
-    try {
-      const rec = await startRecording();
-      recording.current = { rec, startedAt: Date.now(), timer: setTimeout(() => void finEnregistrement(), MAX_RECORDING_MS) };
-      setPhase("recording");
-      if (!pressed.current) void finEnregistrement();
-    } catch {
-      setNotice("Le micro est bloqué. Autorise-le : touche le cadenas à côté de l'adresse, puis Micro → Autoriser.");
-    } finally {
-      starting.current = false;
-    }
-  }
-
-  async function finEnregistrement() {
-    pressed.current = false;
-    const current = recording.current;
-    if (!current) return;
-    recording.current = null;
-    clearTimeout(current.timer);
-    const blob = await current.rec.stop();
-    const retour: Phase = attente.current ? "confirmation" : "idle";
-    if (Date.now() - current.startedAt < MIN_RECORDING_MS || blob.size === 0) {
-      setPhase(retour);
-      setNotice("Je n'ai rien entendu. Garde le doigt appuyé pendant que tu parles.");
-      return;
-    }
-    setPhase("thinking");
-    let audio: string;
-    try {
-      audio = toBase64(await toWav16k(blob));
-    } catch {
-      setPhase(retour);
-      setNotice("Impossible de lire l'enregistrement. Réessaie.");
-      return;
-    }
-    const history: HistoryItem[] = turnsRef.current.slice(-10).map(({ role, text }) => ({ role, text: text.slice(0, 800) }));
-    const enAttente = attente.current;
-    const res = await askAssistant(audio, history, enAttente ? missionForModel(enAttente.mission) : null);
-    if (!res.ok) {
-      setPhase(attente.current ? "confirmation" : "idle");
-      setNotice(res.error);
-      return;
-    }
-    await traiter(res.reply);
-  }
-
-  function setOuvert(valeur: boolean) {
-    setOuvertEtat(valeur);
-    if (valeur && Date.now() - dernierReveil.current > REVEIL_MS) {
-      dernierReveil.current = Date.now();
-      void reveillerVoix().then((r) => {
-        voixEnReveil.current = Boolean(r?.configuree && !r.pret);
-      });
-    }
+    setPhase("connexion");
+    conversation.current = creerConversation({
+      contexte,
+      surEtat: (etat) => {
+        if (!piloteEnCours.current) setPhase(PHASE_DE[etat]);
+      },
+      surOutils: (appels) => void surOutils(appels),
+      surOutilsAnnules,
+      surFin: (raison) => {
+        conversation.current = null;
+        controle.current?.abort();
+        appelBrouillon.current = null;
+        appelConfirmation.current = null;
+        setActif(false);
+        setPhase("repos");
+        if (raison) setNotice(raison);
+      },
+    });
   }
 
   const value: AssistantValue = {
-    ouvert,
-    setOuvert,
+    actif,
     phase,
-    turns,
     notice,
     statut,
     resume,
     doigt,
     touche,
-    rejouer,
-    appuyer: () => {
-      pressed.current = true;
-      void demarrer();
-    },
-    relacher: () => {
-      if (!pressed.current) return;
-      pressed.current = false;
-      void finEnregistrement();
-    },
+    demarrer,
+    terminer: () => conversation.current?.terminer(),
+    couperParole: () => conversation.current?.couperParole(),
     accord: (oui) => attente.current?.resoudre({ type: oui ? "oui" : "non" }),
-    arreter: () => controle.current?.abort(),
-    fermerStatut: () => montrerStatut(null),
+    arreterTache: () => controle.current?.abort(),
+    fermerStatut: () => {
+      montrerStatut(null);
+      setNotice(null);
+    },
   };
 
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;

@@ -35,6 +35,12 @@ describe("allowedTools", () => {
     expect(allowedTools(access("owner"))).not.toContain("confirmer");
     expect(allowedTools(access("owner"), { attente: true }).slice(-2)).toEqual(["confirmer", "repondre"]);
   });
+  it("gives the live dialogue confirmer and no repondre", () => {
+    const tools = allowedTools(access("owner"), { direct: true });
+    expect(tools).toContain("confirmer");
+    expect(tools).not.toContain("repondre");
+    expect(tools.at(-1)).toBe("confirmer");
+  });
   it("respects disabled modules", () => {
     const tools = allowedTools(access("owner", { modulePos: false, moduleOrders: false }));
     expect(tools).not.toContain("brouillon_vente");

@@ -1,11 +1,10 @@
 // Pas de "server-only" : les dépendances (Gemini, base) sont injectées, ce qui rend la boucle testable.
 import { z } from "zod";
-import { draftForModel, type DraftResult } from "@/lib/domain/assistant/drafts";
-import type { EcranResult } from "@/lib/domain/assistant/ecrans";
 import type { Confirmation, Mission } from "@/lib/domain/assistant/mission";
 import type { AssistantReply, HistoryItem } from "@/lib/domain/assistant/reply";
-import { isDraftTool, isReadTool, LANGS, type DraftToolName, type FunctionDeclaration, type ReadToolName } from "@/lib/domain/assistant/tools";
+import { LANGS, type FunctionDeclaration } from "@/lib/domain/assistant/tools";
 import type { GeminiCall, GeminiContent, GeminiPart } from "./gemini";
+import { executerOutil, type OutilDeps } from "./outils";
 
 /** 3 tours d'outils au plus, puis la réponse finale. */
 export const MAX_GEMINI_CALLS = 4;
@@ -30,11 +29,8 @@ export interface RunInput {
   attente?: string | null;
 }
 
-export interface RunDeps {
+export interface RunDeps extends OutilDeps {
   gemini: GeminiCall;
-  read: (name: ReadToolName, args: Record<string, unknown>) => Promise<Record<string, unknown>>;
-  draft: (name: DraftToolName, args: Record<string, unknown>) => Promise<DraftResult> | DraftResult;
-  ecran: (args: Record<string, unknown>) => Promise<EcranResult> | EcranResult;
 }
 
 const MAX_TEXT = 800;
@@ -94,33 +90,7 @@ export async function runAssistant(input: RunInput, deps: RunDeps): Promise<Assi
       const args = part.functionCall.args ?? {};
       let response: Record<string, unknown>;
       let settled = false;
-      if (!allowed.has(name)) {
-        response = { erreur: "Outil non autorisé pour cet utilisateur." };
-      } else if (isReadTool(name)) {
-        response = await deps.read(name, args);
-      } else if (isDraftTool(name)) {
-        const result = await deps.draft(name, args);
-        if (result.ok) {
-          mission = { type: "tache", tache: result.draft };
-          settled = true;
-          response = {
-            ok: true,
-            brouillon: draftForModel(result.draft),
-            message: "Tâche lancée à l'écran : l'assistant remplit le formulaire puis demande au commerçant s'il peut enregistrer.",
-          };
-        } else {
-          response = { ok: false, raison: result.reason, ...(result.candidates ? { candidats: result.candidates } : {}) };
-        }
-      } else if (name === "montrer_ecran") {
-        const result = await deps.ecran(args);
-        if (result.ok) {
-          mission = { type: "ecran", ecran: result.ecran };
-          settled = true;
-          response = { ok: true, ecran: result.ecran.titre, message: "Écran ouvert devant le commerçant." };
-        } else {
-          response = { ok: false, raison: result.reason, ...(result.candidates ? { candidats: result.candidates } : {}) };
-        }
-      } else if (name === "confirmer") {
+      if (name === "confirmer" && allowed.has(name)) {
         const parsed = confirmArgs.safeParse(args);
         if (parsed.success) {
           confirmation = parsed.data.reponse;
@@ -130,7 +100,19 @@ export async function runAssistant(input: RunInput, deps: RunDeps): Promise<Assi
           response = { ok: false, raison: "La réponse doit être oui ou non." };
         }
       } else {
-        response = { erreur: "Outil inconnu." };
+        const resultat = await executerOutil(name, args, allowed, deps);
+        response = resultat.reponse;
+        if (resultat.mission) {
+          mission = resultat.mission;
+          settled = true;
+          response = {
+            ...response,
+            message:
+              resultat.mission.type === "tache"
+                ? "Tâche lancée à l'écran : l'assistant remplit le formulaire puis demande au commerçant s'il peut enregistrer."
+                : "Écran ouvert devant le commerçant.",
+          };
+        }
       }
       if (!settled) allSettled = false;
       results.set(part, response);

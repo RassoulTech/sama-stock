@@ -57,7 +57,11 @@ export function isDraftTool(name: string): name is DraftToolName {
 }
 
 /** Outils proposés à l'IA pour ce rôle et ces modules. L'écran et l'action revérifient les droits au moment d'enregistrer. */
-export function allowedTools(access: ToolAccess, opts: { attente?: boolean } = {}): ToolName[] {
+/**
+ * `attente` : une tâche attend l'accord du commerçant (ancienne voie). `direct` : dialogue en direct, où l'IA parle
+ * elle-même (pas de « repondre ») et où l'accord peut arriver à tout moment (« confirmer » toujours proposé).
+ */
+export function allowedTools(access: ToolAccess, opts: { attente?: boolean; direct?: boolean } = {}): ToolName[] {
   const tools: ToolName[] = ["resume_ventes", "montrer_ecran"];
   if (access.can("products.view")) tools.push("stock_produit");
   if (access.can("customers.manage")) tools.push("clients_debiteurs");
@@ -71,8 +75,8 @@ export function allowedTools(access: ToolAccess, opts: { attente?: boolean } = {
     if (access.can("products.manage")) tools.push("brouillon_produit", "brouillon_prix");
     if (access.can("suppliers.manage")) tools.push("brouillon_fournisseur");
   }
-  if (opts.attente) tools.push("confirmer");
-  tools.push("repondre");
+  if (opts.attente || opts.direct) tools.push("confirmer");
+  if (!opts.direct) tools.push("repondre");
   return tools;
 }
 

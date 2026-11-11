@@ -40,4 +40,14 @@ describe("buildSystemPrompt", () => {
     expect(text).not.toContain(`Produit ${MAX_PROMPT_PRODUCTS} —`);
     expect(text).toContain("… et 5 autres produits");
   });
+  it("writes conversation rules for the live dialogue", () => {
+    const text = buildSystemPrompt({ ...base, products: [], mode: "conversation" });
+    expect(text).toContain("Tu parles à voix haute avec le commerçant");
+    expect(text).toContain("relance avec une question courte");
+    expect(text).toContain("Ne dis jamais « je t'affiche »");
+    expect(text).toContain("Ndax ma bind ko ?");
+    expect(text).toContain("appelle « confirmer »");
+    expect(text).not.toContain("repondre");
+    expect(text).toContain("(aucun produit enregistré)");
+  });
 });
