@@ -15,7 +15,7 @@ describe("allowedTools", () => {
       [
         "brouillon_client", "brouillon_commande", "brouillon_entree_stock", "brouillon_fournisseur", "brouillon_paiement_client",
         "brouillon_prix", "brouillon_produit", "brouillon_sortie_stock", "brouillon_statut_commande", "brouillon_vente",
-        "clients_debiteurs", "commandes_en_cours", "repondre", "resume_ventes", "stock_produit",
+        "clients_debiteurs", "commandes_en_cours", "montrer_ecran", "repondre", "resume_ventes", "stock_produit",
       ].sort(),
     );
     expect(tools.at(-1)).toBe("repondre");
@@ -26,10 +26,14 @@ describe("allowedTools", () => {
     expect(tools).toEqual(expect.arrayContaining(["brouillon_vente", "brouillon_commande", "brouillon_paiement_client", "stock_produit"]));
   });
   it("gives the storekeeper stock entries and exits only", () => {
-    expect(allowedTools(access("storekeeper"))).toEqual(["resume_ventes", "stock_produit", "brouillon_entree_stock", "brouillon_sortie_stock", "repondre"]);
+    expect(allowedTools(access("storekeeper"))).toEqual(["resume_ventes", "montrer_ecran", "stock_produit", "brouillon_entree_stock", "brouillon_sortie_stock", "repondre"]);
   });
   it("offers no draft at all on a read-only plan", () => {
     expect(allowedTools({ ...access("owner"), readOnly: true }).filter((t) => t.startsWith("brouillon_"))).toEqual([]);
+  });
+  it("adds confirmer only while a task waits for the user's answer", () => {
+    expect(allowedTools(access("owner"))).not.toContain("confirmer");
+    expect(allowedTools(access("owner"), { attente: true }).slice(-2)).toEqual(["confirmer", "repondre"]);
   });
   it("respects disabled modules", () => {
     const tools = allowedTools(access("owner", { modulePos: false, moduleOrders: false }));

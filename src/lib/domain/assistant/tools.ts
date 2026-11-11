@@ -30,7 +30,9 @@ export const STATUS_TARGETS = ["preparing", "shipping", "delivered", "cancelled"
 export const UNIT_IDS = UNITS.map((u) => u.id) as [UnitId, ...UnitId[]];
 export type ReadToolName = (typeof READ_TOOLS)[number];
 export type DraftToolName = (typeof DRAFT_TOOLS)[number];
-export type ToolName = ReadToolName | DraftToolName | "repondre";
+export const ECRANS = ["tableau_de_bord", "rapports", "stock_bas", "ruptures", "ventes", "ventes_credit", "commandes", "client", "produit"] as const;
+export type SpecialToolName = "montrer_ecran" | "confirmer";
+export type ToolName = ReadToolName | DraftToolName | SpecialToolName | "repondre";
 
 export const LANGS = ["wo", "fr"] as const;
 export type Lang = (typeof LANGS)[number];
@@ -55,8 +57,8 @@ export function isDraftTool(name: string): name is DraftToolName {
 }
 
 /** Outils proposés à l'IA pour ce rôle et ces modules. L'écran et l'action revérifient les droits au moment d'enregistrer. */
-export function allowedTools(access: ToolAccess): ToolName[] {
-  const tools: ToolName[] = ["resume_ventes"];
+export function allowedTools(access: ToolAccess, opts: { attente?: boolean } = {}): ToolName[] {
+  const tools: ToolName[] = ["resume_ventes", "montrer_ecran"];
   if (access.can("products.view")) tools.push("stock_produit");
   if (access.can("customers.manage")) tools.push("clients_debiteurs");
   if (access.can("orders.manage")) tools.push("commandes_en_cours");
@@ -69,6 +71,7 @@ export function allowedTools(access: ToolAccess): ToolName[] {
     if (access.can("products.manage")) tools.push("brouillon_produit", "brouillon_prix");
     if (access.can("suppliers.manage")) tools.push("brouillon_fournisseur");
   }
+  if (opts.attente) tools.push("confirmer");
   tools.push("repondre");
   return tools;
 }
@@ -224,6 +227,23 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
       name: "brouillon_fournisseur",
       description: "Prépare la fiche d'un nouveau fournisseur.",
       parameters: object({ nom: str("Nom du fournisseur"), telephone: str("Téléphone, s'il est dit"), note: str("Précision éventuelle") }, ["nom"]),
+    },
+    montrer_ecran: {
+      name: "montrer_ecran",
+      description: "Ouvre un écran de l'application devant le commerçant et montre du doigt le chiffre ou la liste demandés.",
+      parameters: object(
+        {
+          ecran: oneOf(ECRANS, "tableau_de_bord, rapports, stock_bas, ruptures, ventes, ventes_credit (ventes à crédit), commandes, client (fiche d'un client), produit (fiche d'un produit)"),
+          periode: oneOf(PERIODS, "Période pour les ventes ou les rapports"),
+          nom: str("Nom du client ou du produit, pour ouvrir sa fiche"),
+        },
+        ["ecran"],
+      ),
+    },
+    confirmer: {
+      name: "confirmer",
+      description: "Réponse du commerçant à « Je l'enregistre ? » pour la tâche remplie à l'écran.",
+      parameters: object({ reponse: oneOf(["oui", "non"], "oui : waaw, oui, bind ko, def ko ; non : déedéet, non, bayyil") }, ["reponse"]),
     },
     repondre: {
       name: "repondre",
