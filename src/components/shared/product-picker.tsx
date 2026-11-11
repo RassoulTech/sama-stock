@@ -27,6 +27,7 @@ export function ProductPicker({
   label = "Ajouter un produit",
   showPrice = "sale",
   className,
+  cible,
 }: {
   products: PickerProduct[];
   onSelect: (product: PickerProduct) => void;
@@ -34,6 +35,8 @@ export function ProductPicker({
   label?: string;
   showPrice?: "sale" | "cost" | "none";
   className?: string;
+  /** Cible de l'assistant sur le bouton d'ajout. */
+  cible?: string;
 }) {
   const [open, setOpen] = useState(false);
   const choices = products.filter((p) => !excludeIds.includes(p.id));
@@ -41,7 +44,7 @@ export function ProductPicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" className={className ?? "w-full border-dashed"}>
+        <Button type="button" variant="outline" className={className ?? "w-full border-dashed"} data-assistant={cible}>
           <Plus /> {label}
         </Button>
       </PopoverTrigger>

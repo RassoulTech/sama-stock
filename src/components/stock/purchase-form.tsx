@@ -4,6 +4,8 @@ import { Loader2, PackagePlus, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import type { ResultatPilote } from "@/components/assistant/pilote/types";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { ProductThumb } from "@/components/products/product-thumb";
 import { FormError, FormField, SuffixInput } from "@/components/shared/form-field";
 import { ProductPicker, type PickerProduct } from "@/components/shared/product-picker";
@@ -54,26 +56,54 @@ export function PurchaseForm({
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
   }
 
-  function submit() {
+  function submit(): Promise<ResultatPilote> {
     setError(null);
-    if (lines.length === 0) return setError("Ajoutez au moins un produit.");
-    if (lines.some((l) => !l.quantity || Number(l.quantity) <= 0)) return setError("Chaque quantité doit être supérieure à 0.");
-    startTransition(async () => {
-      const res = await createPurchase({
-        supplierId: supplierId === NONE ? null : supplierId,
-        note,
-        items: lines.map((l) => ({
-          productId: l.product.id,
-          quantity: Number(l.quantity),
-          unitCost: showCost && l.unitCost !== "" ? Number(l.unitCost) : null,
-        })),
+    const refus = (message: string) => {
+      setError(message);
+      return Promise.resolve({ ok: false, message });
+    };
+    if (lines.length === 0) return refus("Ajoutez au moins un produit.");
+    if (lines.some((l) => !l.quantity || Number(l.quantity) <= 0)) return refus("Chaque quantité doit être supérieure à 0.");
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const res = await createPurchase({
+          supplierId: supplierId === NONE ? null : supplierId,
+          note,
+          items: lines.map((l) => ({
+            productId: l.product.id,
+            quantity: Number(l.quantity),
+            unitCost: showCost && l.unitCost !== "" ? Number(l.unitCost) : null,
+          })),
+        });
+        if (!res.ok) {
+          setError(res.error);
+          resolve({ ok: false, message: res.error });
+          return;
+        }
+        toast.success("Entrée de stock enregistrée");
+        resolve({ ok: true, message: "Entrée de stock enregistrée" });
+        router.push("/stock");
+        router.refresh();
       });
-      if (!res.ok) return setError(res.error);
-      toast.success("Entrée de stock enregistrée");
-      router.push("/stock");
-      router.refresh();
     });
   }
+
+  // L'assistant vocal remplit l'entrée avec les mêmes fonctions que la main du magasinier
+  usePiloteEcran("entree", {
+    vider: () => {
+      setLines([]);
+      setSupplierId(NONE);
+      setNote("");
+      setError(null);
+    },
+    ajouterLigne: (id, quantite, cout) => {
+      const p = products.find((x) => x.id === id);
+      if (!p) return;
+      setLines((prev) => [...prev.filter((l) => l.product.id !== id), { product: p, quantity: quantite, unitCost: cout ?? p.costPrice ?? "" }]);
+    },
+    fournisseur: (id) => setSupplierId(id ?? NONE),
+    enregistrer: () => submit(),
+  });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
@@ -132,6 +162,7 @@ export function PurchaseForm({
             products={products}
             excludeIds={lines.map((l) => l.product.id)}
             showPrice={showCost ? "cost" : "none"}
+            cible="entree.ajouter"
             onSelect={(p) => setLines((prev) => [...prev, { product: p, quantity: 1, unitCost: p.costPrice ?? "" }])}
           />
         </CardContent>
@@ -142,7 +173,7 @@ export function PurchaseForm({
           <CardContent className="space-y-4">
             <FormField label="Fournisseur (facultatif)">
               <Select value={supplierId} onValueChange={setSupplierId}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full" data-assistant="entree.fournisseur">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,7 +216,7 @@ export function PurchaseForm({
           </CardContent>
         </Card>
         <FormError message={error} />
-        <Button type="button" size="lg" className="w-full" disabled={pending} onClick={submit}>
+        <Button type="button" size="lg" className="w-full" disabled={pending} onClick={() => void submit()} data-assistant="entree.valider">
           {pending && <Loader2 className="animate-spin" />}
           Valider l&apos;entrée
         </Button>

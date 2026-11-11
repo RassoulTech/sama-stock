@@ -4,6 +4,8 @@ import { ArrowUpFromLine, Loader2, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import type { ResultatPilote } from "@/components/assistant/pilote/types";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { ProductThumb } from "@/components/products/product-thumb";
 import { FormError, FormField } from "@/components/shared/form-field";
 import { ProductPicker, type PickerProduct } from "@/components/shared/product-picker";
@@ -36,23 +38,49 @@ export function ExitForm({ products, initialProductId }: { products: ExitProduct
     setReason(k === "exit" ? "sold_offline" : "breakage");
   }
 
-  function submit() {
+  function submit(): Promise<ResultatPilote> {
     setError(null);
-    if (!product) return setError("Choisissez un produit.");
-    if (!quantity || quantity <= 0) return setError("La quantité doit être supérieure à 0.");
-    startTransition(async () => {
-      const res = await createStockExit({ productId: product.id, quantity, kind, reason, note });
-      if (!res.ok) return setError(res.error);
-      toast.success(kind === "loss" ? "Perte enregistrée" : "Sortie enregistrée");
-      router.push(`/produits/${product.id}`);
-      router.refresh();
+    const refus = (message: string) => {
+      setError(message);
+      return Promise.resolve({ ok: false, message });
+    };
+    if (!product) return refus("Choisissez un produit.");
+    if (!quantity || quantity <= 0) return refus("La quantité doit être supérieure à 0.");
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const res = await createStockExit({ productId: product.id, quantity, kind, reason, note });
+        if (!res.ok) {
+          setError(res.error);
+          resolve({ ok: false, message: res.error });
+          return;
+        }
+        const message = kind === "loss" ? "Perte enregistrée" : "Sortie enregistrée";
+        toast.success(message);
+        resolve({ ok: true, message });
+        router.push(`/produits/${product.id}`);
+        router.refresh();
+      });
     });
   }
+
+  // L'assistant vocal remplit la sortie avec les mêmes fonctions que la main du magasinier
+  usePiloteEcran("sortie", {
+    produit: (id) => {
+      const p = products.find((x) => x.id === id);
+      if (p) setProduct(p);
+    },
+    genre: (k) => changeKind(k),
+    motif: (r) => setReason(r),
+    quantite: (n) => setQuantity(n),
+    note: (t) => setNote(t),
+    enregistrer: () => submit(),
+  });
 
   return (
     <Card className="mx-auto max-w-xl">
       <CardContent className="space-y-5">
         <FormField label="Produit">
+          <div data-assistant="sortie.produit">
           {product ? (
             <div className="flex items-center gap-3 rounded-xl border p-3">
               <ProductThumb name={product.name} imageUrl={product.imageUrl} className="size-10" />
@@ -72,6 +100,7 @@ export function ExitForm({ products, initialProductId }: { products: ExitProduct
               onSelect={(p) => setProduct(products.find((x) => x.id === p.id) ?? null)}
             />
           )}
+          </div>
         </FormField>
 
         <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted p-1">
@@ -86,6 +115,7 @@ export function ExitForm({ products, initialProductId }: { products: ExitProduct
               type="button"
               onClick={() => changeKind(k)}
               aria-pressed={kind === k}
+              data-assistant={`sortie.genre.${k}`}
               className={cn(
                 "flex flex-col items-center gap-0.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors",
                 kind === k && "bg-card text-foreground shadow-sm",
@@ -102,7 +132,7 @@ export function ExitForm({ products, initialProductId }: { products: ExitProduct
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Motif">
             <Select value={reason} onValueChange={setReason}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" data-assistant="sortie.motif">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -115,16 +145,16 @@ export function ExitForm({ products, initialProductId }: { products: ExitProduct
             </Select>
           </FormField>
           <FormField label={`Quantité${product ? ` (${unitLabel(product.unit, 2)})` : ""}`}>
-            <QtyStepper value={quantity} onChange={setQuantity} unit={product?.unit ?? "piece"} max={product?.physical} />
+            <QtyStepper value={quantity} onChange={setQuantity} unit={product?.unit ?? "piece"} max={product?.physical} cible="sortie.quantite" />
           </FormField>
         </div>
 
         <FormField label="Note (facultative)" htmlFor="note">
-          <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ce qui s'est passé…" />
+          <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ce qui s'est passé…" data-assistant="sortie.note" />
         </FormField>
 
         <FormError message={error} />
-        <Button type="button" size="lg" className="w-full" disabled={pending} onClick={submit}>
+        <Button type="button" size="lg" className="w-full" disabled={pending} onClick={() => void submit()} data-assistant="sortie.valider">
           {pending && <Loader2 className="animate-spin" />}
           Enregistrer {kind === "loss" ? "la perte" : "la sortie"}
         </Button>

@@ -14,6 +14,7 @@ export function QtyStepper({
   max,
   className,
   label = "Quantité",
+  cible,
 }: {
   value: number | "";
   onChange: (value: number | "") => void;
@@ -22,6 +23,8 @@ export function QtyStepper({
   max?: number;
   className?: string;
   label?: string;
+  /** Cible de l'assistant sur le compteur. */
+  cible?: string;
 }) {
   const decimals = unitAllowsDecimals(unit);
   const current = value === "" ? 0 : value;
@@ -33,7 +36,7 @@ export function QtyStepper({
   };
 
   return (
-    <div className={cn("flex h-11 items-center rounded-xl border border-input bg-card", className)}>
+    <div className={cn("flex h-11 items-center rounded-xl border border-input bg-card", className)} data-assistant={cible}>
       <button
         type="button"
         onClick={() => onChange(clamp(current - 1))}
