@@ -4,6 +4,7 @@ import { HandCoins, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { FormError, FormField, SuffixInput } from "@/components/shared/form-field";
 import { PaymentMethodPicker } from "@/components/shared/payment-method-picker";
@@ -33,6 +34,28 @@ export function OrderStatusButtons({ id, next }: { id: string; next: readonly Or
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
+  // L'assistant a déjà demandé l'accord : il change l'état sans la fenêtre « Êtes-vous sûr ? »
+  usePiloteEcran("commande.statut", {
+    changerStatut: (to) =>
+      new Promise((resolve) => {
+        if (!next.includes(to)) {
+          resolve({ ok: false, message: "Cette commande ne peut plus passer à cet état." });
+          return;
+        }
+        startTransition(async () => {
+          const res = await updateOrderStatus(id, to);
+          if (!res.ok) {
+            toast.error(res.error);
+            resolve({ ok: false, message: res.error });
+          } else {
+            toast.success("Statut mis à jour");
+            resolve({ ok: true, message: "Statut mis à jour" });
+          }
+          router.refresh();
+        });
+      }),
+  });
+
   return (
     <div className="flex flex-col gap-2">
       {next.map((to) => {
@@ -43,7 +66,7 @@ export function OrderStatusButtons({ id, next }: { id: string; next: readonly Or
             <ConfirmAction
               key={to}
               trigger={
-                <Button variant={destructive ? "destructive" : to === "delivered" ? "default" : "saffron"} className="w-full">
+                <Button variant={destructive ? "destructive" : to === "delivered" ? "default" : "saffron"} className="w-full" data-assistant={`commande.statut.${to}`}>
                   {ORDER_ACTION_LABELS[to]}
                 </Button>
               }
@@ -61,6 +84,7 @@ export function OrderStatusButtons({ id, next }: { id: string; next: readonly Or
             key={to}
             className="w-full"
             disabled={pending}
+            data-assistant={`commande.statut.${to}`}
             onClick={() =>
               startTransition(async () => {
                 const res = await updateOrderStatus(id, to);

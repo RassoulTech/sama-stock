@@ -4,6 +4,8 @@ import { Loader2, ShoppingBag, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import type { ResultatPilote } from "@/components/assistant/pilote/types";
+import { usePiloteEcran } from "@/components/assistant/pilote/use-pilote-ecran";
 import { CustomerCombobox } from "@/components/customers/customer-combobox";
 import type { CustomerOption } from "@/components/customers/customer-dialog";
 import { ProductThumb } from "@/components/products/product-thumb";
@@ -40,27 +42,69 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
   const subtotal = lines.reduce((s, l) => s + Math.round((Number(l.quantity) || 0) * l.product.salePrice), 0);
   const total = subtotal + (Number(deliveryFee) || 0);
 
-  function submit() {
+  function submit(): Promise<ResultatPilote> {
     setError(null);
-    if (!customerId) return setError("Choisissez le client de la commande.");
-    if (lines.length === 0) return setError("Ajoutez au moins un produit.");
-    startTransition(async () => {
-      const res = await createOrder({
-        customerId,
-        channel,
-        items: lines.map((l) => ({ productId: l.product.id, quantity: Number(l.quantity) })),
-        deliveryFee: Number(deliveryFee) || 0,
-        deliveryAddress: address,
-        amountPaid: Number(paid) || 0,
-        paymentMethod: Number(paid) > 0 ? method : null,
-        note,
+    const refus = (message: string) => {
+      setError(message);
+      return Promise.resolve({ ok: false, message });
+    };
+    if (!customerId) return refus("Choisissez le client de la commande.");
+    if (lines.length === 0) return refus("Ajoutez au moins un produit.");
+    return new Promise((resolve) => {
+      startTransition(async () => {
+        const res = await createOrder({
+          customerId,
+          channel,
+          items: lines.map((l) => ({ productId: l.product.id, quantity: Number(l.quantity) })),
+          deliveryFee: Number(deliveryFee) || 0,
+          deliveryAddress: address,
+          amountPaid: Number(paid) || 0,
+          paymentMethod: Number(paid) > 0 ? method : null,
+          note,
+        });
+        if (!res.ok) {
+          setError(res.error);
+          resolve({ ok: false, message: res.error });
+          return;
+        }
+        toast.success("Commande enregistrée — les produits sont réservés");
+        resolve({ ok: true, message: "Commande enregistrée" });
+        router.push(`/commandes/${res.data.id}`);
+        router.refresh();
       });
-      if (!res.ok) return setError(res.error);
-      toast.success("Commande enregistrée — les produits sont réservés");
-      router.push(`/commandes/${res.data.id}`);
-      router.refresh();
     });
   }
+
+  // L'assistant vocal remplit la commande avec les mêmes fonctions que la main du vendeur
+  usePiloteEcran("commande", {
+    vider: () => {
+      setCustomerId(null);
+      setChannel("whatsapp");
+      setLines([]);
+      setDeliveryFee("");
+      setAddress("");
+      setPaid("");
+      setMethod("wave");
+      setNote("");
+      setError(null);
+    },
+    client: (id) => setCustomerId(id),
+    canal: (c) => setChannel(c),
+    ajouterLigne: (id, quantite) => {
+      const p = products.find((x) => x.id === id);
+      if (!p) return;
+      setLines((prev) => [...prev.filter((l) => l.product.id !== id), { product: p, quantity: quantite }]);
+    },
+    livraison: (adresse, frais) => {
+      setAddress(adresse);
+      setDeliveryFee(frais || "");
+    },
+    acompte: (montant, methode) => {
+      setPaid(montant || "");
+      if (methode) setMethod(methode);
+    },
+    enregistrer: () => submit(),
+  });
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
@@ -76,6 +120,7 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
                   setError(null);
                 }}
                 onCreated={(c) => setCustomers((prev) => [...prev, c].sort((a, b) => a.name.localeCompare(b.name, "fr")))}
+                cible="commande.client"
               />
             </FormField>
             <FormField label="Canal de la commande">
@@ -86,6 +131,7 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
                     type="button"
                     onClick={() => setChannel(c)}
                     aria-pressed={channel === c}
+                    data-assistant={`commande.canal.${c}`}
                     className={cn(
                       "h-9 rounded-full border bg-card px-3.5 text-[0.8125rem] font-medium text-muted-foreground",
                       channel === c && "border-primary/30 bg-accent text-accent-foreground",
@@ -144,6 +190,7 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
               products={products.filter((p) => p.available > 0)}
               excludeIds={lines.map((l) => l.product.id)}
               onSelect={(p) => setLines((prev) => [...prev, { product: p, quantity: 1 }])}
+              cible="commande.ajouter"
             />
           </CardContent>
         </Card>
@@ -153,7 +200,7 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
         <Card>
           <CardContent className="space-y-4">
             <FormField label="Adresse de livraison" htmlFor="address">
-              <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Quartier, repère…" />
+              <Input id="address" data-assistant="commande.livraison" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Quartier, repère…" />
             </FormField>
             <FormField label="Frais de livraison" htmlFor="fee">
               <SuffixInput
@@ -170,6 +217,7 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
             <FormField label="Déjà payé (acompte)" htmlFor="paid" hint="Laissez vide si le client paie à la livraison.">
               <SuffixInput
                 id="paid"
+                data-assistant="commande.acompte"
                 suffix="FCFA"
                 min={0}
                 max={total}
@@ -207,7 +255,7 @@ export function OrderForm({ products, customers: initialCustomers }: { products:
           </CardContent>
         </Card>
         <FormError message={error} />
-        <Button size="lg" className="w-full" disabled={pending} onClick={submit}>
+        <Button size="lg" className="w-full" disabled={pending} onClick={() => void submit()} data-assistant="commande.valider">
           {pending && <Loader2 className="animate-spin" />}
           Enregistrer la commande
         </Button>
