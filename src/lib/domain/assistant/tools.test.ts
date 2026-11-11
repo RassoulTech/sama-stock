@@ -13,7 +13,8 @@ describe("allowedTools", () => {
     const tools = allowedTools(access("owner"));
     expect([...tools].sort()).toEqual(
       [
-        "brouillon_commande", "brouillon_entree_stock", "brouillon_paiement_client", "brouillon_vente",
+        "brouillon_client", "brouillon_commande", "brouillon_entree_stock", "brouillon_fournisseur", "brouillon_paiement_client",
+        "brouillon_prix", "brouillon_produit", "brouillon_sortie_stock", "brouillon_statut_commande", "brouillon_vente",
         "clients_debiteurs", "commandes_en_cours", "repondre", "resume_ventes", "stock_produit",
       ].sort(),
     );
@@ -24,8 +25,11 @@ describe("allowedTools", () => {
     expect(tools).not.toContain("brouillon_entree_stock");
     expect(tools).toEqual(expect.arrayContaining(["brouillon_vente", "brouillon_commande", "brouillon_paiement_client", "stock_produit"]));
   });
-  it("gives the storekeeper quantities only", () => {
-    expect(allowedTools(access("storekeeper"))).toEqual(["resume_ventes", "stock_produit", "brouillon_entree_stock", "repondre"]);
+  it("gives the storekeeper stock entries and exits only", () => {
+    expect(allowedTools(access("storekeeper"))).toEqual(["resume_ventes", "stock_produit", "brouillon_entree_stock", "brouillon_sortie_stock", "repondre"]);
+  });
+  it("offers no draft at all on a read-only plan", () => {
+    expect(allowedTools({ ...access("owner"), readOnly: true }).filter((t) => t.startsWith("brouillon_"))).toEqual([]);
   });
   it("respects disabled modules", () => {
     const tools = allowedTools(access("owner", { modulePos: false, moduleOrders: false }));

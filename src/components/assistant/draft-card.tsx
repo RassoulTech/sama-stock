@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useOfflineMode } from "@/components/offline/offline-provider";
 import { Button } from "@/components/ui/button";
-import type { Draft, DraftLine } from "@/lib/domain/assistant/drafts";
+import type { Draft as AnyDraft, DraftLine } from "@/lib/domain/assistant/drafts";
+
+/** Carte provisoire : remplacée par le mode pilote (les nouvelles tâches ne passent pas par elle). */
+export type Draft = Extract<AnyDraft, { action: "sale" | "purchase" | "order" | "payment" }>;
+export const isCardDraft = (d: AnyDraft | null): d is Draft => d !== null && ["sale", "purchase", "order", "payment"].includes(d.action);
 import { CHANNELS, PAYMENT_METHODS } from "@/lib/domain/sales";
 import { formatFCFA, formatQty } from "@/lib/format";
 import { recordCustomerPayment } from "@/server/actions/customers";

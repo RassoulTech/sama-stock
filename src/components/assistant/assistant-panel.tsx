@@ -2,11 +2,11 @@
 
 import { Mic, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { Draft } from "@/lib/domain/assistant/drafts";
+import type { Draft } from "./draft-card";
 import type { AssistantReply, HistoryItem } from "@/lib/domain/assistant/reply";
 import { cn } from "@/lib/utils";
 import { askAssistant, speakFrench, wolofVoice } from "./api";
-import { DraftCard } from "./draft-card";
+import { DraftCard, isCardDraft } from "./draft-card";
 import { MAX_RECORDING_MS, MIN_RECORDING_MS, startRecording, toBase64, toWav16k, type Recording } from "./recorder";
 
 type Phase = "idle" | "recording" | "thinking" | "speaking";
@@ -117,7 +117,7 @@ export function AssistantPanel() {
       setNotice(res.error);
       return;
     }
-    addTurns({ role: "user", text: res.reply.transcription || "…" }, { role: "assistant", text: res.reply.texte, draft: res.reply.brouillon });
+    addTurns({ role: "user", text: res.reply.transcription || "…" }, { role: "assistant", text: res.reply.texte, draft: isCardDraft(res.reply.brouillon) ? res.reply.brouillon : null });
     await speak(res.reply);
   }
 

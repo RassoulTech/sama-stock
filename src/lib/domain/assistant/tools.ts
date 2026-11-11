@@ -2,9 +2,32 @@
 import { dayStart } from "@/lib/filters";
 import type { Permission } from "@/lib/domain/permissions";
 import { ORDER_CHANNELS, PAYING_METHODS, SALE_METHODS } from "@/lib/domain/sales";
+import { EXIT_REASONS, LOSS_REASONS } from "@/lib/domain/stock";
+import { UNITS, type UnitId } from "@/lib/format";
 
 export const READ_TOOLS = ["stock_produit", "resume_ventes", "clients_debiteurs", "commandes_en_cours"] as const;
-export const DRAFT_TOOLS = ["brouillon_vente", "brouillon_entree_stock", "brouillon_commande", "brouillon_paiement_client"] as const;
+
+export const DRAFT_TOOLS = [
+  "brouillon_vente",
+  "brouillon_entree_stock",
+  "brouillon_sortie_stock",
+  "brouillon_commande",
+  "brouillon_statut_commande",
+  "brouillon_paiement_client",
+  "brouillon_produit",
+  "brouillon_prix",
+  "brouillon_client",
+  "brouillon_fournisseur",
+] as const;
+
+/** Motifs d'une sortie de stock : pertes d'abord, puis sorties (clés de lib/domain/stock). */
+export const STOCK_REASON_KEYS = [...Object.keys(LOSS_REASONS), ...Object.keys(EXIT_REASONS)] as [
+  keyof typeof LOSS_REASONS | keyof typeof EXIT_REASONS,
+  ...(keyof typeof LOSS_REASONS | keyof typeof EXIT_REASONS)[],
+];
+/** États qu'une commande peut prendre à la demande (jamais « new »). */
+export const STATUS_TARGETS = ["preparing", "shipping", "delivered", "cancelled", "returned"] as const;
+export const UNIT_IDS = UNITS.map((u) => u.id) as [UnitId, ...UnitId[]];
 export type ReadToolName = (typeof READ_TOOLS)[number];
 export type DraftToolName = (typeof DRAFT_TOOLS)[number];
 export type ToolName = ReadToolName | DraftToolName | "repondre";
@@ -19,6 +42,8 @@ export interface ToolAccess {
   can(p: Permission): boolean;
   modulePos: boolean;
   moduleOrders: boolean;
+  /** Offre en lecture seule : aucun brouillon. */
+  readOnly?: boolean;
 }
 
 export function isReadTool(name: string): name is ReadToolName {
@@ -29,15 +54,21 @@ export function isDraftTool(name: string): name is DraftToolName {
   return (DRAFT_TOOLS as readonly string[]).includes(name);
 }
 
-/** Outils proposés à l'IA pour ce rôle et ces modules. L'action existante revérifie les droits au moment de valider. */
+/** Outils proposés à l'IA pour ce rôle et ces modules. L'écran et l'action revérifient les droits au moment d'enregistrer. */
 export function allowedTools(access: ToolAccess): ToolName[] {
   const tools: ToolName[] = ["resume_ventes"];
   if (access.can("products.view")) tools.push("stock_produit");
-  if (access.can("customers.manage")) tools.push("clients_debiteurs", "brouillon_paiement_client");
+  if (access.can("customers.manage")) tools.push("clients_debiteurs");
   if (access.can("orders.manage")) tools.push("commandes_en_cours");
-  if (access.can("orders.manage") && access.moduleOrders) tools.push("brouillon_commande");
-  if (access.can("sales.create") && access.modulePos) tools.push("brouillon_vente");
-  if (access.can("stock.in")) tools.push("brouillon_entree_stock");
+  if (!access.readOnly) {
+    if (access.can("customers.manage")) tools.push("brouillon_paiement_client", "brouillon_client");
+    if (access.can("orders.manage") && access.moduleOrders) tools.push("brouillon_commande", "brouillon_statut_commande");
+    if (access.can("sales.create") && access.modulePos) tools.push("brouillon_vente");
+    if (access.can("stock.in")) tools.push("brouillon_entree_stock");
+    if (access.can("stock.adjust")) tools.push("brouillon_sortie_stock");
+    if (access.can("products.manage")) tools.push("brouillon_produit", "brouillon_prix");
+    if (access.can("suppliers.manage")) tools.push("brouillon_fournisseur");
+  }
   tools.push("repondre");
   return tools;
 }
@@ -131,6 +162,68 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
         },
         ["client", "montant", "paiement"],
       ),
+    },
+    brouillon_sortie_stock: {
+      name: "brouillon_sortie_stock",
+      description: "Prépare une sortie de stock : une perte (casse, vol, perte, péremption, erreur de saisie) ou une sortie (vendu hors caisse, utilisé, offert, autre).",
+      parameters: object(
+        {
+          produit: str("Nom exact du produit dans le catalogue si tu le reconnais, sinon tel que dit par le commerçant"),
+          quantite: { type: "number", description: "Quantité sortie" },
+          motif: oneOf(STOCK_REASON_KEYS, "breakage (casse), theft (vol), loss (perte), expired (péremption), entry_error (erreur de saisie), sold_offline (vendu hors caisse), used (utilisé), gift (offert), other (autre)"),
+          note: str("Précision éventuelle"),
+        },
+        ["produit", "quantite", "motif"],
+      ),
+    },
+    brouillon_statut_commande: {
+      name: "brouillon_statut_commande",
+      description: "Change l'état d'une commande en cours.",
+      parameters: object(
+        {
+          commande: str("Numéro de la commande, ou nom du client qui l'a passée"),
+          etat: oneOf(STATUS_TARGETS, "preparing (en préparation), shipping (en livraison), delivered (livrée), cancelled (annulée), returned (retournée)"),
+        },
+        ["commande", "etat"],
+      ),
+    },
+    brouillon_produit: {
+      name: "brouillon_produit",
+      description: "Prépare la fiche d'un nouveau produit.",
+      parameters: object(
+        {
+          nom: str("Nom du produit"),
+          prix_vente: int("Prix de vente en FCFA"),
+          ...(opts.costs ? { prix_achat: int("Prix d'achat en FCFA, s'il est dit") } : {}),
+          unite: oneOf(UNIT_IDS, "Unité de vente : piece, kg, g, m, l, sac, carton, paquet, boite, rouleau, sachet, bouteille, paire, lot"),
+          categorie: str("Catégorie, si elle est dite"),
+          stock_initial: { type: "number", description: "Quantité déjà en boutique, si elle est dite" },
+          reference: str("Référence, si elle est dite"),
+        },
+        ["nom", "prix_vente"],
+      ),
+    },
+    brouillon_prix: {
+      name: "brouillon_prix",
+      description: "Change le prix de vente d'un produit existant (et son prix d'achat s'il est dit).",
+      parameters: object(
+        {
+          produit: str("Nom exact du produit dans le catalogue si tu le reconnais, sinon tel que dit par le commerçant"),
+          prix_vente: int("Nouveau prix de vente en FCFA"),
+          ...(opts.costs ? { prix_achat: int("Nouveau prix d'achat en FCFA, s'il est dit") } : {}),
+        },
+        ["produit"],
+      ),
+    },
+    brouillon_client: {
+      name: "brouillon_client",
+      description: "Prépare la fiche d'un nouveau client.",
+      parameters: object({ nom: str("Nom du client"), telephone: str("Téléphone, s'il est dit"), adresse: str("Adresse, si elle est dite") }, ["nom"]),
+    },
+    brouillon_fournisseur: {
+      name: "brouillon_fournisseur",
+      description: "Prépare la fiche d'un nouveau fournisseur.",
+      parameters: object({ nom: str("Nom du fournisseur"), telephone: str("Téléphone, s'il est dit"), note: str("Précision éventuelle") }, ["nom"]),
     },
     repondre: {
       name: "repondre",
