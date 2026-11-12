@@ -320,6 +320,40 @@
   }
 }
 
+/*
+ * Rond lumineux de l'assistant vocal : il flotte, respire quand il écoute, ses reflets tournent.
+ * Le battement avec la voix passe par --niveau (posé à chaque image) et reste actif même avec moins d'animations.
+ */
+@keyframes orbe-flotter {
+  50% {
+    translate: 0 -14px;
+  }
+}
+@keyframes orbe-respirer {
+  50% {
+    scale: 1.035;
+  }
+}
+@keyframes orbe-tourner {
+  to {
+    rotate: 360deg;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .orbe-flotte {
+    animation: orbe-flotter 6s ease-in-out infinite;
+  }
+  .orbe-respire {
+    animation: orbe-respirer 3.2s ease-in-out infinite;
+  }
+  .orbe-reflets {
+    animation: orbe-tourner 10s linear infinite;
+  }
+  .orbe-reflets-vite {
+    animation-duration: 2.4s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -1,4 +1,5 @@
 // src/components/assistant/direct/haut-parleur.ts
+import { creerSonde } from "./niveau";
 import { base64VersFloat32, TAUX_SORTIE } from "./protocole";
 
 export interface HautParleur {
@@ -8,6 +9,10 @@ export interface HautParleur {
   vider(): void;
   /** La voix est-elle en train de sortir ? */
   parle(): boolean;
+  /** Niveau de la voix qui sort (0 à 1), pour faire battre le rond. */
+  niveau(): number;
+  /** Débranche le lecteur (fin de la conversation). */
+  fermer(): void;
 }
 
 /**
@@ -17,6 +22,21 @@ export interface HautParleur {
 export function creerHautParleur(contexte: AudioContext): HautParleur {
   let curseur = 0;
   const sources = new Set<AudioBufferSourceNode>();
+  const sortie = contexte.createGain();
+  sortie.connect(contexte.destination);
+  const sonde = creerSonde(contexte, sortie);
+  const parle = () => contexte.currentTime < curseur;
+  const vider = () => {
+    for (const source of sources) {
+      try {
+        source.stop();
+      } catch {
+        // déjà arrêtée
+      }
+    }
+    sources.clear();
+    curseur = 0;
+  };
   return {
     jouer(base64) {
       const echantillons = base64VersFloat32(base64);
@@ -25,26 +45,22 @@ export function creerHautParleur(contexte: AudioContext): HautParleur {
       tampon.getChannelData(0).set(echantillons);
       const source = contexte.createBufferSource();
       source.buffer = tampon;
-      source.connect(contexte.destination);
+      source.connect(sortie);
       const debut = Math.max(contexte.currentTime + 0.04, curseur);
       source.start(debut);
       curseur = debut + tampon.duration;
       sources.add(source);
       source.onended = () => sources.delete(source);
     },
-    vider() {
-      for (const source of sources) {
-        try {
-          source.stop();
-        } catch {
-          // déjà arrêtée
-        }
-      }
-      sources.clear();
-      curseur = 0;
+    vider,
+    parle,
+    niveau() {
+      return parle() ? sonde.niveau() : 0;
     },
-    parle() {
-      return contexte.currentTime < curseur;
+    fermer() {
+      vider();
+      sonde.detacher();
+      sortie.disconnect();
     },
   };
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { STATUTS, useAssistant } from "../assistant-provider";
 import { Doigt } from "./doigt";
+import { Orbe } from "./orbe";
 
 /**
  * Bulle de la conversation : un rond qui vit avec la voix (écoute, parle, regarde, remplit), « Terminer », et pendant
@@ -14,8 +15,9 @@ import { Doigt } from "./doigt";
  */
 export function BulleAssistant() {
   const a = useAssistant();
-  if (!a.actif && a.statut === null && a.notice === null) return null;
+  if (a.affichage !== "bulle") return null;
   const accord = a.phase === "confirmation";
+  const tache = a.phase === "pilote" || accord;
   return (
     <div
       data-assistant-bulle=""
@@ -23,27 +25,19 @@ export function BulleAssistant() {
       aria-live="polite"
       style={{ pointerEvents: "auto" }}
       // En haut sur téléphone : en bas, elle cacherait la barre du panier et la barre de navigation
-      className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[60] mx-auto max-w-md rounded-2xl border bg-background/95 p-3 shadow-2xl backdrop-blur lg:top-auto lg:bottom-6 print:hidden"
+      className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[60] mx-auto max-w-md rounded-2xl border bg-background/95 p-3 shadow-2xl backdrop-blur motion-safe:animate-[enter-pop_0.45s_cubic-bezier(0.16,1,0.3,1)] lg:top-auto lg:bottom-6 print:hidden"
     >
       <div className="flex items-center gap-3">
         <button
           type="button"
-          aria-label={a.phase === "parle" ? "Couper la parole de l'assistant" : "Assistant"}
-          onClick={a.couperParole}
-          className="relative grid size-12 shrink-0 place-items-center"
+          // Pendant une tâche, le rond coupe la parole ; sinon il ramène la conversation en plein écran
+          aria-label={tache ? "Couper la parole de l'assistant" : "Agrandir l'assistant"}
+          title={tache ? undefined : "Agrandir"}
+          disabled={!a.actif}
+          onClick={tache ? a.couperParole : a.agrandir}
+          className="relative grid size-12 shrink-0 place-items-center rounded-full"
         >
-          <span
-            aria-hidden
-            className={cn(
-              "absolute inset-0 rounded-full bg-gradient-to-br from-emerald-300 via-teal-400 to-teal-700 transition-transform duration-300",
-              a.phase === "ecoute" && "scale-110 animate-pulse",
-              a.phase === "parle" && "scale-105 animate-[pulse_0.9s_ease-in-out_infinite]",
-              (a.phase === "outil" || a.phase === "connexion") && "animate-spin [animation-duration:2.5s]",
-              a.phase === "pilote" && "animate-pulse",
-              !a.actif && "opacity-50",
-            )}
-          />
-          {a.phase === "ecoute" && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-teal-400/40" />}
+          <Orbe phase={a.phase} niveau={a.niveau} taille="petit" className={cn(!a.actif && "opacity-50")} />
         </button>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{accord ? a.question : (a.statut ?? STATUTS[a.phase])}</p>

@@ -1,4 +1,5 @@
 // src/components/assistant/direct/micro.ts
+import { creerSonde } from "./niveau";
 import { versPcm16 } from "./protocole";
 
 /** Petit module joué dans le fil audio du navigateur : il recopie chaque bloc du micro vers la page. */
@@ -16,6 +17,8 @@ const MORCEAU_MS = 100;
 const modulesCharges = new WeakSet<BaseAudioContext>();
 
 export interface Micro {
+  /** Niveau de la voix captée (0 à 1). */
+  niveau(): number;
   fermer(): void;
 }
 
@@ -71,10 +74,13 @@ export async function ouvrirMicro(contexte: AudioContext, surMorceau: (pcm: Int1
   }
   source.connect(noeud);
   noeud.connect(muet);
+  const sonde = creerSonde(contexte, source);
 
   return {
+    niveau: () => sonde.niveau(),
     fermer() {
       detacher();
+      sonde.detacher();
       source.disconnect();
       noeud.disconnect();
       muet.disconnect();

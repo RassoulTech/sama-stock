@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { dansLaBulle } from "@/components/ui/garde-bulle";
 import type { Mission } from "@/lib/domain/assistant/mission";
+import { choisirAffichage, type Affichage } from "./affichage";
 import { executerOutilServeur } from "./api";
 import { creerConversation, type Conversation, type EtatConversation } from "./direct/conversation";
 import type { AppelOutil } from "./direct/protocole";
@@ -38,6 +39,8 @@ export const STATUTS: Record<Phase, string> = {
 interface AssistantValue {
   /** Une conversation est en cours. */
   actif: boolean;
+  /** Plein écran pour parler, bulle en bas pendant les tâches. */
+  affichage: Affichage;
   phase: Phase;
   notice: string | null;
   statut: string | null;
@@ -51,6 +54,11 @@ interface AssistantValue {
   demarrer: () => void;
   terminer: () => void;
   couperParole: () => void;
+  /** Niveau du son de celui qui parle (0 à 1), lu à chaque image pour faire battre le rond. */
+  niveau: () => number;
+  /** Rond de la bulle touché : retour au plein écran (sauf pendant une tâche). */
+  agrandir: () => void;
+  reduire: () => void;
   accord: (oui: boolean) => void;
   arreterTache: () => void;
   faireGeste: () => void;
@@ -92,6 +100,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [doigt, setDoigt] = useState<PositionDoigt | null>(null);
   const [touche, setTouche] = useState(0);
   const [geste, setGeste] = useState<{ texte: string; chemin: string } | null>(null);
+  const [plein, setPlein] = useState(true);
 
   const contexteAudio = useRef<AudioContext | null>(null);
   const conversation = useRef<Conversation | null>(null);
@@ -217,6 +226,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   /** Joue une mission à l'écran (doigt, champs remplis, accord) et rend sa fin. */
   async function jouerMission(mission: Mission): Promise<FinMission> {
     piloteEnCours.current = true;
+    setPlein(false);
     setPhase("pilote");
     const c = new AbortController();
     controle.current = c;
@@ -259,6 +269,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     }
     const nom = choisi.libelle;
     piloteEnCours.current = true;
+    setPlein(false);
     setPhase("pilote");
     let accordDemande = false;
     let appuie = true;
@@ -323,6 +334,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       });
       return;
     }
+    setPlein(false);
     const bouton = trouverCible("document.envoyer");
     if (bouton) await pointerElement(bouton, gestesDoigt);
     setDoigt(null);
@@ -436,6 +448,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     if (sessionAudio) sessionAudio.type = "play-and-record";
 
     setActif(true);
+    setPlein(true);
     setNotice(null);
     setPhase("connexion");
     conversation.current = creerConversation({
@@ -458,8 +471,12 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  // Le bouton vert ne vaut que sur la page du document qu'il envoie
+  const gesteVisible = geste && geste.chemin === chemin ? geste.texte : null;
+
   const value: AssistantValue = {
     actif,
+    affichage: choisirAffichage({ actif, plein, phase, geste: gesteVisible !== null, message: statut !== null || notice !== null }),
     phase,
     notice,
     statut,
@@ -467,11 +484,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     question,
     doigt,
     touche,
-    // Le bouton vert ne vaut que sur la page du document qu'il envoie
-    geste: geste && geste.chemin === chemin ? geste.texte : null,
+    geste: gesteVisible,
     demarrer,
     terminer: () => conversation.current?.terminer(),
     couperParole: () => conversation.current?.couperParole(),
+    niveau: () => conversation.current?.niveau() ?? 0,
+    agrandir: () => {
+      if (!piloteEnCours.current) setPlein(true);
+    },
+    reduire: () => setPlein(false),
     accord: (oui) => attente.current?.resoudre({ type: oui ? "oui" : "non" }),
     arreterTache: () => controle.current?.abort(),
     faireGeste,

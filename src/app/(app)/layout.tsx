@@ -8,6 +8,7 @@ import { AppProvider, type ClientAppInfo } from "@/components/shell/app-provider
 import { AssistantButton } from "@/components/assistant/assistant-button";
 import { AssistantProvider } from "@/components/assistant/assistant-provider";
 import { BulleAssistant, DoigtAssistant } from "@/components/assistant/pilote/bulle";
+import { PleinEcranAssistant } from "@/components/assistant/pilote/plein-ecran";
 import { BottomNav } from "@/components/shell/bottom-nav";
 import { LocationSwitcher } from "@/components/shell/location-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -196,6 +197,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {ctx.business.assistantEnabled && (
             <AssistantProvider>
               <AssistantButton />
+              <PleinEcranAssistant />
               <BulleAssistant />
               <DoigtAssistant />
             </AssistantProvider>

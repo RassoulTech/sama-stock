@@ -32,6 +32,8 @@ export interface Conversation {
   noter(texte: string): void;
   /** Coupe la parole de l'assistant (toucher la bulle). */
   couperParole(): void;
+  /** Niveau du son de celui qui parle (la voix de l'assistant, sinon le micro), de 0 à 1. */
+  niveau(): number;
   terminer(raison?: string | null): void;
 }
 
@@ -77,7 +79,7 @@ export function creerConversation(o: OptionsConversation): Conversation {
     if (surveillance) clearInterval(surveillance);
     if (verifParole) clearTimeout(verifParole);
     micro?.fermer();
-    haut.vider();
+    haut.fermer();
     if (ws && ws.readyState <= WebSocket.OPEN) ws.close(1000);
     noter({ fin: raison });
     o.surFin(raison);
@@ -184,6 +186,10 @@ export function creerConversation(o: OptionsConversation): Conversation {
       ignorerVoix = true;
       haut.vider();
       attendreFinVoix();
+    },
+    niveau() {
+      if (finie) return 0;
+      return haut.parle() ? haut.niveau() : (micro?.niveau() ?? 0);
     },
     terminer,
   };
