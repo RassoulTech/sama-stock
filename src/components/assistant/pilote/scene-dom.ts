@@ -35,8 +35,9 @@ const visible = (element: Element) => element.getClientRects().length > 0 && get
 
 /** La fenêtre ouverte par-dessus la page (le reste de l'écran est alors inactif), ou null. */
 function fenetreOuverte(): HTMLElement | null {
+  // Une fenêtre en train de se fermer (data-state="closed") ne compte plus
   const fenetres = [...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="alertdialog"]')].filter(
-    (f) => visible(f) && !f.closest("[data-assistant-bulle]"),
+    (f) => visible(f) && f.dataset.state !== "closed" && !f.closest("[data-assistant-bulle]"),
   );
   return fenetres.at(-1) ?? null;
 }

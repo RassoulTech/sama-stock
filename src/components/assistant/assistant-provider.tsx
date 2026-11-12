@@ -42,6 +42,8 @@ interface AssistantValue {
   notice: string | null;
   statut: string | null;
   resume: string | null;
+  /** La question posée pendant l'accord (« Je l'enregistre ? », « J'appuie dessus ? »). */
+  question: string;
   doigt: PositionDoigt | null;
   touche: number;
   /** Bouton que le commerçant doit toucher lui-même (le téléphone exige un vrai toucher pour envoyer un fichier). */
@@ -86,6 +88,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [statut, setStatut] = useState<string | null>(null);
   const [resume, setResume] = useState<string | null>(null);
+  const [question, setQuestion] = useState(STATUTS.confirmation);
   const [doigt, setDoigt] = useState<PositionDoigt | null>(null);
   const [touche, setTouche] = useState(0);
   const [geste, setGeste] = useState<{ texte: string; chemin: string } | null>(null);
@@ -130,7 +133,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const gestesDoigt = { deplacerDoigt: setDoigt, toucher: () => setTouche((n) => n + 1) };
 
   /** Le résumé et Oui / Non dans la bulle, jusqu'à la réponse (dite, touchée, ou la main reprise sur l'écran). */
-  function attendreAccord(texte: string, signal: AbortSignal): Promise<ReponseAccord> {
+  function attendreAccord(texte: string, signal: AbortSignal, demande = STATUTS.confirmation): Promise<ReponseAccord> {
     return new Promise<ReponseAccord>((resolve) => {
       const finir = (reponse: ReponseAccord) => {
         if (attente.current?.resoudre !== finir) return;
@@ -141,6 +144,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       };
       attente.current = { resoudre: finir };
       setResume(texte);
+      setQuestion(demande);
       setPhase("confirmation");
       signal.addEventListener("abort", () => finir({ type: "non" }), { once: true });
     });
@@ -266,11 +270,11 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         repondre({
           ok: false,
           accord_requis: true,
-          message: `Le doigt est sur « ${nom} ». Demande l'accord du commerçant ; s'il dit oui, appelle confirmer avec oui.`,
+          message: `Le doigt est sur « ${nom} ». Demande au commerçant en une phrase s'il veut vraiment que tu appuies dessus (sans parler d'enregistrer) ; s'il dit oui, appelle confirmer avec oui.`,
         });
         const c = new AbortController();
         controle.current = c;
-        const accord = await attendreAccord(`Appuyer sur « ${nom} »`, c.signal);
+        const accord = await attendreAccord(`Appuyer sur « ${nom} »`, c.signal, "J'appuie dessus ?");
         controle.current = null;
         if (accord.type !== "oui") {
           appuie = false;
@@ -460,6 +464,7 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     notice,
     statut,
     resume,
+    question,
     doigt,
     touche,
     // Le bouton vert ne vaut que sur la page du document qu'il envoie

@@ -26,7 +26,8 @@ export function AssistantButton() {
         // Le son est débloqué ici, dans l'appui sur la touche, comme dans un toucher du micro
         if (assistant.actif) assistant.terminer();
         else if (enLigne) assistant.demarrer();
-      } else if (assistant.actif && estFermetureAssistant(event)) {
+      } else if (assistant.actif && estFermetureAssistant(event) && !event.defaultPrevented) {
+        // Une fenêtre ouverte prend Échap pour elle (elle marque l'évènement) : la conversation continue
         assistant.terminer();
       }
     };

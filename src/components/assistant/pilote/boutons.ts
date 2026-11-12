@@ -15,13 +15,17 @@ export function normaliser(texte: string): string {
     .trim();
 }
 
+/** Plus le texte du bouton contient toute la demande, mieux il correspond (« stock bas » : « Stock bas 1 » avant « Stock »). */
 function score(demande: string, libelle: string): number {
   if (!demande || !libelle) return 0;
-  if (libelle === demande) return 4;
-  if (libelle.startsWith(demande) || demande.startsWith(libelle)) return 3;
-  if (demande.length >= 3 && libelle.includes(demande)) return 2;
+  if (libelle === demande) return 6;
+  if (libelle.startsWith(demande)) return 5;
+  if (demande.length >= 3 && libelle.includes(demande)) return 4;
   const mots = demande.split(" ").filter((m) => m.length > 2);
-  if (mots.length > 0 && mots.every((m) => libelle.includes(m))) return 1;
+  if (mots.length > 0 && mots.every((m) => libelle.includes(m))) return 3;
+  // Le bouton dit moins que la demande (« valider la vente » → « Valider ») : en dernier recours
+  if (demande.startsWith(libelle)) return 2;
+  if (libelle.length >= 4 && demande.includes(libelle)) return 1;
   return 0;
 }
 

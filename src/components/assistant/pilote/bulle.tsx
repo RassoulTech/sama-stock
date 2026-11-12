@@ -46,7 +46,7 @@ export function BulleAssistant() {
           {a.phase === "ecoute" && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-teal-400/40" />}
         </button>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">{accord ? STATUTS.confirmation : (a.statut ?? STATUTS[a.phase])}</p>
+          <p className="text-sm font-medium">{accord ? a.question : (a.statut ?? STATUTS[a.phase])}</p>
           {accord && a.resume && <p className="mt-0.5 text-sm text-muted-foreground">{a.resume}</p>}
           {a.notice && <p className="mt-1 text-sm text-destructive">{a.notice}</p>}
         </div>

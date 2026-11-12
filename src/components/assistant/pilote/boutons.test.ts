@@ -20,6 +20,13 @@ describe("choisirBouton", () => {
     expect(choisirBouton("envoyer le reçu", boutons)?.element).toBe(3);
     expect(choisirBouton("bord tableau", boutons)?.element).toBe(0);
   });
+  it("prefers the label that holds the whole request over a shorter one", () => {
+    expect(choisirBouton("stock bas", b("Stock", "Tous 18", "Stock bas 1", "Rupture 2"))?.element).toBe(2);
+    expect(choisirBouton("ciment", b("Stock", "CK Ciment 50 kg"))?.element).toBe(1);
+  });
+  it("falls back on a shorter label that starts the request", () => {
+    expect(choisirBouton("valider la vente", b("Annuler", "Valider"))?.element).toBe(1);
+  });
   it("returns null when nothing matches", () => {
     expect(choisirBouton("factures", boutons)).toBeNull();
     expect(choisirBouton("", boutons)).toBeNull();
