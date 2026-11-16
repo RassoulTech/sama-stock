@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { NOM_ASSISTANT } from "./nom";
 import { buildSystemPrompt, MAX_PROMPT_PRODUCTS } from "./prompt";
 
 const base = { businessName: "Boutique Ndiaye", roleLabel: "Vendeur", today: new Date("2026-11-05T10:00:00Z") };
@@ -52,5 +53,22 @@ describe("buildSystemPrompt", () => {
     expect(text).toContain("« envoyer_whatsapp »");
     expect(text).not.toContain("repondre");
     expect(text).toContain("(aucun produit enregistré)");
+  });
+  it("calls the assistant Finch", () => {
+    expect(NOM_ASSISTANT).toBe("Finch");
+  });
+  it("gives the assistant its name in both modes", () => {
+    for (const mode of ["note", "conversation"] as const) {
+      const text = buildSystemPrompt({ ...base, products: [], mode });
+      expect(text).toContain(`Tu t'appelles ${NOM_ASSISTANT}`);
+      expect(text).toContain(`Je m'appelle ${NOM_ASSISTANT}`);
+      expect(text).toContain(`Maa ngi tudd ${NOM_ASSISTANT}`);
+    }
+  });
+  it("answers to its name and introduces itself when greeted in the live dialogue", () => {
+    const text = buildSystemPrompt({ ...base, products: [], mode: "conversation" });
+    expect(text).toContain(`t'appelle par ton nom (« ${NOM_ASSISTANT}, … »)`);
+    expect(text).toContain("salue");
+    expect(text).toContain(`« Bonjour, c'est ${NOM_ASSISTANT}. »`);
   });
 });

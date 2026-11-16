@@ -110,7 +110,9 @@ premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settin
    (`.env.local` sur l'ordinateur, variables Vercel pour la version en ligne).
 2. **Activation** : dans l'administration, ouvrez la fiche du commerce, puis **« Activer l'assistant »**. Le bouton
    micro apparaît dans son application.
-3. **Utilisation** : un toucher sur le micro ouvre la **conversation à la voix**. On parle normalement, en wolof ou en
+3. **Utilisation** : un toucher sur le micro ouvre la **conversation à la voix** avec **Finch**, le nom de l'assistant
+   (il se présente quand on le salue, dit son nom quand on le lui demande et comprend « Finch, … » ; le nom se change
+   dans `src/lib/domain/assistant/nom.ts`). On parle normalement, en wolof ou en
    français ; l'assistant entend la fin de la phrase, **répond à voix haute** (première voix en moins d'une seconde) et
    relance (« Am na leneen ? »). Pas de texte à lire : la conversation s'ouvre en **plein écran**, avec un rond lumineux
    qui flotte et bat au rythme de la voix (la tienne quand il écoute, la sienne quand il parle). Dès qu'il travaille sur

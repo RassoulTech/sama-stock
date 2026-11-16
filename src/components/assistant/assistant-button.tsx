@@ -3,6 +3,7 @@
 import { Mic } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useOfflineMode } from "@/components/offline/offline-provider";
+import { NOM_ASSISTANT } from "@/lib/domain/assistant/nom";
 import { useAssistant } from "./assistant-provider";
 import { estFermetureAssistant, estRaccourciAssistant, LIBELLE_RACCOURCI } from "./raccourci";
 
@@ -36,7 +37,7 @@ export function AssistantButton() {
   }, []);
 
   if (a.actif) return null;
-  const label = online ? `Parler avec l'assistant (${LIBELLE_RACCOURCI})` : "Assistant indisponible hors connexion";
+  const label = online ? `Parler avec ${NOM_ASSISTANT} (${LIBELLE_RACCOURCI})` : `${NOM_ASSISTANT} est indisponible hors connexion`;
 
   return (
     <button

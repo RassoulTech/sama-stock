@@ -2,6 +2,7 @@
 "use client";
 
 import { Minimize2, PhoneOff } from "lucide-react";
+import { NOM_ASSISTANT } from "@/lib/domain/assistant/nom";
 import { cn } from "@/lib/utils";
 import { STATUTS, useAssistant } from "../assistant-provider";
 import { Orbe } from "./orbe";
@@ -20,7 +21,7 @@ export function PleinEcranAssistant() {
       data-assistant-bulle=""
       role="dialog"
       aria-modal={visible}
-      aria-label="Conversation avec l'assistant"
+      aria-label={`Conversation avec ${NOM_ASSISTANT}`}
       aria-hidden={!visible}
       inert={!visible}
       // Une fenêtre ouverte en dessous bloque les touches du reste de la page : pas celles-ci
@@ -34,7 +35,9 @@ export function PleinEcranAssistant() {
       <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(20,184,166,0.3),transparent_62%)]" />
 
       <div className="relative flex w-full items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+1rem)] sm:px-8">
-        <p className="text-sm font-medium tracking-wide text-white/65">Assistant Sama Stock</p>
+        <p className="text-sm font-medium tracking-wide text-white/65">
+          <span className="font-semibold text-white/90">{NOM_ASSISTANT}</span> · Assistant Sama Stock
+        </p>
         <button
           type="button"
           onClick={a.reduire}
