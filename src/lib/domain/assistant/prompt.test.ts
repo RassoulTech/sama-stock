@@ -44,8 +44,8 @@ describe("buildSystemPrompt", () => {
   it("writes conversation rules for the live dialogue", () => {
     const text = buildSystemPrompt({ ...base, products: [], mode: "conversation" });
     expect(text).toContain("Tu parles à voix haute avec le commerçant");
-    expect(text).toContain("relance avec une question courte");
-    expect(text).toContain("Ne dis jamais « je t'affiche »");
+    expect(text).toContain("Relance avec une question courte");
+    expect(text).toContain("dis en quelques mots ce que tu fais");
     expect(text).toContain("Ndax ma bind ko ?");
     expect(text).toContain("appelle « confirmer »");
     expect(text).toContain("« lire_ecran »");
@@ -53,6 +53,33 @@ describe("buildSystemPrompt", () => {
     expect(text).toContain("« envoyer_whatsapp »");
     expect(text).not.toContain("repondre");
     expect(text).toContain("(aucun produit enregistré)");
+  });
+  it("teaches the live dialogue the whole shop: map, sections, filters, dates, inventory and Wolof words", () => {
+    const text = buildSystemPrompt({ ...base, products: [], mode: "conversation", today: new Date("2026-11-18T10:00:00Z") });
+    expect(text).toContain("Carte de la boutique");
+    expect(text).toContain("- rapports (Rapports)");
+    expect(text).toContain("Meilleures ventes (les produits les plus vendus");
+    expect(text).toContain("rapports, section « Meilleures ventes »");
+    expect(text).toContain("« defiler »");
+    expect(text).toContain("« saisir »");
+    expect(text).toContain("« analyse_ventes »");
+    expect(text).toContain("nous sommes le 2026-11-18");
+    expect(text).toContain("Quantité comptée pour <nom du produit>");
+    expect(text).toContain("wàccal : descends");
+    expect(text).toContain("Ne dis jamais que tu as ouvert, descendu, tapé ou appuyé");
+    expect(text).toContain("si la réponse de l'outil ne le dit pas clairement");
+    expect(text).toContain("weer wi weesu : le mois dernier");
+  });
+  it("only maps the pages the role can open", () => {
+    const text = buildSystemPrompt({
+      ...base,
+      products: [],
+      mode: "conversation",
+      acces: { reports: false, products: true, orders: false, customers: true },
+    });
+    expect(text).not.toContain("- rapports (Rapports)");
+    expect(text).not.toContain("- commandes (Commandes)");
+    expect(text).toContain("- produits (Produits)");
   });
   it("calls the assistant Finch", () => {
     expect(NOM_ASSISTANT).toBe("Finch");

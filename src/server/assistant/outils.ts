@@ -33,7 +33,10 @@ export async function executerOutil(name: string, args: Record<string, unknown>,
   if (name === "montrer_ecran") {
     const resultat = await deps.ecran(args);
     if (!resultat.ok) return { reponse: refus(resultat.reason, resultat.candidates), mission: null };
-    return { reponse: { ok: true, ecran: resultat.ecran.titre }, mission: { type: "ecran", ecran: resultat.ecran } };
+    return {
+      reponse: { ok: true, ecran: resultat.ecran.titre, ...(resultat.remarques ? { remarques: resultat.remarques } : {}) },
+      mission: { type: "ecran", ecran: resultat.ecran },
+    };
   }
   return { reponse: { erreur: "Outil inconnu." }, mission: null };
 }

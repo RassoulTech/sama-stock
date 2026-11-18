@@ -2,7 +2,7 @@
 import type { ClePhrase } from "@/lib/domain/assistant/phrases";
 import { DELAIS, type ReponseAccord, type Scene } from "./moteur";
 import { attendrePilote } from "./registre";
-import type { Bouton } from "./boutons";
+import { choisirBouton, type Bouton } from "./boutons";
 
 export interface PositionDoigt {
   x: number;
@@ -90,22 +90,156 @@ export function genreElement(element: HTMLElement): { lien: boolean; soumission:
   return { lien, soumission };
 }
 
-const TEXTE_MAX = 3_500;
+const TEXTE_MAX = 6_000;
+const SECTION_MAX = 3_500;
 
-/** Ce que voit le commerçant : la page (ou la fenêtre ouverte) en texte, et les boutons qu'on peut toucher. */
-export function lireEcran(): { page: string; titre: string; fenetre: string | null; texte: string } {
-  const fenetre = fenetreOuverte();
-  const zone = fenetre ?? document.querySelector<HTMLElement>("main") ?? document.body;
+/** Une fenêtre est-elle ouverte par-dessus la page ? */
+export function fenetreEstOuverte(): boolean {
+  return fenetreOuverte() !== null;
+}
+
+/** Ce qu'on lit : la fenêtre ouverte, sinon le contenu principal de la page. */
+function zoneLecture(): HTMLElement {
+  return fenetreOuverte() ?? document.querySelector<HTMLElement>("main") ?? document.body;
+}
+
+/** Le texte d'un élément, ligne par ligne, sans doublons ni blancs, coupé à `max` caractères. */
+export function texteDe(element: HTMLElement, max = SECTION_MAX): string {
   const lignes: string[] = [];
-  for (const ligne of zone.innerText.split("\n")) {
+  for (const ligne of element.innerText.split("\n")) {
     const propre = ligne.replace(/\s+/g, " ").trim();
     if (propre && propre !== lignes.at(-1)) lignes.push(propre);
   }
-  let texte = lignes.join("\n");
-  if (texte.length > TEXTE_MAX) texte = `${texte.slice(0, TEXTE_MAX)}\n… (suite plus bas dans la page)`;
+  const texte = lignes.join("\n");
+  return texte.length > max ? `${texte.slice(0, max)}\n… (la suite est plus bas)` : texte;
+}
+
+export interface SectionEcran {
+  titre: string;
+  element: HTMLElement;
+}
+
+const SECTIONS = '[data-slot="card"], section[aria-label], nav[aria-label], [data-assistant-section]';
+
+/** Les sections de la page, dans l'ordre : les cartes avec un titre et les blocs nommés (ex. « Meilleures ventes »). */
+export function sectionsPage(): SectionEcran[] {
+  const sections: SectionEcran[] = [];
+  for (const element of zoneLecture().querySelectorAll<HTMLElement>(SECTIONS)) {
+    if (element.closest("[data-assistant-bulle]") || !visible(element)) continue;
+    const titre = (
+      element.dataset.assistantSection ||
+      element.querySelector<HTMLElement>('[data-slot="card-title"]')?.innerText ||
+      element.getAttribute("aria-label") ||
+      ""
+    )
+      .replace(/\s+/g, " ")
+      .trim();
+    // Une carte sans titre (chiffre du haut) n'est pas une section ; une carte dans une section déjà vue non plus
+    if (!titre || sections.some((s) => s.element.contains(element))) continue;
+    sections.push({ titre: titre.slice(0, 80), element });
+  }
+  return sections;
+}
+
+/** La section dont le titre correspond le mieux à la demande, ou null. */
+export function trouverSection(nom: string): SectionEcran | null {
+  const choisi = choisirBouton(nom, sectionsPage().map((s) => ({ libelle: s.titre, element: s })));
+  return choisi?.element ?? null;
+}
+
+/** Fait monter la section en haut de l'écran (sous la barre du haut) et pose le doigt sur son titre. */
+export async function allerASection(section: SectionEcran, deplacerDoigt: (position: PositionDoigt | null) => void): Promise<void> {
+  section.element.style.scrollMarginTop = "88px";
+  section.element.scrollIntoView({ block: "start", behavior: "smooth" });
+  await attendre(650);
+  const titre = section.element.querySelector<HTMLElement>('[data-slot="card-title"]') ?? section.element;
+  const r = titre.getBoundingClientRect();
+  deplacerDoigt({ x: r.left + Math.min(r.width, 240) / 2, y: r.top + Math.min(r.height, 60) / 2, largeur: Math.min(r.width, 240), hauteur: Math.min(r.height, 60) });
+}
+
+/** Défile d'un écran vers le bas ou le haut, ou jusqu'au début ou à la fin de la page. */
+export async function defilerPage(sens: "bas" | "haut" | "debut" | "fin"): Promise<void> {
+  const hauteur = window.innerHeight * 0.8;
+  if (sens === "debut") window.scrollTo({ top: 0, behavior: "smooth" });
+  else if (sens === "fin") window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+  else window.scrollBy({ top: sens === "bas" ? hauteur : -hauteur, behavior: "smooth" });
+  await attendre(650);
+}
+
+/** Ce qui est à l'écran en ce moment : les sections visibles (titre et texte), sinon le haut de la page. */
+export function texteVisible(): string {
+  const dedans = sectionsPage().filter(({ element }) => {
+    const r = element.getBoundingClientRect();
+    return r.bottom > 80 && r.top < window.innerHeight;
+  });
+  if (dedans.length === 0) return texteDe(zoneLecture(), SECTION_MAX);
+  return dedans.map((s) => texteDe(s.element, 1_800)).join("\n\n").slice(0, SECTION_MAX);
+}
+
+const CHAMPS = [
+  'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="image"]):not([type="reset"])',
+  "textarea",
+  "select",
+].join(", ");
+
+type Champ = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+
+function libelleChamp(champ: Champ): string {
+  const texte =
+    champ.getAttribute("aria-label") ||
+    champ.labels?.[0]?.innerText ||
+    ("placeholder" in champ ? champ.placeholder : "") ||
+    champ.closest("label")?.innerText ||
+    champ.getAttribute("name") ||
+    "";
+  return texte.replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+/** Les champs où l'on peut taper (dans la fenêtre ouverte s'il y en a une, jamais dans la bulle). */
+export function champsSaisissables(): Bouton<Champ>[] {
+  const racine = fenetreOuverte() ?? document.body;
+  const champs: Bouton<Champ>[] = [];
+  for (const champ of racine.querySelectorAll<Champ>(CHAMPS)) {
+    if (champ.closest("[data-assistant-bulle]") || !visible(champ) || champ.disabled) continue;
+    if ("readOnly" in champ && champ.readOnly) continue;
+    const libelle = libelleChamp(champ);
+    if (libelle) champs.push({ libelle, element: champ });
+  }
+  return champs;
+}
+
+/** Tape la valeur comme au clavier : React voit la saisie (évènements input et change). */
+export function remplirChamp(champ: Champ, valeur: string): void {
+  champ.focus({ preventScroll: true });
+  const proto = champ instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : champ instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, "value")?.set?.call(champ, valeur);
+  champ.dispatchEvent(new Event("input", { bubbles: true }));
+  champ.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+/** Ce que voit le commerçant : la page (ou la fenêtre ouverte) en texte, ses sections et ses champs. */
+export function lireEcran(nomSection?: string): {
+  page: string;
+  titre: string;
+  fenetre: string | null;
+  sections: string[];
+  champs: string[];
+  texte: string;
+  section?: string;
+} {
+  const fenetre = fenetreOuverte();
+  const section = nomSection ? trouverSection(nomSection) : null;
   const titre = document.querySelector("main h1")?.textContent?.trim() || document.title;
-  const nomFenetre = fenetre?.querySelector("h2, [data-slot='dialog-title'], [data-slot='sheet-title']")?.textContent?.trim() ?? null;
-  return { page: `${window.location.pathname}${window.location.search}`, titre, fenetre: fenetre ? (nomFenetre ?? "fenêtre ouverte") : null, texte };
+  const nomFenetre = fenetre?.querySelector("h2, [data-slot='dialog-title'], [data-slot='sheet-title'], [data-slot='alert-dialog-title']")?.textContent?.trim() ?? null;
+  return {
+    page: `${window.location.pathname}${window.location.search}`,
+    titre,
+    fenetre: fenetre ? (nomFenetre ?? "fenêtre ouverte") : null,
+    sections: sectionsPage().map((s) => s.titre),
+    champs: [...new Set(champsSaisissables().map((c) => c.libelle))].slice(0, 25),
+    ...(section ? { section: section.titre } : {}),
+    texte: section ? texteDe(section.element, TEXTE_MAX) : texteDe(zoneLecture(), TEXTE_MAX),
+  };
 }
 
 /**

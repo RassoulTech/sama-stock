@@ -14,13 +14,22 @@ import { jouer, type FinMission, type ReponseAccord } from "./pilote/moteur";
 import { etapesPour } from "./pilote/recettes";
 import { attendrePilote, lirePilote } from "./pilote/registre";
 import {
+  allerASection,
   appuyer,
+  champsSaisissables,
   creerScene,
+  defilerPage,
   elementsCliquables,
+  fenetreEstOuverte,
   genreElement,
   lireEcran,
   pointerElement,
+  remplirChamp,
+  sectionsPage,
+  texteDe,
+  texteVisible,
   trouverCible,
+  trouverSection,
   type PositionDoigt,
 } from "./pilote/scene-dom";
 
@@ -77,6 +86,14 @@ export function useAssistant(): AssistantValue {
 const STATUT_MS = 5_000;
 /** Le temps qu'un appui fasse son effet (fenêtre qui s'ouvre, page qui change) avant de le raconter. */
 const APRES_APPUI_MS = 800;
+/** Un « oui » qui ouvre une fenêtre de confirmation vaut aussi pour son bouton final, pendant ce temps. */
+const ACCORD_FENETRE_MS = 120_000;
+/** Après un appui dans une fenêtre (bouton final), le temps laissé à l'enregistrement pour la refermer. */
+const FERMETURE_FENETRE_MS = 6_000;
+/** Le doigt reste quelques instants sur le titre d'une section avant de s'effacer. */
+const DOIGT_SECTION_MS = 1_800;
+/** Le temps laissé à une page qui vient de s'ouvrir pour afficher ses sections. */
+const ATTENTE_SECTIONS_MS = 4_000;
 
 const PHASE_DE: Record<EtatConversation, Phase> = { connexion: "connexion", ecoute: "ecoute", parle: "parle", outil: "outil" };
 
@@ -112,6 +129,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   /** Appel « confirmer » qui attend le résultat du bouton final. */
   const appelConfirmation = useRef<{ id: string; name: string } | null>(null);
   const minuterie = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Jusqu'à quand un « oui » donné vaut pour le bouton de la fenêtre de confirmation qu'il a ouverte. */
+  const accordFenetre = useRef(0);
+  const minuterieDoigt = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Départ de l'application : conversation et tâche arrêtées.
   useEffect(() => {
@@ -248,9 +268,89 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     rendreResultat(await jouerMission(mission));
   }
 
-  /** Lit ce qui est affiché, avec les boutons qu'on peut toucher. */
-  function lire(): Record<string, unknown> {
-    return { ok: true, ...lireEcran(), boutons: libellesUniques(elementsCliquables()) };
+  /** Lit ce qui est affiché (ou une section entière), avec les boutons qu'on peut toucher. */
+  function lire(section?: string): Record<string, unknown> {
+    const ecran = lireEcran(section);
+    const introuvable = section && !ecran.section ? { section_introuvable: `Aucune section « ${section} » ici.` } : {};
+    return { ok: true, ...ecran, ...introuvable, boutons: libellesUniques(elementsCliquables()) };
+  }
+
+  /** Doigt posé un instant sur un titre de section, puis effacé. */
+  function doigtFurtif(position: PositionDoigt | null) {
+    if (minuterieDoigt.current) clearTimeout(minuterieDoigt.current);
+    setDoigt(position);
+    if (position) minuterieDoigt.current = setTimeout(() => setDoigt(null), DOIGT_SECTION_MS);
+  }
+
+  /** Descend jusqu'à la section (en attendant qu'elle s'affiche) et rend son texte, ou les sections présentes. */
+  async function montrerSection(nom: string, attenteMs = 0): Promise<Record<string, unknown>> {
+    const fin = Date.now() + attenteMs;
+    let section = trouverSection(nom);
+    while (!section && Date.now() < fin) {
+      await attendre(250);
+      section = trouverSection(nom);
+    }
+    if (!section) return { section_introuvable: `Aucune section « ${nom} » sur cette page.`, sections: sectionsPage().map((s) => s.titre) };
+    await allerASection(section, doigtFurtif);
+    return { section: section.titre, texte: texteDe(section.element) };
+  }
+
+  /** Fait défiler la page (vers une section, ou d'un écran) et dit ce qui est maintenant affiché. */
+  async function defiler(appel: AppelOutil): Promise<void> {
+    const repondre = (reponse: Record<string, unknown>) => conversation.current?.repondreOutil(appel.id, appel.name, reponse);
+    if (piloteEnCours.current) {
+      repondre({ ok: false, raison: "Une tâche est en cours à l'écran : termine-la d'abord." });
+      return;
+    }
+    const nom = typeof appel.args.section === "string" ? appel.args.section.trim() : "";
+    if (nom) {
+      const resultat = await montrerSection(nom);
+      repondre({ ok: !("section_introuvable" in resultat), ...resultat });
+      return;
+    }
+    const sens = ["bas", "haut", "debut", "fin"].includes(String(appel.args.sens)) ? (appel.args.sens as "bas" | "haut" | "debut" | "fin") : "bas";
+    await defilerPage(sens);
+    const bas = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 8;
+    repondre({ ok: true, texte: texteVisible(), sections: sectionsPage().map((s) => s.titre), ...(bas ? { fin_de_page: true } : {}) });
+  }
+
+  /** Tape une valeur dans un champ visible ; si le produit n'est pas affiché, le cherche d'abord dans la recherche. */
+  async function saisir(appel: AppelOutil): Promise<void> {
+    const repondre = (reponse: Record<string, unknown>) => conversation.current?.repondreOutil(appel.id, appel.name, reponse);
+    if (piloteEnCours.current) {
+      repondre({ ok: false, raison: "Une tâche est en cours à l'écran : termine-la d'abord." });
+      return;
+    }
+    const demande = typeof appel.args.champ === "string" ? appel.args.champ : "";
+    const valeur = appel.args.valeur === undefined || appel.args.valeur === null ? "" : String(appel.args.valeur);
+    let choisi = choisirBouton(demande, champsSaisissables());
+    // « Quantité comptée pour Riz » : un produit caché plus bas dans la liste se retrouve par la recherche de la page
+    const quoi = demande.replace(/^.*\bpour\s+/i, "").trim();
+    if ((!choisi || choisi.element.matches('[type="search"], [placeholder^="Recherch"]')) && quoi && quoi !== demande) {
+      const recherche = champsSaisissables().find((c) => /recherch/i.test(c.libelle));
+      if (recherche) {
+        remplirChamp(recherche.element, quoi);
+        await attendre(500);
+        choisi = choisirBouton(demande, champsSaisissables().filter((c) => c.element !== recherche.element));
+      }
+    }
+    if (!choisi) {
+      repondre({ ok: false, raison: `Aucun champ « ${demande} » à l'écran.`, champs_visibles: libellesUniques(champsSaisissables(), 25) });
+      return;
+    }
+    piloteEnCours.current = true;
+    setPlein(false);
+    setPhase("pilote");
+    try {
+      await pointerElement(choisi.element, gestesDoigt);
+      remplirChamp(choisi.element, valeur);
+      await attendre(300);
+      repondre({ ok: true, champ: choisi.libelle, valeur, message: "C'est tapé à l'écran ; rien n'est enregistré tant que le bouton final n'est pas touché." });
+    } finally {
+      setDoigt(null);
+      piloteEnCours.current = false;
+      setPhase(conversation.current ? "ecoute" : "repos");
+    }
   }
 
   /** Appuie sur un bouton visible ; s'il enregistre, envoie ou supprime, le commerçant dit oui d'abord. */
@@ -276,7 +376,10 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     let suite: Mission | null = null;
     try {
       await pointerElement(choisi.element, gestesDoigt);
-      if (estRisque(nom, genreElement(choisi.element))) {
+      const dansFenetre = choisi.element.closest('[role="dialog"], [role="alertdialog"]') !== null;
+      const dejaAccorde = dansFenetre && accordFenetre.current > Date.now();
+      accordFenetre.current = 0;
+      if (!dejaAccorde && estRisque(nom, genreElement(choisi.element))) {
         accordDemande = true;
         repondre({
           ok: false,
@@ -297,12 +400,34 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
         const avant = pageActuelle();
         appuyer(choisi.element);
         await attendre(APRES_APPUI_MS);
+        // Bouton d'une fenêtre : l'enregistrement la referme, on attend la fin avant de raconter
+        const finAttente = Date.now() + FERMETURE_FENETRE_MS;
+        while (dansFenetre && choisi.element.isConnected && fenetreEstOuverte() && Date.now() < finAttente) await attendre(250);
         const apres = pageActuelle();
-        const reponse = {
-          ok: true,
-          message: `J'ai appuyé sur « ${nom} ».${apres !== avant ? " Une nouvelle page est ouverte." : ""} Lis l'écran si tu dois savoir ce qui a changé.`,
-          page: apres,
-        };
+        let message = `J'ai appuyé sur « ${nom} ».${apres !== avant ? " Une nouvelle page est ouverte." : ""} Lis l'écran si tu dois savoir ce qui a changé.`;
+        let fenetre: Record<string, unknown> = {};
+        if (fenetreEstOuverte() && !dansFenetre) {
+          // Une fenêtre de confirmation s'ouvre : rien n'est encore fait, le bouton final est dedans
+          const vue = lireEcran();
+          const boutons = libellesUniques(elementsCliquables());
+          fenetre = { fenetre: vue.fenetre, texte_fenetre: vue.texte.slice(0, 1_200), boutons_fenetre: boutons };
+          if (accordDemande) {
+            // Le « oui » déjà donné vaut pour le bouton final de cette fenêtre
+            accordFenetre.current = Date.now() + ACCORD_FENETRE_MS;
+            message = `J'ai appuyé sur « ${nom} » : une fenêtre de confirmation est ouverte, RIEN N'EST ENCORE ENREGISTRÉ. Dis au commerçant l'essentiel de la fenêtre en une phrase, puis appelle cliquer sur son bouton final (son accord vaut déjà pour ce bouton).`;
+          } else {
+            message = `J'ai appuyé sur « ${nom} » : une fenêtre est ouverte (voir son texte et ses boutons).`;
+          }
+        } else if (dansFenetre && fenetreEstOuverte()) {
+          // La fenêtre est restée ouverte : souvent un message d'erreur, à lire au commerçant
+          fenetre = { texte_fenetre: lireEcran().texte.slice(0, 1_000) };
+          message = `J'ai appuyé sur « ${nom} », mais la fenêtre est toujours ouverte : lis texte_fenetre (une erreur ou une question) avant de dire quoi que ce soit.`;
+        } else if (accordDemande || dejaAccorde) {
+          // Bouton final : ce que montre l'écran après l'appui dit si c'est vraiment fait
+          fenetre = { ecran_apres: lireEcran().texte.slice(0, 1_000) };
+          message = `J'ai appuyé sur « ${nom} ».${apres !== avant ? " Une nouvelle page est ouverte." : ""} Vérifie dans ecran_apres que c'est bien fait avant de le dire au commerçant.`;
+        }
+        const reponse = { ok: true, message, page: apres, ...fenetre };
         if (accordDemande) rendreApresAccord(reponse);
         else repondre(reponse);
       }
@@ -377,7 +502,13 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           }
           continue;
         case "lire_ecran":
-          conv?.repondreOutil(appel.id, appel.name, lire());
+          conv?.repondreOutil(appel.id, appel.name, lire(typeof appel.args.section === "string" && appel.args.section.trim() ? appel.args.section : undefined));
+          continue;
+        case "defiler":
+          await defiler(appel);
+          continue;
+        case "saisir":
+          await saisir(appel);
           continue;
         case "cliquer":
           await cliquer(appel);
@@ -410,15 +541,20 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
           conv?.repondreOutil(appel.id, appel.name, { ok: false, raison: "Une tâche attend à l'écran : termine-la d'abord." });
           continue;
         }
-        // La réponse part une fois la page affichée : l'assistant peut alors la lire et en parler
+        // La réponse part une fois la page affichée (et la section atteinte) : l'assistant dit alors ce qu'on y voit
         const fin = await jouerMission(mission);
-        conv?.repondreOutil(
-          appel.id,
-          appel.name,
-          fin.etat === "montre"
-            ? { ...reponse, page_ouverte: true }
-            : { ok: false, raison: fin.etat === "arrete" && fin.raison === "reprise" ? "Le commerçant a repris la main." : "La page ne s'est pas ouverte." },
-        );
+        if (fin.etat !== "montre") {
+          conv?.repondreOutil(appel.id, appel.name, {
+            ok: false,
+            raison: fin.etat === "arrete" && fin.raison === "reprise" ? "Le commerçant a repris la main." : "La page ne s'est pas ouverte.",
+          });
+          continue;
+        }
+        // Sans section, la page vient de s'ouvrir en haut : on lit son début (titre, filtres, total, premières lignes)
+        const vue = mission.ecran.section
+          ? await montrerSection(mission.ecran.section, ATTENTE_SECTIONS_MS)
+          : { texte: lireEcran().texte.slice(0, 2_500), sections: sectionsPage().map((s) => s.titre) };
+        conv?.repondreOutil(appel.id, appel.name, { ...reponse, page_ouverte: true, ...vue });
         continue;
       }
       conv?.repondreOutil(appel.id, appel.name, reponse);

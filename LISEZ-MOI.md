@@ -138,8 +138,24 @@ Toucher l'écran pendant une tâche reprend la main ; ce qui est rempli reste af
 - « Va sur… » : l'assistant ouvre n'importe quelle page (produits, caisse, clients, fournisseurs, stock, inventaire,
   factures, équipe, paramètres, reçu de la dernière vente…), **lit l'écran** et dit l'essentiel (« combien de produits
   j'ai ? » : nombre, stock bas, ruptures, valeur du stock).
-- Il **appuie sur les boutons** comme le commerçant (onglets, filtres, liens, « Nouvelle vente »…). Un bouton qui
-  enregistre, envoie, annule ou supprime n'est touché qu'après son oui. Il ne tape rien en dehors des tâches ci-dessus.
+- **Il connaît toute la boutique** : une carte de chaque page, de ses sections (de haut en bas, sous leur titre à
+  l'écran) et de ses filtres entre dans ses consignes (`src/lib/domain/assistant/carte.ts`, limitée aux pages du rôle).
+  « Le produit le plus vendu ce mois-ci » ouvre les rapports du mois, **descend jusqu'à « Meilleures ventes »** et dit
+  le premier avec ses chiffres, puis propose la suite (« Tu veux voir par catégorie ? »). Il va aussi aux ventes par
+  catégorie, produits les plus rentables, produits qui dorment, pertes, ventes par paiement ou par canal.
+- **Filtres et dates** : ventes, produits, historique du stock et commandes s'ouvrent filtrés par période (aujourd'hui,
+  hier, 7 jours, 30 jours, ce mois, mois dernier, 90 jours, tout, ou **un jour précis / un intervalle** : « le 3
+  novembre », « du 1er au 10 »), catégorie, état (payées, crédit, stock bas, ruptures, entrées, sorties…), mode de
+  paiement et recherche. `analyse_ventes` donne les chiffres exacts (dont les ventes d'un seul produit sur une période).
+- **Défiler et lire** : « descends », « remonte », « wàccal », « yéegal » font défiler la page ; il lit une section
+  entière et dit ce qu'on y voit.
+- **Taper** : il tape dans les champs (quantités, recherche, notes). **Inventaire à la voix** : « j'ai compté 12 sacs
+  de ciment » remplit « Quantité comptée pour Ciment 50 kg » ; à la fin il demande « Je valide l'inventaire ? », lit
+  la fenêtre de confirmation (écarts, valeur manquante) et ne dit « validé » qu'une fois l'écran le montrant.
+- Il **appuie sur les boutons** comme le commerçant (onglets, filtres, liens, « Voir plus »…). Un bouton qui
+  enregistre, valide, envoie, annule ou supprime n'est touché qu'après son oui ; ce oui vaut aussi pour le bouton final
+  de la fenêtre de confirmation qu'il ouvre (2 minutes au plus). Il n'annonce jamais un geste ou un enregistrement
+  que l'outil n'a pas fait.
 - **WhatsApp** : « envoie le reçu sur WhatsApp » ouvre la vente puis affiche un gros bouton vert dans la bulle ; le
   commerçant le touche et le PDF part (le téléphone exige un vrai toucher pour envoyer un fichier). Marche aussi pour
   une facture ou un devis ouvert.

@@ -13,7 +13,7 @@ describe("allowedTools", () => {
     const tools = allowedTools(access("owner"));
     expect([...tools].sort()).toEqual(
       [
-        "brouillon_client", "brouillon_commande", "brouillon_entree_stock", "brouillon_fournisseur", "brouillon_paiement_client",
+        "analyse_ventes", "brouillon_client", "brouillon_commande", "brouillon_entree_stock", "brouillon_fournisseur", "brouillon_paiement_client",
         "brouillon_prix", "brouillon_produit", "brouillon_sortie_stock", "brouillon_statut_commande", "brouillon_vente",
         "clients_debiteurs", "commandes_en_cours", "montrer_ecran", "repondre", "resume_catalogue", "resume_ventes", "stock_produit",
       ].sort(),
@@ -34,6 +34,20 @@ describe("allowedTools", () => {
   it("adds confirmer only while a task waits for the user's answer", () => {
     expect(allowedTools(access("owner"))).not.toContain("confirmer");
     expect(allowedTools(access("owner"), { attente: true }).slice(-2)).toEqual(["confirmer", "repondre"]);
+  });
+  it("gives the live dialogue every screen gesture: read, scroll, tap, type, WhatsApp", () => {
+    const tools = allowedTools(access("owner"), { direct: true });
+    expect(tools).toEqual(expect.arrayContaining(["lire_ecran", "defiler", "cliquer", "saisir", "envoyer_whatsapp", "analyse_ventes"]));
+    expect(allowedTools(access("storekeeper"), { direct: true })).not.toContain("analyse_ventes");
+  });
+  it("lets montrer_ecran carry filters and a section, and declares the new gestures", () => {
+    const decl = toolDeclarations(["montrer_ecran", "defiler", "saisir", "analyse_ventes"], { costs: true });
+    const props = decl[0].parameters?.properties ?? {};
+    expect(Object.keys(props)).toEqual(expect.arrayContaining(["ecran", "section", "periode", "du", "au", "categorie", "etat", "paiement", "recherche", "nom"]));
+    expect(props.periode.enum).toEqual(expect.arrayContaining(["dates", "mois_dernier", "30jours"]));
+    expect(decl[1].parameters?.required).toBeUndefined();
+    expect(decl[2].parameters?.required).toEqual(["champ", "valeur"]);
+    expect(decl[3].parameters?.properties?.vue.enum).toEqual(expect.arrayContaining(["produits", "produit", "categories", "dormants"]));
   });
   it("gives the live dialogue confirmer and no repondre", () => {
     const tools = allowedTools(access("owner"), { direct: true });

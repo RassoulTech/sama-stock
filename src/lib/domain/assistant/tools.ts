@@ -4,8 +4,12 @@ import type { Permission } from "@/lib/domain/permissions";
 import { ORDER_CHANNELS, PAYING_METHODS, SALE_METHODS } from "@/lib/domain/sales";
 import { EXIT_REASONS, LOSS_REASONS } from "@/lib/domain/stock";
 import { UNITS, type UnitId } from "@/lib/format";
+import { PERIODES } from "./periodes";
 
-export const READ_TOOLS = ["stock_produit", "resume_ventes", "resume_catalogue", "clients_debiteurs", "commandes_en_cours"] as const;
+export const READ_TOOLS = ["stock_produit", "resume_ventes", "analyse_ventes", "resume_catalogue", "clients_debiteurs", "commandes_en_cours"] as const;
+
+/** Vues de l'analyse des ventes (les mêmes chiffres que les sections des rapports). */
+export const VUES_ANALYSE = ["produits", "produit", "categories", "rentables", "canaux", "paiements", "dormants", "pertes"] as const;
 
 export const DRAFT_TOOLS = [
   "brouillon_vente",
@@ -46,20 +50,28 @@ export const ECRANS = [
   "client",
   "produit",
   "nouveau_produit",
+  "categories",
   "fournisseurs",
+  "fournisseur",
   "stock",
   "entree_stock",
   "sortie_stock",
   "inventaire",
+  "inventaires_passes",
   "transfert",
   "historique_stock",
   "factures",
+  "devis",
   "equipe",
   "parametres",
+  "mon_compte",
   "licence",
 ] as const;
-/** Outils joués par le téléphone lui-même (lecture de l'écran, appui sur un bouton, envoi WhatsApp) : ils ne passent pas par le serveur. */
-export const OUTILS_ECRAN = ["lire_ecran", "cliquer", "envoyer_whatsapp"] as const;
+/**
+ * Outils joués par le téléphone lui-même (lire l'écran, descendre jusqu'à une section, appuyer sur un bouton, taper
+ * dans un champ, envoyer sur WhatsApp) : ils ne passent pas par le serveur.
+ */
+export const OUTILS_ECRAN = ["lire_ecran", "defiler", "cliquer", "saisir", "envoyer_whatsapp"] as const;
 export type OutilEcran = (typeof OUTILS_ECRAN)[number];
 export type SpecialToolName = "montrer_ecran" | "confirmer" | OutilEcran;
 export type ToolName = ReadToolName | DraftToolName | SpecialToolName | "repondre";
@@ -93,6 +105,7 @@ export function isDraftTool(name: string): name is DraftToolName {
  */
 export function allowedTools(access: ToolAccess, opts: { attente?: boolean; direct?: boolean } = {}): ToolName[] {
   const tools: ToolName[] = ["resume_ventes", "montrer_ecran"];
+  if (access.can("reports.view")) tools.push("analyse_ventes");
   if (access.can("products.view")) tools.push("stock_produit", "resume_catalogue");
   if (access.can("customers.manage")) tools.push("clients_debiteurs");
   if (access.can("orders.manage")) tools.push("commandes_en_cours");
@@ -128,9 +141,13 @@ export interface FunctionDeclaration {
 }
 
 const str = (description: string): JsonSchema => ({ type: "string", description });
+const PERIODE_TEXTE =
+  "aujourdhui, hier, 7jours, 30jours, mois (ce mois-ci), mois_dernier, 90jours, tout, ou dates (un jour précis ou un intervalle : remplis du et au)";
+const DU_TEXTE = "Pour periode dates : premier jour, AAAA-MM-JJ";
+const AU_TEXTE = "Pour periode dates : dernier jour, AAAA-MM-JJ (le même que du pour un seul jour)";
 const int = (description: string): JsonSchema => ({ type: "integer", description });
 const oneOf = (values: readonly string[], description: string): JsonSchema => ({ type: "string", enum: values, description });
-const object = (properties: Record<string, JsonSchema>, required: string[]): JsonSchema => ({ type: "object", properties, required });
+const object = (properties: Record<string, JsonSchema>, required: string[]): JsonSchema => ({ type: "object", properties, ...(required.length ? { required } : {}) });
 
 function lines(price: "vente" | "achat" | null): JsonSchema {
   const properties: Record<string, JsonSchema> = {
@@ -151,8 +168,26 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
     },
     resume_ventes: {
       name: "resume_ventes",
-      description: "Chiffre d'affaires et nombre de ventes sur une période.",
-      parameters: object({ periode: oneOf(PERIODS, "Période : aujourdhui, hier, 7jours ou mois") }, ["periode"]),
+      description: "Chiffre d'affaires et nombre de ventes sur une période (un jour précis ou un intervalle avec dates).",
+      parameters: object({ periode: oneOf(PERIODES, PERIODE_TEXTE), du: str(DU_TEXTE), au: str(AU_TEXTE) }, ["periode"]),
+    },
+    analyse_ventes: {
+      name: "analyse_ventes",
+      description:
+        "Analyse des ventes sur une période, avec les chiffres exacts : produits les plus vendus, ventes d'un produit, ventes par catégorie, produits les plus rentables, par canal, par mode de paiement, produits qui dorment, pertes.",
+      parameters: object(
+        {
+          vue: oneOf(
+            VUES_ANALYSE,
+            "produits (les plus vendus) ; produit (les ventes d'un seul produit, avec son nom) ; categories ; rentables ; canaux ; paiements ; dormants (en stock mais pas vendus depuis 30 jours) ; pertes",
+          ),
+          periode: oneOf(PERIODES, PERIODE_TEXTE),
+          du: str(DU_TEXTE),
+          au: str(AU_TEXTE),
+          produit: str("Nom du produit, pour la vue produit"),
+        },
+        ["vue"],
+      ),
     },
     clients_debiteurs: { name: "clients_debiteurs", description: "Clients qui doivent de l'argent (ventes à crédit non remboursées)." },
     commandes_en_cours: { name: "commandes_en_cours", description: "Commandes en ligne pas encore livrées." },
@@ -266,15 +301,20 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
     },
     montrer_ecran: {
       name: "montrer_ecran",
-      description: "Ouvre une page de l'application devant le commerçant (et montre du doigt le chiffre principal quand il y en a un).",
+      description:
+        "Ouvre une page de l'application devant le commerçant, avec ses filtres (période, dates, catégorie, état, paiement, recherche), puis descend jusqu'à la section demandée. La réponse arrive une fois la page affichée, avec le texte de la section (ou le haut de la page) et la liste des sections : dis ce qu'on y voit.",
       parameters: object(
         {
-          ecran: oneOf(
-            ECRANS,
-            "tableau_de_bord ; rapports ; produits (liste du catalogue) ; stock_bas ; ruptures ; ventes ; ventes_credit ; derniere_vente (le reçu de la dernière vente) ; vendre (la caisse) ; commandes ; nouvelle_commande ; clients ; client (fiche, avec nom) ; produit (fiche, avec nom) ; nouveau_produit ; fournisseurs ; stock ; entree_stock ; sortie_stock ; inventaire ; transfert ; historique_stock ; factures ; equipe ; parametres ; licence",
-          ),
-          periode: oneOf(PERIODS, "Période pour les ventes ou les rapports"),
-          nom: str("Nom du client ou du produit, pour ouvrir sa fiche"),
+          ecran: oneOf(ECRANS, "La page à ouvrir (voir la carte de la boutique dans tes consignes)"),
+          section: str("Titre de la section où descendre une fois la page ouverte, tel qu'il est écrit à l'écran (ex. « Meilleures ventes », « Ventes par catégorie »)"),
+          periode: oneOf(PERIODES, PERIODE_TEXTE),
+          du: str(DU_TEXTE),
+          au: str(AU_TEXTE),
+          categorie: str("Nom de la catégorie, pour filtrer ventes, produits ou historique du stock"),
+          etat: str("Filtre d'état de la liste : ventes payees, credit, annulees, averifier ; produits bas, rupture ; historique in, out, loss, transfer, fix ; commandes open, new, preparing, shipping, delivered, closed, all"),
+          paiement: oneOf(["cash", "wave", "orange_money", "credit"], "Mode de paiement, pour filtrer les ventes"),
+          recherche: str("Texte à chercher dans la liste (nom de produit, de client, numéro)"),
+          nom: str("Nom du client, du produit ou du fournisseur, pour ouvrir sa fiche"),
         },
         ["ecran"],
       ),
@@ -285,7 +325,33 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
     },
     lire_ecran: {
       name: "lire_ecran",
-      description: "Lit ce qui est affiché à l'écran en ce moment (page, chiffres, listes, fenêtre ouverte), pour en parler au commerçant ou décider quoi faire.",
+      description:
+        "Lit la page affichée (chiffres, listes, fenêtre ouverte) avec la liste de ses sections, ses champs et ses boutons. Avec une section : lit cette section en entier.",
+      parameters: object({ section: str("Titre de la section à lire en entier, s'il en faut une seule") }, []),
+    },
+    defiler: {
+      name: "defiler",
+      description:
+        "Fait défiler la page devant le commerçant : jusqu'à une section (par son titre à l'écran), ou d'un écran vers le bas ou vers le haut. Rend le texte de ce qui est maintenant affiché.",
+      parameters: object(
+        {
+          section: str("Titre de la section où aller, tel qu'il est écrit à l'écran"),
+          sens: oneOf(["bas", "haut", "debut", "fin"], "Sans section : bas ou haut (d'un écran), debut ou fin de la page"),
+        },
+        [],
+      ),
+    },
+    saisir: {
+      name: "saisir",
+      description:
+        "Tape une valeur dans un champ visible à l'écran (quantité comptée d'un inventaire, recherche, note, quantité d'un transfert…), désigné par son libellé. Rien n'est enregistré : le bouton final demande toujours l'accord.",
+      parameters: object(
+        {
+          champ: str("Libellé du champ tel qu'il est à l'écran (ex. « Quantité comptée pour Ciment 50 kg », « Rechercher un produit »)"),
+          valeur: str("Ce qu'il faut taper (un nombre pour une quantité)"),
+        },
+        ["champ", "valeur"],
+      ),
     },
     cliquer: {
       name: "cliquer",

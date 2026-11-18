@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { buildSystemPrompt } from "@/lib/domain/assistant/prompt";
 import { toolDeclarations } from "@/lib/domain/assistant/tools";
 import { ROLE_LABELS } from "@/lib/domain/permissions";
-import { contexteAssistant, NO_STORE, outilsDirects, refuser } from "@/server/assistant/contexte";
+import { accesEcrans, contexteAssistant, NO_STORE, outilsDirects, refuser } from "@/server/assistant/contexte";
 import { creerJetonDirect } from "@/server/assistant/direct";
 import { GeminiError } from "@/server/assistant/gemini";
 import { consumeAssistantQuota } from "@/server/assistant/usage";
@@ -22,7 +22,14 @@ export async function POST() {
   const [quota, products] = await Promise.all([consumeAssistantQuota(ctx.business.id, { isDemo: ctx.business.isDemo }), listProducts(ctx)]);
   if (!quota.allowed) return refuser("Limite du jour atteinte, réessaie demain.", 429);
 
-  const system = buildSystemPrompt({ businessName: ctx.business.name, roleLabel: ROLE_LABELS[ctx.role], today: new Date(), products, mode: "conversation" });
+  const system = buildSystemPrompt({
+    businessName: ctx.business.name,
+    roleLabel: ROLE_LABELS[ctx.role],
+    today: new Date(),
+    products,
+    mode: "conversation",
+    acces: accesEcrans(ctx),
+  });
   const tools = toolDeclarations(outilsDirects(ctx), { costs: ctx.can("costs.view") });
   try {
     const session = await creerJetonDirect({
