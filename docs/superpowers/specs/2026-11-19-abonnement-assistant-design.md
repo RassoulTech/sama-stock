@@ -47,9 +47,9 @@ espèces, virement) et enregistre chaque paiement dans l'administration ; aucun 
 | `id` | text, clé | |
 | `business_id` | text → businesses, cascade | |
 | `kind` | text | `activation` \| `mois` \| `recharge` |
-| `months` | integer, 0 par défaut | nombre de mois payés (`mois`) ; 0 sinon |
+| `months` | integer, 0 par défaut | nombre de mois payés (`activation`, `mois`) ; 0 pour une recharge |
 | `credits` | integer, 0 par défaut | crédits de recharge (`recharge`) ; 0 sinon |
-| `amount` | integer | montant réellement reçu, en FCFA |
+| `amount` | integer | montant réellement reçu, en FCFA (pour une activation : activation + ses premiers mois) |
 | `method` | text | `wave` \| `orange_money` \| `especes` \| `virement` \| `autre` |
 | `note` | text, nullable | |
 | `recorded_by` | text → user, set null | |
@@ -82,9 +82,11 @@ Les deux tables entrent dans les sauvegardes (`src/server/backup/tables.ts`).
 
 ## Règles (fonctions pures, `src/lib/domain/assistant/abonnement.ts`)
 
-- **Placement des mois** : `planifierMois(finActuelle, maintenant, n)` rend n fenêtres consécutives d'un mois
-  (`addMonths`, même jour du mois suivant). La première commence à `max(maintenant, fin du dernier mois abonnement)` :
-  payer en avance ajoute les mois après la fin actuelle, payer après expiration repart d'aujourd'hui.
+- **Placement des mois** : `planifierMois(mois, n, maintenant)` rend n fenêtres consécutives d'un mois. La première
+  commence à `max(maintenant, fin du dernier mois abonnement)` : payer en avance ajoute les mois après la fin actuelle,
+  payer après expiration repart d'aujourd'hui. Un mois finit le même jour du mois suivant, ramené au dernier jour du
+  mois quand ce jour n'existe pas (31 janvier → 28 février), calculé depuis le premier début pour ne pas dériver
+  (31 janvier → 28 février → 31 mars).
 - **État** : `etatAssistant({ isDemo, plan, months }, maintenant)` rend `{ statut, offre, mois, restants, finLe }`
   avec `statut` parmi :
   - `demo` : boutique de démonstration ;
@@ -109,8 +111,9 @@ Les deux tables entrent dans les sauvegardes (`src/server/backup/tables.ts`).
   limite du jour, 503 pour Google), plus les infos de la fiche (offre, prix, crédits, fin).
 - **Recharge** : seulement si un mois d'abonnement couvre maintenant ; ajoute `ASSISTANT_RECHARGE.credits` à son
   `extra_credits`.
-- **Activation** : seulement pour un commerce sous licence qui n'a jamais payé d'activation ; enregistre la ligne
-  `activation` et la ligne `mois` (n mois, 1 par défaut) dans la même transaction.
+- **Activation** : seulement pour un commerce sous licence qui n'a jamais payé d'activation ; enregistre une seule
+  ligne `activation` (avec ses n premiers mois, 1 par défaut, et le montant total reçu) et ouvre ses fenêtres, dans la
+  même transaction. L'historique l'affiche « Activation + n mois ».
 - **Annulation d'une saisie** : l'administrateur peut supprimer le dernier paiement saisi d'un commerce tant que ses
   crédits n'ont pas servi (mois créés à `used = 0`, ou recharge dont les crédits restent disponibles) ; les fenêtres
   créées (ou les crédits ajoutés) sont retirés avec lui.
@@ -143,14 +146,15 @@ Les deux tables entrent dans les sauvegardes (`src/server/backup/tables.ts`).
   - expiré : « Ton abonnement à Finch est terminé depuis le … », mensualité ;
   - essai épuisé : les 10 conversations sont utilisées ; Finch vient avec la licence et l'abonnement.
   Bouton **WhatsApp** vers Sama Stock, message pré-rempli (« Bonjour, je veux activer / renouveler / recharger Finch
-  pour <boutique> (licence <pack>). »). Le numéro vient de `NEXT_PUBLIC_WHATSAPP_SAMA_STOCK` (chiffres
-  internationaux) ; sans lui, le bouton est caché et la fiche dit « Contacte Sama Stock ».
+  pour <boutique> (licence <pack>). »). Le numéro est celui de l'assistance déjà affiché sur la page Licence
+  (`LEGAL.whatsapp`, `src/lib/legal.ts`) ; sans numéro, le bouton est caché.
   Un refus du serveur à l'ouverture (crédits partis entre-temps) ouvre la même fiche.
 - **Plein écran de la conversation** : « N conversations restantes » discret en bas, orange à partir de 10
   (essai : « N conversations d'essai »).
-- **Page « Licence »** : carte « Assistant Finch » (offre, statut, fin, barre des crédits, historique des paiements
-  sans le nom de l'administrateur, bouton WhatsApp). Les montants ne sont visibles que pour le propriétaire et les
-  gérants ; les employés voient seulement si Finch est disponible.
+- **Page « Licence »** (réservée à qui gère la facturation, le propriétaire) : carte « Assistant Finch » (offre, statut,
+  fin, barre des crédits, historique des paiements sans le nom de l'administrateur, bouton WhatsApp). Dans la fiche du
+  micro, seul ce rôle voit les prix et le bouton ; les autres (gérants, employés) lisent « Finch n'est pas disponible
+  pour le moment : préviens le propriétaire de la boutique ».
 
 ## Notifications
 
@@ -168,15 +172,17 @@ Les deux tables entrent dans les sauvegardes (`src/server/backup/tables.ts`).
 ## Mise en service
 
 1. Appliquer la migration sur la base Neon **avant** l'envoi sur GitHub (ordre du LISEZ-MOI).
-2. Ajouter `NEXT_PUBLIC_WHATSAPP_SAMA_STOCK` dans les variables Vercel (fourni par le propriétaire).
-3. Envoyer le code : Vercel déploie, la tâche `rappels` est déclarée dans `vercel.json`.
-4. Le commerce sous licence qui a aujourd'hui Finch le perd jusqu'à l'activation : le propriétaire le prévient avant.
+2. Envoyer le code : Vercel déploie, la tâche `rappels` est déclarée dans `vercel.json`.
+3. Le commerce sous licence qui a aujourd'hui Finch le perd jusqu'à l'activation : le propriétaire le prévient avant.
 
 ## Erreurs et cas limites
 
 - Deux téléphones ouvrent Finch sur le dernier crédit : le retrait atomique n'en laisse passer qu'un.
 - Échec Google ou limite du jour après le retrait : crédit rendu.
 - Changement de licence : le mois en cours garde ses crédits ; les mois payés ensuite prennent l'offre de la nouvelle.
+- Commerce en essai qui achète sa licence : seuls les mois d'abonnement comptent dès lors (la fenêtre d'essai restante
+  est ignorée) ; il passe `inactif` jusqu'à l'activation.
+- La recharge annulée est retirée du mois d'abonnement qui couvrait sa date de paiement.
 - Licence retirée ou commerce suspendu : `indisponible`, mois déjà payés conservés (ils reprennent si la situation
   revient avant leur fin).
 - Montant saisi différent du catalogue (remise) : accepté, c'est le montant reçu qui compte pour la rentabilité.
