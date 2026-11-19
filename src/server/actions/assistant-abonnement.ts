@@ -16,7 +16,10 @@ import { logAdmin } from "../services/admin-audit";
 
 const METHODS = Object.keys(LICENSE_PAYMENT_METHODS) as [LicensePaymentMethod, ...LicensePaymentMethod[]];
 const argent = {
-  amount: z.coerce.number().int("Montant en francs entiers.").min(0, "Montant invalide.").max(10_000_000),
+  amount: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.coerce.number({ message: "Indiquez le montant reçu." }).int("Montant en francs entiers.").min(0, "Montant invalide.").max(10_000_000),
+  ),
   method: z.enum(METHODS, { message: "Choisissez le moyen de paiement." }),
   note: z.string().trim().max(200).optional().default(""),
 };

@@ -60,7 +60,7 @@ export function AssistantAdminCard({
             )}
           </div>
         </div>
-        <AssistantPaymentForm businessId={businessId} offre={offre} choix={choix} />
+        <AssistantPaymentForm key={choix.join()} businessId={businessId} offre={offre} choix={choix} />
         {paiements.length > 0 && (
           <ul className="divide-y rounded-xl border text-sm">
             {paiements.map((p) => (
