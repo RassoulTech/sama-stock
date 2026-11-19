@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { ASSISTANT_OFFERS, ASSISTANT_RECHARGE, ASSISTANT_TRIAL_CREDITS } from "../plans";
-import { boutonAssistantVisible, etatAssistant, finAbonnement, moisPlus, planifierMois, type MoisAssistant } from "./abonnement";
+import { formatFCFA } from "@/lib/format";
+import {
+  boutonAssistantVisible,
+  etatAssistant,
+  ficheAssistant,
+  finAbonnement,
+  libellePaiement,
+  messageAssistant,
+  montantParDefaut,
+  moisPlus,
+  peutAnnuler,
+  planifierMois,
+  rappelPour,
+  rentabilite,
+  texteCredits,
+  type MoisAssistant,
+} from "./abonnement";
 
 const d = (s: string) => new Date(s);
 const now = d("2026-11-19T10:00:00Z");
@@ -127,5 +143,89 @@ describe("etatAssistant", () => {
   it("commerce suspendu ou essai fini : indisponible", () => {
     expect(etatAssistant({ isDemo: false, plan: { status: "suspended", license: "pro" }, mois: [enCours] }, now).statut).toBe("indisponible");
     expect(etatAssistant({ isDemo: false, plan: { status: "expired", license: null }, mois: [] }, now).statut).toBe("indisponible");
+  });
+});
+
+describe("ficheAssistant", () => {
+  const o = { boutique: "Awa Mode", peutPayer: true, support: "221773831364" };
+  it("rien à montrer quand Finch peut parler", () => {
+    expect(ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [enCours] }, now), o)).toBeNull();
+    expect(ficheAssistant(etatAssistant({ isDemo: false, plan: enEssai, mois: [] }, now), o)).toBeNull();
+  });
+  it("inactif : l'offre de la licence et un lien WhatsApp pré-rempli", () => {
+    const f = ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [] }, now), o);
+    expect(f?.titre).toBe("Finch, ton employé qui parle wolof");
+    expect(f?.texte).toContain("250 conversations par mois");
+    expect(f?.texte).toContain(formatFCFA(15_000));
+    expect(f?.bouton).toBe("Activer Finch");
+    expect(f?.lien).toBe(`https://wa.me/221773831364?text=${encodeURIComponent("Bonjour, je veux activer Finch pour Awa Mode (licence Pro).")}`);
+  });
+  it("épuisé : la recharge et la fin du mois", () => {
+    const f = ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [{ ...enCours, used: 250 }] }, now), o);
+    expect(f?.texte).toContain("250 conversations");
+    expect(f?.texte).toContain("50 conversations");
+    expect(f?.bouton).toBe("Demander une recharge");
+  });
+  it("employé : pas de prix ni de lien", () => {
+    const f = ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [] }, now), { ...o, peutPayer: false });
+    expect(f).toMatchObject({ bouton: null, lien: null });
+    expect(f?.texte).toContain("préviens le propriétaire");
+  });
+  it("sans numéro d'assistance : pas de bouton", () => {
+    expect(ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [] }, now), { ...o, support: null })).toMatchObject({ bouton: null, lien: null });
+  });
+});
+
+describe("texteCredits", () => {
+  it("compte et alerte à partir de 10", () => {
+    expect(texteCredits(187, false)).toEqual({ texte: "187 conversations restantes", alerte: false });
+    expect(texteCredits(10, false).alerte).toBe(true);
+    expect(texteCredits(1, true)).toEqual({ texte: "1 conversation d'essai restante", alerte: true });
+  });
+});
+
+describe("montants et libellés", () => {
+  it("pré-remplit les montants du catalogue", () => {
+    expect(montantParDefaut("pro", "activation", 1)).toBe(25_000);
+    expect(montantParDefaut("pro", "mois", 3)).toBe(30_000);
+    expect(montantParDefaut("boutique", "recharge")).toBe(3_000);
+  });
+  it("décrit chaque paiement", () => {
+    expect(libellePaiement({ kind: "activation", months: 1, credits: 0 })).toBe("Activation + 1 mois");
+    expect(libellePaiement({ kind: "mois", months: 3, credits: 0 })).toBe("3 mois");
+    expect(libellePaiement({ kind: "recharge", months: 0, credits: 50 })).toBe("Recharge de 50 conversations");
+  });
+});
+
+describe("peutAnnuler", () => {
+  it("des mois encore intacts", () => {
+    expect(peutAnnuler({ kind: "mois", credits: 0 }, [{ ...enCours, used: 0 }], null)).toBe(true);
+    expect(peutAnnuler({ kind: "activation", credits: 0 }, [enCours], null)).toBe(false);
+  });
+  it("une recharge dont les crédits restent disponibles", () => {
+    expect(peutAnnuler({ kind: "recharge", credits: 50 }, [], { ...enCours, extraCredits: 50, used: 250 })).toBe(true);
+    expect(peutAnnuler({ kind: "recharge", credits: 50 }, [], { ...enCours, extraCredits: 50, used: 251 })).toBe(false);
+    expect(peutAnnuler({ kind: "recharge", credits: 50 }, [], null)).toBe(false);
+  });
+});
+
+describe("rentabilite", () => {
+  it("compare l'argent encaissé au coût Google estimé", () => {
+    expect(rentabilite(60_000, 400)).toEqual({ encaisse: 60_000, conversations: 400, cout: 20_000, marge: 40_000 });
+    expect(rentabilite(0, 10, 100).marge).toBe(-1_000);
+  });
+});
+
+describe("rappels", () => {
+  const fin = d("2026-11-22T10:00:00Z");
+  it("prévient 3 jours avant, puis le jour de la fin", () => {
+    expect(rappelPour(fin, d("2026-11-19T11:00:00Z"))).toBe("bientot");
+    expect(rappelPour(fin, d("2026-11-20T11:00:00Z"))).toBeNull();
+    expect(rappelPour(fin, d("2026-11-22T11:00:00Z"))).toBe("termine");
+    expect(rappelPour(fin, d("2026-11-23T11:00:00Z"))).toBeNull();
+  });
+  it("écrit des messages qui mènent à la page Licence", () => {
+    expect(messageAssistant("dix")).toMatchObject({ kind: "assistant", href: "/licence" });
+    expect(messageAssistant("bientot", fin).body).toContain("22");
   });
 });

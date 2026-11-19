@@ -3,7 +3,7 @@ import { CHANNELS, isChannel } from "./sales";
 import { stockStatus } from "./stock";
 
 /** Ce qui déclenche une notification. */
-export const NOTIFY_KINDS = ["sale", "sale_cancel", "order", "stock_low", "stock_out"] as const;
+export const NOTIFY_KINDS = ["sale", "sale_cancel", "order", "stock_low", "stock_out", "assistant"] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 
 export function isNotifyKind(value: unknown): value is NotifyKind {
@@ -11,19 +11,21 @@ export function isNotifyKind(value: unknown): value is NotifyKind {
 }
 
 /** Réglages de chaque personne : un interrupteur par sujet, et le son dans l'application. */
-export type NotifyTopic = "sale" | "order" | "stock";
+export type NotifyTopic = "sale" | "order" | "stock" | "assistant";
 export const TOPIC_OF: Record<NotifyKind, NotifyTopic> = {
   sale: "sale",
   sale_cancel: "sale",
   order: "order",
   stock_low: "stock",
   stock_out: "stock",
+  assistant: "assistant",
 };
 
 export const TOPICS: Record<NotifyTopic, { label: string; hint: string }> = {
   sale: { label: "Ventes", hint: "Chaque vente faite, annulée ou corrigée par votre équipe" },
   order: { label: "Commandes", hint: "Chaque nouvelle commande client" },
   stock: { label: "Stock bas et ruptures", hint: "Quand un produit passe sous son seuil d'alerte ou n'en a plus" },
+  assistant: { label: "Assistant Finch", hint: "Fin de l'abonnement et crédits presque épuisés" },
 };
 
 export type NotifyPrefs = Record<NotifyTopic | "sound", boolean>;
@@ -32,7 +34,7 @@ export type NotifyPrefs = Record<NotifyTopic | "sound", boolean>;
 export function notifyPrefs(raw: unknown): NotifyPrefs {
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const on = (k: string) => r[k] !== false;
-  return { sale: on("sale"), order: on("order"), stock: on("stock"), sound: on("sound") };
+  return { sale: on("sale"), order: on("order"), stock: on("stock"), assistant: on("assistant"), sound: on("sound") };
 }
 
 /** Rôles qui reçoivent les notifications. */
@@ -47,7 +49,8 @@ export function receivesNotifications(role: string): boolean {
  * même à celui qui a vendu le dernier article (sinon un commerçant seul ne serait jamais prévenu).
  */
 export function notifiesActor(kind: NotifyKind): boolean {
-  return TOPIC_OF[kind] === "stock";
+  // Stock et abonnement concernent tout le monde, y compris la personne qui a fait l'action
+  return TOPIC_OF[kind] === "stock" || TOPIC_OF[kind] === "assistant";
 }
 
 /** Alerte quand un produit passe sous son seuil (une seule fois : pas à chaque vente suivante). */

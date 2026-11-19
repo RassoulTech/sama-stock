@@ -30,7 +30,7 @@ export async function markNotificationsSeen() {
   });
 }
 
-const prefsSchema = z.object({ sale: z.boolean(), order: z.boolean(), stock: z.boolean(), sound: z.boolean() });
+const prefsSchema = z.object({ sale: z.boolean(), order: z.boolean(), stock: z.boolean(), assistant: z.boolean().default(true), sound: z.boolean() });
 
 export async function updateNotifyPrefs(input: z.input<typeof prefsSchema>) {
   return runAction(async () => {

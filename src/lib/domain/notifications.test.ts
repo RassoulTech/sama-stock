@@ -21,8 +21,8 @@ describe("alertes de stock", () => {
 
 describe("réglages", () => {
   it("active tout par défaut et garde ce qui a été coupé", () => {
-    expect(notifyPrefs(null)).toEqual({ sale: true, order: true, stock: true, sound: true });
-    expect(notifyPrefs({ sale: false, sound: false })).toEqual({ sale: false, order: true, stock: true, sound: false });
+    expect(notifyPrefs(null)).toEqual({ sale: true, order: true, stock: true, assistant: true, sound: true });
+    expect(notifyPrefs({ sale: false, sound: false })).toEqual({ sale: false, order: true, stock: true, assistant: true, sound: false });
   });
   it("seuls le propriétaire et les gérants sont prévenus", () => {
     expect(receivesNotifications("owner")).toBe(true);
