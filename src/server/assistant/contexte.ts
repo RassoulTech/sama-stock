@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { boutonAssistantVisible } from "@/lib/domain/assistant/abonnement";
 import { buildDraft, type DraftCatalog } from "@/lib/domain/assistant/drafts";
 import { buildEcran, type EcranAccess } from "@/lib/domain/assistant/ecrans";
 import { allowedTools, type ToolName } from "@/lib/domain/assistant/tools";
@@ -15,14 +16,14 @@ export function refuser(error: string, status: number) {
   return NextResponse.json({ error }, { status, headers: NO_STORE });
 }
 
-/** Contrôles communs aux adresses de l'assistant : session, commerce, suspension, assistant activé. */
+/** Contrôles communs aux adresses de l'assistant : session, commerce, suspension, droit à Finch (les crédits se comptent à l'ouverture). */
 export async function contexteAssistant(): Promise<{ ok: true; ctx: BusinessContext } | { ok: false; reponse: NextResponse }> {
   const app = await getContext();
   if (!app) return { ok: false, reponse: refuser("Votre session a expiré. Reconnectez-vous.", 401) };
   if (!app.business) return { ok: false, reponse: refuser("Aucun commerce sélectionné.", 409) };
   const ctx = app as BusinessContext;
   if (ctx.plan.status === "suspended") return { ok: false, reponse: refuser("Ce commerce est suspendu. Contactez Sama Stock.", 403) };
-  if (!ctx.business.assistantEnabled) return { ok: false, reponse: refuser("L'assistant vocal n'est pas activé pour ce commerce.", 403) };
+  if (!boutonAssistantVisible(ctx.plan, ctx.business.isDemo)) return { ok: false, reponse: refuser("Finch n'est pas disponible pour ce commerce.", 403) };
   return { ok: true, ctx };
 }
 
