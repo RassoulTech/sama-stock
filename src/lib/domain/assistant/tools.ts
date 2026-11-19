@@ -74,10 +74,7 @@ export const ECRANS = [
 export const OUTILS_ECRAN = ["lire_ecran", "defiler", "cliquer", "saisir", "envoyer_whatsapp"] as const;
 export type OutilEcran = (typeof OUTILS_ECRAN)[number];
 export type SpecialToolName = "montrer_ecran" | "confirmer" | OutilEcran;
-export type ToolName = ReadToolName | DraftToolName | SpecialToolName | "repondre";
-
-export const LANGS = ["wo", "fr"] as const;
-export type Lang = (typeof LANGS)[number];
+export type ToolName = ReadToolName | DraftToolName | SpecialToolName;
 
 export const PERIODS = ["aujourdhui", "hier", "7jours", "mois"] as const;
 export type Period = (typeof PERIODS)[number];
@@ -98,12 +95,12 @@ export function isDraftTool(name: string): name is DraftToolName {
   return (DRAFT_TOOLS as readonly string[]).includes(name);
 }
 
-/** Outils proposés à l'IA pour ce rôle et ces modules. L'écran et l'action revérifient les droits au moment d'enregistrer. */
 /**
- * `attente` : une tâche attend l'accord du commerçant (ancienne voie). `direct` : dialogue en direct, où l'IA parle
- * elle-même (pas de « repondre ») et où l'accord peut arriver à tout moment (« confirmer » toujours proposé).
+ * Outils proposés à l'IA pour ce rôle et ces modules (dialogue en direct). L'écran et l'action revérifient les droits au
+ * moment d'enregistrer. L'IA se sert de l'écran comme une personne (lire, défiler, cliquer, taper, envoyer un reçu), et
+ * l'accord du commerçant peut arriver à tout moment : « confirmer » est toujours proposé, en dernier.
  */
-export function allowedTools(access: ToolAccess, opts: { attente?: boolean; direct?: boolean } = {}): ToolName[] {
+export function allowedTools(access: ToolAccess): ToolName[] {
   const tools: ToolName[] = ["resume_ventes", "montrer_ecran"];
   if (access.can("reports.view")) tools.push("analyse_ventes");
   if (access.can("products.view")) tools.push("stock_produit", "resume_catalogue");
@@ -118,10 +115,7 @@ export function allowedTools(access: ToolAccess, opts: { attente?: boolean; dire
     if (access.can("products.manage")) tools.push("brouillon_produit", "brouillon_prix");
     if (access.can("suppliers.manage")) tools.push("brouillon_fournisseur");
   }
-  // Dialogue en direct : l'assistant se sert de l'écran comme une personne (lire, cliquer, envoyer un reçu)
-  if (opts.direct) tools.push(...OUTILS_ECRAN);
-  if (opts.attente || opts.direct) tools.push("confirmer");
-  if (!opts.direct) tools.push("repondre");
+  tools.push(...OUTILS_ECRAN, "confirmer");
   return tools;
 }
 
@@ -366,18 +360,6 @@ export function toolDeclarations(names: readonly ToolName[], opts: { costs: bool
       name: "confirmer",
       description: "Réponse du commerçant à « Je l'enregistre ? » pour la tâche remplie à l'écran.",
       parameters: object({ reponse: oneOf(["oui", "non"], "oui : waaw, oui, bind ko, def ko ; non : déedéet, non, bayyil") }, ["reponse"]),
-    },
-    repondre: {
-      name: "repondre",
-      description: "Réponse finale au commerçant. À appeler pour terminer chaque demande.",
-      parameters: object(
-        {
-          transcription: str("Ce que le commerçant a dit, mot pour mot, dans sa langue"),
-          langue: oneOf(LANGS, "Langue principale du commerçant : wo (wolof) ou fr (français)"),
-          texte: str("Réponse courte dans la langue du commerçant, faite pour être lue à voix haute"),
-        },
-        ["transcription", "langue", "texte"],
-      ),
     },
   };
   return names.map((name) => all[name]);

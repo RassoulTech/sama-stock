@@ -1,6 +1,20 @@
 // Pas de "server-only" : testé avec Vitest.
 import type { FunctionDeclaration } from "@/lib/domain/assistant/tools";
-import { GeminiError } from "./gemini";
+
+export type GeminiErrorKind = "quota" | "unavailable" | "invalid";
+
+/** Refus de Google à l'ouverture d'une conversation : quota atteint, service indisponible ou demande refusée. */
+export class GeminiError extends Error {
+  constructor(
+    readonly kind: GeminiErrorKind,
+    message: string,
+    /** Code HTTP quand Google a répondu. */
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = "GeminiError";
+  }
+}
 
 /**
  * Dialogue en direct (Gemini Live), mesuré le 2026-11-11 sur l'offre gratuite : première voix en 0,6 s, en français

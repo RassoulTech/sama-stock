@@ -3,8 +3,7 @@ import { buildSystemPrompt } from "@/lib/domain/assistant/prompt";
 import { toolDeclarations } from "@/lib/domain/assistant/tools";
 import { ROLE_LABELS } from "@/lib/domain/permissions";
 import { accesEcrans, contexteAssistant, NO_STORE, outilsDirects, refuser } from "@/server/assistant/contexte";
-import { creerJetonDirect } from "@/server/assistant/direct";
-import { GeminiError } from "@/server/assistant/gemini";
+import { creerJetonDirect, GeminiError } from "@/server/assistant/direct";
 import { consumeAssistantQuota } from "@/server/assistant/usage";
 import { listProducts } from "@/server/queries/products";
 
@@ -27,7 +26,6 @@ export async function POST() {
     roleLabel: ROLE_LABELS[ctx.role],
     today: new Date(),
     products,
-    mode: "conversation",
     acces: accesEcrans(ctx),
   });
   const tools = toolDeclarations(outilsDirects(ctx), { costs: ctx.can("costs.view") });

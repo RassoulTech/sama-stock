@@ -1,5 +1,5 @@
 // src/lib/domain/assistant/phrases.ts
-/** Phrases du parcours, produites une fois avec la voix Anta (public/assistant/voix) : elles se jouent tout de suite. */
+/** Moments du parcours où le pilote pourrait parler (clés de `dire`) ; en direct, c'est l'IA qui parle elle-même. */
 export const PHRASES = {
   "je-m-en-occupe": { wo: "Waaw, maa ngi ko def.", fr: "D'accord, je m'en occupe." },
   "je-peux-enregistrer": { wo: "Ndax ma bind ko ?", fr: "Je l'enregistre ?" },
@@ -11,24 +11,3 @@ export const PHRASES = {
 } as const;
 
 export type ClePhrase = keyof typeof PHRASES;
-
-export function fichierPhrase(cle: ClePhrase): string {
-  return `/assistant/voix/${cle}.wav`;
-}
-
-/** Morceau plus court : collé à la phrase précédente (une voix lancée pour trois lettres coûte plus qu'elle ne rapporte). */
-const MIN_PHRASE = 12;
-
-/** Découpe une réponse en phrases, pour lire la première pendant que la suivante se prépare. */
-export function decouperPhrases(texte: string): string[] {
-  const morceaux = texte.trim().match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [];
-  const phrases: string[] = [];
-  for (const brut of morceaux) {
-    const morceau = brut.trim();
-    if (!morceau) continue;
-    const dernier = phrases.at(-1);
-    if (dernier !== undefined && dernier.length < MIN_PHRASE) phrases[phrases.length - 1] = `${dernier} ${morceau}`;
-    else phrases.push(morceau);
-  }
-  return phrases;
-}

@@ -15,20 +15,10 @@ describe("buildSystemPrompt", () => {
     const text = buildSystemPrompt({ ...base, products: [{ name: "Riz parfumé 1kg", unit: "kg", salePrice: 600, available: 40 }] });
     expect(text).toContain("- Riz parfumé 1kg — kg — 600 F — 40");
   });
-  it("teaches the dërëm amounts and the final tool", () => {
+  it("teaches the dërëm amounts", () => {
     const text = buildSystemPrompt({ ...base, products: [] });
     expect(text).toContain("dërëm");
     expect(text).toContain("ñaari junni");
-    expect(text).toContain("repondre");
-  });
-  it("explains the screen tasks, the agreement and the single task rule", () => {
-    const text = buildSystemPrompt({ ...base, products: [] });
-    expect(text).toContain("dans le même tour");
-    expect(text).toContain("ne répète pas les montants");
-    expect(text).toContain("l'assistant remplit l'écran devant le commerçant puis lui demande s'il peut enregistrer");
-    expect(text).toContain("Une seule tâche par demande");
-    expect(text).toContain("« montrer_ecran »");
-    expect(text).not.toContain("Tu ne peux ni créer de produit");
   });
   it("never leaks a purchase price passed by mistake", () => {
     const products = [{ name: "Savon", unit: "piece", salePrice: 250, available: 3, costPrice: 987654 }];
@@ -42,7 +32,7 @@ describe("buildSystemPrompt", () => {
     expect(text).toContain("… et 5 autres produits");
   });
   it("writes conversation rules for the live dialogue", () => {
-    const text = buildSystemPrompt({ ...base, products: [], mode: "conversation" });
+    const text = buildSystemPrompt({ ...base, products: [] });
     expect(text).toContain("Tu parles à voix haute avec le commerçant");
     expect(text).toContain("Relance avec une question courte");
     expect(text).toContain("dis en quelques mots ce que tu fais");
@@ -55,7 +45,7 @@ describe("buildSystemPrompt", () => {
     expect(text).toContain("(aucun produit enregistré)");
   });
   it("teaches the live dialogue the whole shop: map, sections, filters, dates, inventory and Wolof words", () => {
-    const text = buildSystemPrompt({ ...base, products: [], mode: "conversation", today: new Date("2026-11-18T10:00:00Z") });
+    const text = buildSystemPrompt({ ...base, products: [], today: new Date("2026-11-18T10:00:00Z") });
     expect(text).toContain("Carte de la boutique");
     expect(text).toContain("- rapports (Rapports)");
     expect(text).toContain("Meilleures ventes (les produits les plus vendus");
@@ -74,7 +64,6 @@ describe("buildSystemPrompt", () => {
     const text = buildSystemPrompt({
       ...base,
       products: [],
-      mode: "conversation",
       acces: { reports: false, products: true, orders: false, customers: true },
     });
     expect(text).not.toContain("- rapports (Rapports)");
@@ -84,16 +73,14 @@ describe("buildSystemPrompt", () => {
   it("calls the assistant Finch", () => {
     expect(NOM_ASSISTANT).toBe("Finch");
   });
-  it("gives the assistant its name in both modes", () => {
-    for (const mode of ["note", "conversation"] as const) {
-      const text = buildSystemPrompt({ ...base, products: [], mode });
-      expect(text).toContain(`Tu t'appelles ${NOM_ASSISTANT}`);
-      expect(text).toContain(`Je m'appelle ${NOM_ASSISTANT}`);
-      expect(text).toContain(`Maa ngi tudd ${NOM_ASSISTANT}`);
-    }
+  it("gives the assistant its name in French and in Wolof", () => {
+    const text = buildSystemPrompt({ ...base, products: [] });
+    expect(text).toContain(`Tu t'appelles ${NOM_ASSISTANT}`);
+    expect(text).toContain(`Je m'appelle ${NOM_ASSISTANT}`);
+    expect(text).toContain(`Maa ngi tudd ${NOM_ASSISTANT}`);
   });
   it("answers to its name and introduces itself when greeted in the live dialogue", () => {
-    const text = buildSystemPrompt({ ...base, products: [], mode: "conversation" });
+    const text = buildSystemPrompt({ ...base, products: [] });
     expect(text).toContain(`t'appelle par ton nom (« ${NOM_ASSISTANT}, … »)`);
     expect(text).toContain("salue");
     expect(text).toContain(`« Bonjour, c'est ${NOM_ASSISTANT}. »`);

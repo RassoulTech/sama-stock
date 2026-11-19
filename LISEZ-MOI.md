@@ -168,5 +168,6 @@ Limites :
 - 60 conversations par commerce et par jour (`ASSISTANT_DAILY_LIMIT`) ; 20 dans les boutiques de démonstration.
 - Offre gratuite de Gemini : nombre de conversations limité, et Google peut utiliser ces échanges ; à passer en offre
   payante avant d'ouvrir à tous les commerces.
-- Voix wolof de Google : compréhensible, accent à juger sur le terrain. L'ancienne voix Anta (`ANTA_TTS_URL`,
-  `/api/assistant/voix`, phrases prêtes) n'est plus utilisée par l'application : trop lente pour un dialogue (17 s).
+- Voix wolof de Google : compréhensible, accent à juger sur le terrain.
+- L'ancien mode (note vocale envoyée à `/api/assistant`, réponse lue par la voix Anta) a été retiré : seul le dialogue
+  en direct existe. Les variables `GEMINI_MODEL` et `ANTA_TTS_URL` ne servent plus et peuvent être supprimées.

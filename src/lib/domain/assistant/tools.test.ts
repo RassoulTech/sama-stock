@@ -9,16 +9,17 @@ const access = (role: Role, modules = { modulePos: true, moduleOrders: true }) =
 });
 
 describe("allowedTools", () => {
-  it("gives every tool to the owner, with repondre last", () => {
+  it("gives every tool to the owner, with confirmer last", () => {
     const tools = allowedTools(access("owner"));
     expect([...tools].sort()).toEqual(
       [
         "analyse_ventes", "brouillon_client", "brouillon_commande", "brouillon_entree_stock", "brouillon_fournisseur", "brouillon_paiement_client",
         "brouillon_prix", "brouillon_produit", "brouillon_sortie_stock", "brouillon_statut_commande", "brouillon_vente",
-        "clients_debiteurs", "commandes_en_cours", "montrer_ecran", "repondre", "resume_catalogue", "resume_ventes", "stock_produit",
+        "clients_debiteurs", "commandes_en_cours", "confirmer", "montrer_ecran", "resume_catalogue", "resume_ventes", "stock_produit",
+        "lire_ecran", "defiler", "cliquer", "saisir", "envoyer_whatsapp",
       ].sort(),
     );
-    expect(tools.at(-1)).toBe("repondre");
+    expect(tools.at(-1)).toBe("confirmer");
   });
   it("never offers a stock entry to a seller", () => {
     const tools = allowedTools(access("seller"));
@@ -26,19 +27,18 @@ describe("allowedTools", () => {
     expect(tools).toEqual(expect.arrayContaining(["brouillon_vente", "brouillon_commande", "brouillon_paiement_client", "stock_produit"]));
   });
   it("gives the storekeeper stock entries and exits only", () => {
-    expect(allowedTools(access("storekeeper"))).toEqual(["resume_ventes", "montrer_ecran", "stock_produit", "resume_catalogue", "brouillon_entree_stock", "brouillon_sortie_stock", "repondre"]);
+    expect(allowedTools(access("storekeeper"))).toEqual([
+      "resume_ventes", "montrer_ecran", "stock_produit", "resume_catalogue", "brouillon_entree_stock", "brouillon_sortie_stock",
+      "lire_ecran", "defiler", "cliquer", "saisir", "envoyer_whatsapp", "confirmer",
+    ]);
   });
   it("offers no draft at all on a read-only plan", () => {
     expect(allowedTools({ ...access("owner"), readOnly: true }).filter((t) => t.startsWith("brouillon_"))).toEqual([]);
   });
-  it("adds confirmer only while a task waits for the user's answer", () => {
-    expect(allowedTools(access("owner"))).not.toContain("confirmer");
-    expect(allowedTools(access("owner"), { attente: true }).slice(-2)).toEqual(["confirmer", "repondre"]);
-  });
   it("gives the live dialogue every screen gesture: read, scroll, tap, type, WhatsApp", () => {
-    const tools = allowedTools(access("owner"), { direct: true });
+    const tools = allowedTools(access("owner"));
     expect(tools).toEqual(expect.arrayContaining(["lire_ecran", "defiler", "cliquer", "saisir", "envoyer_whatsapp", "analyse_ventes"]));
-    expect(allowedTools(access("storekeeper"), { direct: true })).not.toContain("analyse_ventes");
+    expect(allowedTools(access("storekeeper"))).not.toContain("analyse_ventes");
   });
   it("lets montrer_ecran carry filters and a section, and declares the new gestures", () => {
     const decl = toolDeclarations(["montrer_ecran", "defiler", "saisir", "analyse_ventes"], { costs: true });
@@ -49,13 +49,9 @@ describe("allowedTools", () => {
     expect(decl[2].parameters?.required).toEqual(["champ", "valeur"]);
     expect(decl[3].parameters?.properties?.vue.enum).toEqual(expect.arrayContaining(["produits", "produit", "categories", "dormants"]));
   });
-  it("gives the live dialogue confirmer and no repondre", () => {
-    const tools = allowedTools(access("owner"), { direct: true });
-    expect(tools).toContain("confirmer");
-    expect(tools).not.toContain("repondre");
-    expect(tools.at(-1)).toBe("confirmer");
-    expect(tools).toEqual(expect.arrayContaining(["lire_ecran", "cliquer", "envoyer_whatsapp", "resume_catalogue"]));
-    expect(allowedTools(access("owner"))).not.toContain("cliquer");
+  it("always offers confirmer, last, even on a read-only plan", () => {
+    expect(allowedTools(access("owner")).at(-1)).toBe("confirmer");
+    expect(allowedTools({ ...access("owner"), readOnly: true }).at(-1)).toBe("confirmer");
   });
   it("respects disabled modules", () => {
     const tools = allowedTools(access("owner", { modulePos: false, moduleOrders: false }));
@@ -70,7 +66,7 @@ describe("isReadTool / isDraftTool", () => {
     expect(isReadTool("stock_produit")).toBe(true);
     expect(isReadTool("brouillon_vente")).toBe(false);
     expect(isDraftTool("brouillon_vente")).toBe(true);
-    expect(isDraftTool("repondre")).toBe(false);
+    expect(isDraftTool("confirmer")).toBe(false);
   });
 });
 
@@ -88,7 +84,7 @@ describe("toolDeclarations", () => {
     expect(decl.parameters).toBeUndefined();
   });
   it("keeps the requested order", () => {
-    expect(toolDeclarations(["repondre", "stock_produit"], { costs: false }).map((d) => d.name)).toEqual(["repondre", "stock_produit"]);
+    expect(toolDeclarations(["confirmer", "stock_produit"], { costs: false }).map((d) => d.name)).toEqual(["confirmer", "stock_produit"]);
   });
 });
 

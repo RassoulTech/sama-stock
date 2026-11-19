@@ -28,10 +28,7 @@ export async function contexteAssistant(): Promise<{ ok: true; ctx: BusinessCont
 
 /** Outils du dialogue en direct pour ce rôle, ces modules et cette offre. */
 export function outilsDirects(ctx: BusinessContext): ToolName[] {
-  return allowedTools(
-    { can: ctx.can, modulePos: ctx.business.modulePos, moduleOrders: ctx.business.moduleOrders, readOnly: ctx.plan.readOnly },
-    { direct: true },
-  );
+  return allowedTools({ can: ctx.can, modulePos: ctx.business.modulePos, moduleOrders: ctx.business.moduleOrders, readOnly: ctx.plan.readOnly });
 }
 
 export function accesEcrans(ctx: BusinessContext): EcranAccess {
