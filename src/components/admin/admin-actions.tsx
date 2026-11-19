@@ -1,12 +1,12 @@
 "use client";
 
-import { Ban, CalendarPlus, CheckCircle2, Mic, TimerOff, Trash2 } from "lucide-react";
+import { Ban, CalendarPlus, CheckCircle2, TimerOff, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmAction } from "@/components/shared/confirm-action";
 import { Button } from "@/components/ui/button";
-import { adminDeleteBusiness, adminExpireNow, adminExtend, adminSetAssistant, adminSetSuspended } from "@/server/actions/admin";
+import { adminDeleteBusiness, adminExpireNow, adminExtend, adminSetSuspended } from "@/server/actions/admin";
 
 /**
  * Actions sur un commerce en essai gratuit : prolonger l'essai, l'arrêter, suspendre.
@@ -17,13 +17,11 @@ export function AdminActions({
   businessName,
   licensed,
   suspended,
-  assistantEnabled,
 }: {
   businessId: string;
   businessName: string;
   licensed: boolean;
   suspended: boolean;
-  assistantEnabled: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -90,26 +88,6 @@ export function AdminActions({
             action={() => adminSetSuspended(businessId, true)}
           />
         )}
-      </section>
-      <section className="space-y-3 rounded-xl border p-4">
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <Mic className="size-4 text-primary" /> Assistant vocal (wolof / français)
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {assistantEnabled
-            ? "Activé : le bouton micro apparaît dans l'application de ce commerce."
-            : "Désactivé. Le quota gratuit de l'IA est partagé : activez-le seulement pour les commerces testeurs."}
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={pending}
-          onClick={() =>
-            run(() => adminSetAssistant(businessId, !assistantEnabled), assistantEnabled ? "Assistant vocal désactivé" : "Assistant vocal activé")
-          }
-        >
-          {assistantEnabled ? "Désactiver l'assistant" : "Activer l'assistant"}
-        </Button>
       </section>
       <section className="space-y-3 rounded-xl border border-destructive/30 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-destructive">

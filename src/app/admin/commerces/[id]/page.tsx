@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AssistantAdminCard } from "@/components/admin/assistant/assistant-card";
 import { AdminActions } from "@/components/admin/admin-actions";
 import { AuditList } from "@/components/admin/audit-list";
 import { LicenseCard } from "@/components/admin/licence/license-card";
@@ -13,12 +14,14 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminReminderMessage, planBadgeText } from "@/lib/domain/admin";
+import { etatAssistant } from "@/lib/domain/assistant/abonnement";
 import { isRole, ROLE_LABELS } from "@/lib/domain/permissions";
 import { PLAN_STATUS_LABELS, PLAN_STATUS_TONES, TRIAL_DAYS } from "@/lib/domain/plans";
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
 import { formatDate, formatFCFA, formatPhone } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { getBusinessForAdmin } from "@/server/queries/admin";
+import { moisDuCommerce, paiementsDuCommerce } from "@/server/queries/assistant";
 import { activeSaleFor, balanceOf, getLicenseSale } from "@/server/queries/licences";
 
 export const metadata: Metadata = { title: "Fiche commerce" };
@@ -37,6 +40,8 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
   const s = b.state;
   const activeSale = s.license ? await activeSaleFor(id) : null;
   const licence = activeSale ? await getLicenseSale(activeSale.id) : null;
+  const [moisFinch, paiementsFinch] = s.license ? await Promise.all([moisDuCommerce(id), paiementsDuCommerce(id)]) : [[], []];
+  const etatFinch = etatAssistant({ isDemo: false, plan: s, mois: moisFinch });
 
   const remaining = s.status === "trialing" ? Math.min(100, Math.round((s.daysLeft / TRIAL_DAYS) * 100)) : 0;
   const steps = [
@@ -119,7 +124,8 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
           {licence ? (
             <>
               <LicenseCard detail={licence} />
-              <AdminActions businessId={b.id} businessName={b.name} licensed suspended={s.status === "suspended"} assistantEnabled={b.assistantEnabled} />
+              {s.license && <AssistantAdminCard businessId={b.id} offre={s.license} etat={etatFinch} paiements={paiementsFinch} />}
+              <AdminActions businessId={b.id} businessName={b.name} licensed suspended={s.status === "suspended"} />
             </>
           ) : (
             <Card>
@@ -143,7 +149,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
                     </div>
                   </div>
                 </div>
-                <AdminActions businessId={b.id} businessName={b.name} licensed={false} suspended={s.status === "suspended"} assistantEnabled={b.assistantEnabled} />
+                <AdminActions businessId={b.id} businessName={b.name} licensed={false} suspended={s.status === "suspended"} />
               </CardContent>
             </Card>
           )}

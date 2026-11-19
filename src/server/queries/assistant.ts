@@ -1,8 +1,8 @@
 import "server-only";
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { assistantMonths } from "@/db/schema";
-import type { MoisAssistant } from "@/lib/domain/assistant/abonnement";
+import { assistantMonths, assistantPayments, user } from "@/db/schema";
+import { peutAnnuler, type GenrePaiement, type MoisAssistant } from "@/lib/domain/assistant/abonnement";
 
 export type MoisEnBase = MoisAssistant & { paymentId: string | null };
 
@@ -33,4 +33,55 @@ export async function finsAbonnement(): Promise<{ businessId: string; finLe: Dat
     where m.kind = 'abonnement' and not b.is_demo
     order by m.business_id, m.ends_at desc`);
   return res.rows.map((r) => ({ businessId: r.business_id, finLe: new Date(r.ends_at) }));
+}
+
+export interface PaiementAssistantVue {
+  id: string;
+  kind: GenrePaiement;
+  months: number;
+  credits: number;
+  amount: number;
+  method: string;
+  note: string | null;
+  paidAt: Date;
+  /** Administrateur qui l'a saisi (jamais montré au commerçant). */
+  recordedBy: string | null;
+  /** Dernier paiement saisi, dont les crédits n'ont pas servi. */
+  annulable: boolean;
+}
+
+const genre = (k: string): GenrePaiement => (k === "activation" || k === "recharge" ? k : "mois");
+
+/** Le mois d'abonnement qui portait une recharge (celui qui couvrait sa date de paiement). */
+export function moisDeRecharge(mois: readonly MoisAssistant[], paidAt: Date): MoisAssistant | null {
+  return mois.find((m) => m.kind === "abonnement" && m.startsAt <= paidAt && m.endsAt > paidAt) ?? null;
+}
+
+/** Paiements de Finch d'un commerce, du plus récent au plus ancien. */
+export async function paiementsDuCommerce(businessId: string): Promise<PaiementAssistantVue[]> {
+  const [rows, mois] = await Promise.all([
+    db
+      .select({
+        id: assistantPayments.id,
+        kind: assistantPayments.kind,
+        months: assistantPayments.months,
+        credits: assistantPayments.credits,
+        amount: assistantPayments.amount,
+        method: assistantPayments.method,
+        note: assistantPayments.note,
+        paidAt: assistantPayments.paidAt,
+        recordedBy: user.name,
+      })
+      .from(assistantPayments)
+      .leftJoin(user, eq(user.id, assistantPayments.recordedBy))
+      .where(eq(assistantPayments.businessId, businessId))
+      .orderBy(desc(assistantPayments.createdAt)),
+    moisDuCommerce(businessId),
+  ]);
+  return rows.map((p, i) => {
+    const kind = genre(p.kind);
+    const crees = mois.filter((m) => m.paymentId === p.id);
+    const cible = kind === "recharge" ? moisDeRecharge(mois, p.paidAt) : null;
+    return { ...p, kind, annulable: i === 0 && peutAnnuler({ kind, credits: p.credits }, crees, cible) };
+  });
 }
