@@ -4,6 +4,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { dansLaBulle } from "@/components/ui/garde-bulle";
+import { texteCredits, type CreditsAffiches, type FicheAssistant } from "@/lib/domain/assistant/abonnement";
 import type { Mission } from "@/lib/domain/assistant/mission";
 import { choisirAffichage, type Affichage } from "./affichage";
 import { executerOutilServeur } from "./api";
@@ -71,6 +72,11 @@ interface AssistantValue {
   accord: (oui: boolean) => void;
   arreterTache: () => void;
   faireGeste: () => void;
+  /** Fiche montrée quand Finch n'est pas payé ou n'a plus de crédits (activer, renouveler, recharger). */
+  fiche: FicheAssistant | null;
+  fermerFiche: () => void;
+  /** Conversations restantes de la conversation en cours (null : démonstration ou pas de conversation). */
+  credits: CreditsAffiches | null;
   fermerStatut: () => void;
 }
 
@@ -113,6 +119,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [statut, setStatut] = useState<string | null>(null);
   const [resume, setResume] = useState<string | null>(null);
+  const [fiche, setFiche] = useState<FicheAssistant | null>(null);
+  const [credits, setCredits] = useState<CreditsAffiches | null>(null);
   const [question, setQuestion] = useState(STATUTS.confirmation);
   const [doigt, setDoigt] = useState<PositionDoigt | null>(null);
   const [touche, setTouche] = useState(0);
@@ -586,6 +594,8 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     setActif(true);
     setPlein(true);
     setNotice(null);
+    setFiche(null);
+    setCredits(null);
     setPhase("connexion");
     conversation.current = creerConversation({
       contexte,
@@ -594,12 +604,15 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
       },
       surOutils: (appels) => void surOutils(appels),
       surOutilsAnnules,
+      surFiche: setFiche,
+      surCredits: (c) => setCredits(c ? texteCredits(c.restants, c.essai) : null),
       surFin: (raison) => {
         conversation.current = null;
         controle.current?.abort();
         appelBrouillon.current = null;
         appelConfirmation.current = null;
         setGeste(null);
+        setCredits(null);
         setActif(false);
         setPhase("repos");
         if (raison) setNotice(raison);
@@ -632,6 +645,9 @@ export function AssistantProvider({ children }: { children: React.ReactNode }) {
     accord: (oui) => attente.current?.resoudre({ type: oui ? "oui" : "non" }),
     arreterTache: () => controle.current?.abort(),
     faireGeste,
+    fiche,
+    fermerFiche: () => setFiche(null),
+    credits,
     fermerStatut: () => {
       montrerStatut(null);
       setNotice(null);

@@ -63,9 +63,12 @@ export function PleinEcranAssistant() {
         >
           <Orbe phase={a.phase} niveau={a.niveau} taille="grand" />
         </button>
-        <p aria-live="polite" className="min-h-7 px-6 text-center text-lg font-medium text-white/90 sm:text-xl">
-          {a.statut ?? STATUTS[a.phase]}
-        </p>
+        <div className="flex flex-col items-center gap-2">
+          <p aria-live="polite" className="min-h-7 px-6 text-center text-lg font-medium text-white/90 sm:text-xl">
+            {a.statut ?? STATUTS[a.phase]}
+          </p>
+          {a.credits && <p className={cn("text-sm font-medium", a.credits.alerte ? "text-amber-300" : "text-white/55")}>{a.credits.texte}</p>}
+        </div>
       </div>
 
       <div className="relative flex flex-col items-center gap-2.5 pb-[calc(env(safe-area-inset-bottom)+2rem)]">

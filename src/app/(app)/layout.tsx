@@ -7,6 +7,7 @@ import { OfflineProvider } from "@/components/offline/offline-provider";
 import { AppProvider, type ClientAppInfo } from "@/components/shell/app-provider";
 import { AssistantButton } from "@/components/assistant/assistant-button";
 import { AssistantProvider } from "@/components/assistant/assistant-provider";
+import { FicheAbonnementAssistant } from "@/components/assistant/fiche-assistant";
 import { BulleAssistant, DoigtAssistant } from "@/components/assistant/pilote/bulle";
 import { PleinEcranAssistant } from "@/components/assistant/pilote/plein-ecran";
 import { BottomNav } from "@/components/shell/bottom-nav";
@@ -19,6 +20,7 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { UserMenu } from "@/components/shell/user-menu";
 import { InstallAppButton } from "@/components/pwa/install-app";
 import { ShopAppSync } from "@/components/pwa/shop-app-sync";
+import { boutonAssistantVisible } from "@/lib/domain/assistant/abonnement";
 import { brandCss } from "@/lib/domain/brand";
 import { shopColors } from "@/lib/domain/shop-brand";
 import { initials } from "@/lib/format";
@@ -194,12 +196,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:px-6 lg:px-8 lg:pt-7 lg:pb-12 print:p-0">{children}</main>
           </div>
           <BottomNav items={menu} />
-          {ctx.business.assistantEnabled && (
+          {boutonAssistantVisible(ctx.plan, ctx.business.isDemo) && (
             <AssistantProvider>
               <AssistantButton />
               <PleinEcranAssistant />
               <BulleAssistant />
               <DoigtAssistant />
+              <FicheAbonnementAssistant />
             </AssistantProvider>
           )}
         </div>

@@ -1,5 +1,6 @@
 // src/components/assistant/direct/conversation.ts
-import { demanderSession } from "../api";
+import type { FicheAssistant } from "@/lib/domain/assistant/abonnement";
+import { demanderSession, type CreditsConversation } from "../api";
 import { creerHautParleur } from "./haut-parleur";
 import { ouvrirMicro, type Micro } from "./micro";
 import {
@@ -22,6 +23,10 @@ export interface OptionsConversation {
   surEtat(etat: EtatConversation): void;
   surOutils(appels: AppelOutil[]): void;
   surOutilsAnnules(ids: string[]): void;
+  /** Finch n'est pas payé ou n'a plus de crédits : la fiche à montrer à la place de la conversation. */
+  surFiche(fiche: FicheAssistant): void;
+  /** Conversations restantes, connues à l'ouverture (null : démonstration). */
+  surCredits(credits: CreditsConversation | null): void;
   /** Fin de la conversation, avec la raison à montrer (null : fin normale). */
   surFin(raison: string | null): void;
 }
@@ -153,7 +158,11 @@ export function creerConversation(o: OptionsConversation): Conversation {
     o.surEtat("connexion");
     const session = await demanderSession();
     if (finie) return;
-    if (!session.ok) return terminer(session.error);
+    if (!session.ok) {
+      if (session.fiche) o.surFiche(session.fiche);
+      return terminer(session.fiche ? null : session.error);
+    }
+    o.surCredits(session.credits);
     ws = new WebSocket(urlDirect(session.jeton));
     ws.binaryType = "arraybuffer";
     ws.onopen = () => envoyer(messageDemarrage());

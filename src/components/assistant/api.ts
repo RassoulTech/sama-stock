@@ -1,19 +1,35 @@
 // src/components/assistant/api.ts
+import type { FicheAssistant } from "@/lib/domain/assistant/abonnement";
 import type { Mission } from "@/lib/domain/assistant/mission";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 export type Resultat<T> = ({ ok: true } & T) | { ok: false; error: string };
 
-/** Clé temporaire pour une conversation en direct (une conversation compte pour une demande du jour). */
-export async function demanderSession(): Promise<Resultat<{ jeton: string }>> {
+/** Conversations restantes après l'ouverture (null : démonstration). */
+export interface CreditsConversation {
+  restants: number;
+  essai: boolean;
+}
+
+export type ReponseSession =
+  | { ok: true; jeton: string; credits: CreditsConversation | null }
+  | { ok: false; error: string; fiche: FicheAssistant | null };
+
+/** Clé temporaire pour une conversation en direct (un crédit retiré). Refus 402 : la fiche à montrer à la place. */
+export async function demanderSession(): Promise<ReponseSession> {
   try {
     const res = await fetch("/api/assistant/session", { method: "POST", headers: JSON_HEADERS });
-    const data = (await res.json().catch(() => null)) as { jeton?: string; error?: string } | null;
-    if (!res.ok || !data?.jeton) return { ok: false, error: data?.error ?? "L'assistant ne répond pas. Réessaie." };
-    return { ok: true, jeton: data.jeton };
+    const data = (await res.json().catch(() => null)) as {
+      jeton?: string;
+      credits?: CreditsConversation | null;
+      error?: string;
+      fiche?: FicheAssistant | null;
+    } | null;
+    if (!res.ok || !data?.jeton) return { ok: false, error: data?.error ?? "L'assistant ne répond pas. Réessaie.", fiche: data?.fiche ?? null };
+    return { ok: true, jeton: data.jeton, credits: data.credits ?? null };
   } catch {
-    return { ok: false, error: "Pas de connexion internet." };
+    return { ok: false, error: "Pas de connexion internet.", fiche: null };
   }
 }
 
