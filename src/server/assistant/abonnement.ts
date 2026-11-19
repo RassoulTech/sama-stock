@@ -57,5 +57,10 @@ export async function rendreCredit(moisId: string | null): Promise<void> {
 export async function prevenirSiPeuDeCredits(ctx: BusinessContext, o: Extract<Ouverture, { ok: true }>): Promise<void> {
   if (o.genre !== "abonnement" || (o.restants !== 10 && o.restants !== 0)) return;
   const rappel = o.restants === 0 ? "zero" : "dix";
-  await db.transaction((tx) => notify(tx, ctx, messageAssistant(rappel)));
+  try {
+    await db.transaction((tx) => notify(tx, ctx, messageAssistant(rappel)));
+  } catch (e) {
+    // L'alerte est un plus : une panne ici ne doit jamais refuser une conversation déjà ouverte.
+    console.error("[assistant] alerte crédits", e);
+  }
 }

@@ -28,21 +28,32 @@ export async function POST() {
     return NextResponse.json({ error: fiche?.titre ?? "Finch n'est pas disponible.", fiche }, { status: 402, headers: NO_STORE });
   }
 
-  const [quota, products] = await Promise.all([consumeAssistantQuota(ctx.business.id, { isDemo: ctx.business.isDemo }), listProducts(ctx)]);
-  if (!quota.allowed) {
-    await rendreCredit(ouverture.moisId);
-    return refuser("Limite du jour atteinte, réessaie demain.", 429);
-  }
-
-  const system = buildSystemPrompt({
-    businessName: ctx.business.name,
-    roleLabel: ROLE_LABELS[ctx.role],
-    today: new Date(),
-    products,
-    acces: accesEcrans(ctx),
-  });
-  const tools = toolDeclarations(outilsDirects(ctx), { costs: ctx.can("costs.view") });
+  // Dès ici, toute sortie sans conversation ouverte rend le crédit, une seule fois.
+  let rendu = false;
+  const rendre = async () => {
+    if (rendu) return;
+    rendu = true;
+    try {
+      await rendreCredit(ouverture.moisId);
+    } catch (e) {
+      console.error("[assistant] crédit non rendu", ouverture.moisId, e);
+    }
+  };
   try {
+    const [quota, products] = await Promise.all([consumeAssistantQuota(ctx.business.id, { isDemo: ctx.business.isDemo }), listProducts(ctx)]);
+    if (!quota.allowed) {
+      await rendre();
+      return refuser("Limite du jour atteinte, réessaie demain.", 429);
+    }
+
+    const system = buildSystemPrompt({
+      businessName: ctx.business.name,
+      roleLabel: ROLE_LABELS[ctx.role],
+      today: new Date(),
+      products,
+      acces: accesEcrans(ctx),
+    });
+    const tools = toolDeclarations(outilsDirects(ctx), { costs: ctx.can("costs.view") });
     const session = await creerJetonDirect({
       apiKey,
       system,
@@ -54,7 +65,7 @@ export async function POST() {
     const credits = ouverture.restants === null ? null : { restants: ouverture.restants, essai: ouverture.genre === "essai" };
     return NextResponse.json({ ...session, credits }, { headers: NO_STORE });
   } catch (error) {
-    await rendreCredit(ouverture.moisId);
+    await rendre();
     if (error instanceof GeminiError) {
       console.error("[assistant] session", error.kind, error.status ?? "-");
       return refuser("L'assistant est saturé, réessaie dans une minute.", 503);
