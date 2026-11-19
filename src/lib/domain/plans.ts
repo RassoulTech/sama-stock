@@ -202,3 +202,32 @@ export function licenceFeatures(pack: LicensePack): string[] {
 
 /** Démonstration publique : chaque boutique fictive montre une licence (la colonne `plan` sert de clé de démo). */
 export const DEMO_LICENCE: Record<PlanId, LicensePackId> = { trial: "boutique", pro: "pro", business: "business" };
+
+/**
+ * Assistant vocal Finch : abonnement mensuel, à part de la licence à vie. L'offre suit la licence du commerce ;
+ * 1 crédit = 1 conversation ; les crédits non utilisés sont perdus à la fin du mois.
+ */
+export interface AssistantOffer {
+  /** Payé une fois, à la première mise en service. */
+  activationPrice: number;
+  monthlyPrice: number;
+  monthlyCredits: number;
+}
+
+export const ASSISTANT_OFFERS: Record<LicensePackId, AssistantOffer> = {
+  boutique: { activationPrice: 10_000, monthlyPrice: 5_000, monthlyCredits: 100 },
+  pro: { activationPrice: 15_000, monthlyPrice: 10_000, monthlyCredits: 250 },
+  business: { activationPrice: 20_000, monthlyPrice: 15_000, monthlyCredits: 500 },
+};
+
+/** Conversations en plus, valables jusqu'à la fin du mois en cours. */
+export const ASSISTANT_RECHARGE = { credits: 50, price: 3_000 } as const;
+
+/** Conversations offertes pendant l'essai gratuit (commerce sans licence). */
+export const ASSISTANT_TRIAL_CREDITS = 10;
+
+/** Coût Google estimé d'une conversation (FCFA), pour la carte de rentabilité : à ajuster avec la vraie facture. */
+export const ASSISTANT_COST_PER_CONVERSATION = 50;
+
+/** Mois payés au plus en une seule saisie. */
+export const ASSISTANT_RENEW_MAX_MONTHS = 12;
