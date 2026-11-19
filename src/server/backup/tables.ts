@@ -3,9 +3,9 @@ import { getTableColumns } from "drizzle-orm";
 import { getTableConfig, type PgTable } from "drizzle-orm/pg-core";
 import journal from "../../../drizzle/meta/_journal.json";
 import {
-  adminAuditLog, businessNotes, categories, customerPayments, customers, documentItems, documents, invitations, licensePayments,
-  licenseSales, locations, members, products, purchaseItems, purchases, saleItems, sales, shopDevices, stockLevels, stockMovements,
-  suppliers, user,
+  adminAuditLog, assistantMonths, assistantPayments, businessNotes, categories, customerPayments, customers, documentItems, documents,
+  invitations, licensePayments, licenseSales, locations, members, products, purchaseItems, purchases, saleItems, sales, shopDevices,
+  stockLevels, stockMovements, suppliers, user,
 } from "@/db/schema";
 
 /** Tables d'une boutique, dans l'ordre d'insertion (les tables mères d'abord ; on efface dans l'ordre inverse). */
@@ -22,7 +22,7 @@ export const CHILD_TABLES = {
   documentItems: { parent: documents, parentKey: "documents", fk: documentItems.documentId },
 } as const;
 
-export const ADMIN_TABLES = { licenseSales, licensePayments, businessNotes, adminAuditLog } as const;
+export const ADMIN_TABLES = { licenseSales, licensePayments, businessNotes, adminAuditLog, assistantPayments, assistantMonths } as const;
 export type AdminTableName = keyof typeof ADMIN_TABLES;
 
 /** Ce que gère l'admin dans la ligne du commerce : gardé tel quel quand on restaure une boutique. */

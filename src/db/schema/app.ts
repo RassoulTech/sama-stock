@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -682,4 +683,53 @@ export const assistantUsage = pgTable(
     count: integer("count").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.businessId, t.day] })],
+);
+
+/** Argent reçu pour l'assistant Finch : activation (avec ses premiers mois), mois, recharge. */
+export const assistantPayments = pgTable(
+  "assistant_payments",
+  {
+    id: id(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // activation | mois | recharge
+    /** Mois payés (activation, mois) ; 0 pour une recharge. */
+    months: integer("months").notNull().default(0),
+    /** Conversations ajoutées par une recharge ; 0 sinon. */
+    credits: integer("credits").notNull().default(0),
+    /** Montant réellement reçu, en FCFA. */
+    amount: integer("amount").notNull(),
+    method: text("method").notNull(), // wave | orange_money | especes | virement | autre
+    note: text("note"),
+    recordedBy: text("recorded_by").references(() => user.id, { onDelete: "set null" }),
+    paidAt: timestamp("paid_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("assistant_payments_business_idx").on(t.businessId)],
+);
+
+/** Fenêtres de crédits de Finch : un mois d'abonnement payé, ou l'essai gratuit (1 crédit = 1 conversation). */
+export const assistantMonths = pgTable(
+  "assistant_months",
+  {
+    id: id(),
+    businessId: text("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // abonnement | essai
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    credits: integer("credits").notNull(),
+    extraCredits: integer("extra_credits").notNull().default(0),
+    used: integer("used").notNull().default(0),
+    paymentId: text("payment_id").references(() => assistantPayments.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("assistant_months_business_idx").on(t.businessId, t.startsAt),
+    // Une seule fenêtre d'essai par commerce
+    uniqueIndex("assistant_months_essai_idx").on(t.businessId).where(sql`${t.kind} = 'essai'`),
+    check("assistant_months_used_check", sql`${t.used} >= 0 and ${t.used} <= ${t.credits} + ${t.extraCredits}`),
+  ],
 );

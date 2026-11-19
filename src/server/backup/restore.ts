@@ -109,7 +109,7 @@ export async function restoreShopPayload(payload: BackupPayload, ctx: AppContext
   });
 }
 
-/** Remet licences, paiements, notes et journal dans l'état du fichier admin. */
+/** Remet licences, paiements, abonnements de Finch, notes et journal dans l'état du fichier admin. */
 export async function restoreAdminPayload(payload: BackupPayload, ctx: AppContext): Promise<void> {
   if (payload.type !== "admin") throw new Error("Ce fichier n'est pas la sauvegarde de l'espace admin.");
   assertCompatible(payload);
@@ -117,7 +117,9 @@ export async function restoreAdminPayload(payload: BackupPayload, ctx: AppContex
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext('sama-stock-restore:admin'))`);
     const knownUsers = await restoreUsers(tx, payload);
     const shops = new Set((await tx.select({ id: businesses.id }).from(businesses)).map((b) => b.id));
-    const { licensePayments, licenseSales, businessNotes, adminAuditLog } = ADMIN_TABLES;
+    const { licensePayments, licenseSales, businessNotes, adminAuditLog, assistantPayments, assistantMonths } = ADMIN_TABLES;
+    await tx.delete(assistantMonths);
+    await tx.delete(assistantPayments);
     await tx.delete(licensePayments);
     await tx.delete(licenseSales);
     await tx.delete(businessNotes);
@@ -125,6 +127,9 @@ export async function restoreAdminPayload(payload: BackupPayload, ctx: AppContex
     const ofKnownShop = (rows: Row[]) => rows.filter((r) => shops.has(r.businessId as string));
     await insertRows(tx, licenseSales, ofKnownShop((payload.tables.licenseSales ?? []) as Row[]), knownUsers);
     await insertRows(tx, licensePayments, ofKnownShop((payload.tables.licensePayments ?? []) as Row[]), knownUsers);
+    // Fichiers d'avant l'abonnement de Finch : ces tables y sont absentes (listes vides)
+    await insertRows(tx, assistantPayments, ofKnownShop((payload.tables.assistantPayments ?? []) as Row[]), knownUsers);
+    await insertRows(tx, assistantMonths, ofKnownShop((payload.tables.assistantMonths ?? []) as Row[]), knownUsers);
     await insertRows(tx, businessNotes, ofKnownShop((payload.tables.businessNotes ?? []) as Row[]), knownUsers);
     const journal = ((payload.tables.adminAuditLog ?? []) as Row[]).map((r) => (r.businessId && !shops.has(r.businessId as string) ? { ...r, businessId: null } : r));
     await insertRows(tx, adminAuditLog, journal, knownUsers);
