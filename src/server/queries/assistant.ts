@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assistantMonths } from "@/db/schema";
 import type { MoisAssistant } from "@/lib/domain/assistant/abonnement";
@@ -23,4 +23,14 @@ export async function moisDuCommerce(businessId: string): Promise<MoisEnBase[]> 
     .where(eq(assistantMonths.businessId, businessId))
     .orderBy(asc(assistantMonths.startsAt));
   return rows.map((r) => ({ ...r, kind: r.kind === "essai" ? "essai" : "abonnement" }));
+}
+
+/** Fin du dernier mois d'abonnement de chaque commerce (hors démonstrations). */
+export async function finsAbonnement(): Promise<{ businessId: string; finLe: Date }[]> {
+  const res = await db.execute<{ business_id: string; ends_at: string | Date }>(sql`
+    select distinct on (m.business_id) m.business_id, m.ends_at
+    from assistant_months m join businesses b on b.id = m.business_id
+    where m.kind = 'abonnement' and not b.is_demo
+    order by m.business_id, m.ends_at desc`);
+  return res.rows.map((r) => ({ businessId: r.business_id, finLe: new Date(r.ends_at) }));
 }

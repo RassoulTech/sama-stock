@@ -21,6 +21,15 @@ export async function notify(tx: Tx, ctx: BusinessContext, message: NotifyMessag
   after(() => deliverPush(row!.id));
 }
 
+/** Notification sans auteur (tâche planifiée) : elle part sur les téléphones du propriétaire et des gérants. */
+export async function notifySysteme(tx: Tx, businessId: string, message: NotifyMessage): Promise<void> {
+  const [row] = await tx
+    .insert(notifications)
+    .values({ businessId, kind: message.kind, title: message.title, body: message.body, href: message.href, actorId: null })
+    .returning({ id: notifications.id });
+  after(() => deliverPush(row!.id));
+}
+
 /** Disponible (physique moins commandes réservées) et seuil d'alerte de produits, dans une boutique. */
 async function stockSnapshot(tx: Tx, businessId: string, locationId: string, ids: string[]) {
   const rows = await tx
