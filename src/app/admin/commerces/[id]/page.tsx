@@ -126,7 +126,6 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
           {licence ? (
             <>
               <LicenseCard detail={licence} />
-              {s.license && <AssistantAdminCard businessId={b.id} offre={s.license} etat={etatFinch} paiements={paiementsFinch} />}
               <AdminActions businessId={b.id} businessName={b.name} licensed suspended={s.status === "suspended"} />
             </>
           ) : (
@@ -155,6 +154,9 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
               </CardContent>
             </Card>
           )}
+
+          {/* Finch suit la licence, qu'elle vienne d'une vente enregistrée ou qu'elle ait été posée directement */}
+          {s.license && <AssistantAdminCard businessId={b.id} offre={s.license} etat={etatFinch} paiements={paiementsFinch} />}
 
           {!s.license && (
             <Card>
