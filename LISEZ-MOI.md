@@ -96,8 +96,10 @@ Ces scénarios reprennent la section 9 du cahier des charges. Faites-les avec un
 
 **⚠ Avant d'envoyer le code sur GitHub (donc avant le déploiement Vercel), appliquez d'abord la migration de la base** :
 lancez `npm run db:migrate` (ou double-cliquez sur `lancer.bat`, qui le fait). Sans cela, **toutes les pages du site en
-ligne plantent**, car la nouvelle colonne `assistant_enabled` est lue sur chaque page. Migrer en premier ne risque rien
-pour la version actuellement en ligne : elle ignore simplement cette colonne.
+ligne plantent** : les nouvelles tables `assistant_months` et `assistant_payments` sont lues par la page `/licence`,
+l'accueil de l'administration, la fiche d'un commerce, l'ouverture d'une conversation avec Finch, les rappels de 9 h et
+le fichier admin de la sauvegarde de nuit. Sans ces tables, ces pages et fonctions tombent ; les autres pages continuent
+de marcher. Migrer en premier ne gêne pas la version actuellement en ligne : elle ignore simplement ces tables.
 
 Où mettre les réglages : sur l'ordinateur, dans `.env.local` (Next.js lit aussi `.env`, mais `.env.local` passe en
 premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settings → Environment Variables).
@@ -110,8 +112,9 @@ premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settin
    (`.env.local` sur l'ordinateur, variables Vercel pour la version en ligne).
 2. **Abonnement** : Finch se paie à part de la licence, chaque mois. L'offre suit la licence : Boutique 100
    conversations pour 5 000 F par mois (activation 10 000 F), Pro 250 pour 10 000 F (activation 15 000 F), Business
-   500 pour 15 000 F (activation 20 000 F) ; recharge de 50 conversations pour 3 000 F. 1 crédit = 1 conversation ; les
-   crédits non utilisés sont perdus en fin de mois. Dans l'administration, fiche du commerce → « Assistant Finch » :
+   500 pour 15 000 F (activation 20 000 F) ; recharge de 50 conversations pour 3 000 F. 1 crédit = 1 conversation, pris à
+   l'ouverture : une conversation abandonnée pendant la connexion compte, mais pas une conversation que Google refuse ;
+   les crédits non utilisés sont perdus en fin de mois. Dans l'administration, fiche du commerce → « Assistant Finch » :
    **Activer** (une fois, avec les premiers mois), **Renouveler** (1 à 12 mois, à la suite des mois payés) ou
    **Recharge**, avec le montant réellement reçu ; le dernier paiement saisi s'annule tant que ses crédits n'ont pas
    servi. L'accueil de l'administration liste les abonnements à renouveler et la rentabilité du mois. Pendant l'essai
