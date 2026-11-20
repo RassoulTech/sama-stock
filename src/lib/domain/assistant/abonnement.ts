@@ -88,12 +88,38 @@ export function moisPlus(date: Date, k: number): Date {
 
 /**
  * n mois d'un mois à la suite, à partir de la fin du dernier mois d'abonnement s'il n'est pas fini, sinon de maintenant.
- * Calculés depuis le premier début, pour ne pas dériver en fin de mois.
+ * Chaque date se calcule depuis le début de la suite de mois (pas de fin en fin), pour ne pas dériver en fin de mois :
+ * 31 janvier + 1 mois = 28 février, mais + 2 mois = 31 mars.
  */
 export function planifierMois(mois: readonly MoisAssistant[], n: number, now = new Date()): { startsAt: Date; endsAt: Date }[] {
   const fin = finAbonnement(mois);
-  const debut = fin && fin.getTime() > now.getTime() ? fin : now;
-  return Array.from({ length: n }, (_, k) => ({ startsAt: moisPlus(debut, k), endsAt: moisPlus(debut, k + 1) }));
+  let ancre = now;
+  let k0 = 0;
+  if (fin && fin.getTime() > now.getTime()) {
+    // Par défaut (données anciennes ou saisies à la main) : on repart de la fin actuelle.
+    ancre = fin;
+    // Chaîne de mois d'abonnement qui finit à `fin` : chaque début est la fin du mois d'avant.
+    const abonnements = mois.filter((m) => m.kind === "abonnement");
+    const finDe = (t: number) => abonnements.find((m) => m.endsAt.getTime() === t);
+    let courant = finDe(fin.getTime());
+    let debut: Date | undefined;
+    let taille = 0;
+    while (courant && taille <= abonnements.length) {
+      taille++;
+      debut = courant.startsAt;
+      courant = finDe(debut.getTime());
+    }
+    if (debut && moisPlus(debut, taille).getTime() === fin.getTime()) {
+      ancre = debut;
+      k0 = taille;
+    }
+  }
+  return Array.from({ length: n }, (_, k) => ({ startsAt: moisPlus(ancre, k0 + k), endsAt: moisPlus(ancre, k0 + k + 1) }));
+}
+
+/** Le mois d'abonnement qui portait une recharge (celui qui couvrait sa date de paiement). */
+export function moisDeRecharge(mois: readonly MoisAssistant[], paidAt: Date): MoisAssistant | null {
+  return mois.find((m) => m.kind === "abonnement" && m.startsAt <= paidAt && m.endsAt > paidAt) ?? null;
 }
 
 /** Où en est Finch pour ce commerce. Sous licence, seuls les mois d'abonnement comptent. */
@@ -163,7 +189,7 @@ export function ficheAssistant(etat: EtatAssistant, o: { boutique: string; peutP
       break;
     case "epuise":
       titre = "Plus de conversations ce mois-ci";
-      texte = `Tu as utilisé tes ${conv(etat.total)} avec ${NOM_ASSISTANT}. Recharge ${conv(ASSISTANT_RECHARGE.credits)} pour ${formatFCFA(ASSISTANT_RECHARGE.price)}${etat.mois ? `, ou attends le ${formatDate(etat.mois.endsAt)}` : ""}.`;
+      texte = `Tu as utilisé tes ${conv(etat.total)} avec ${NOM_ASSISTANT}. Recharge ${conv(ASSISTANT_RECHARGE.credits)} pour ${formatFCFA(ASSISTANT_RECHARGE.price)}${etat.mois && etat.finLe && etat.finLe.getTime() > etat.mois.endsAt.getTime() ? `, ou attends le ${formatDate(etat.mois.endsAt)}` : ""}.`;
       bouton = "Demander une recharge";
       message = `Bonjour, je veux recharger ${NOM_ASSISTANT} pour ${o.boutique}.`;
       break;

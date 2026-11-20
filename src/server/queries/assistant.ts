@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { assistantMonths, assistantPayments, assistantUsage, businesses, user } from "@/db/schema";
-import { peutAnnuler, rentabilite, type GenrePaiement, type MoisAssistant, type Rentabilite } from "@/lib/domain/assistant/abonnement";
+import { moisDeRecharge, peutAnnuler, rentabilite, type GenrePaiement, type MoisAssistant, type Rentabilite } from "@/lib/domain/assistant/abonnement";
 
 export type MoisEnBase = MoisAssistant & { paymentId: string | null };
 
@@ -51,11 +51,6 @@ export interface PaiementAssistantVue {
 }
 
 const genre = (k: string): GenrePaiement => (k === "activation" || k === "recharge" ? k : "mois");
-
-/** Le mois d'abonnement qui portait une recharge (celui qui couvrait sa date de paiement). */
-export function moisDeRecharge(mois: readonly MoisAssistant[], paidAt: Date): MoisAssistant | null {
-  return mois.find((m) => m.kind === "abonnement" && m.startsAt <= paidAt && m.endsAt > paidAt) ?? null;
-}
 
 /** Paiements de Finch d'un commerce, du plus récent au plus ancien. */
 export async function paiementsDuCommerce(businessId: string): Promise<PaiementAssistantVue[]> {

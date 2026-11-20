@@ -26,8 +26,13 @@ export async function ouvrirConversation(ctx: BusinessContext): Promise<Ouvertur
   if (genre === "essai" && ctx.plan.status === "trialing" && ctx.plan.endsAt) {
     await db
       .insert(assistantMonths)
-      .values({ businessId: ctx.business.id, kind: "essai", startsAt: new Date(), endsAt: ctx.plan.endsAt, credits: ASSISTANT_TRIAL_CREDITS })
-      .onConflictDoNothing();
+      .values({ businessId: ctx.business.id, kind: "essai", startsAt: sql`now()`, endsAt: ctx.plan.endsAt, credits: ASSISTANT_TRIAL_CREDITS })
+      // Une prolongation d'essai par l'administrateur allonge la fenêtre ; le début ne bouge jamais.
+      .onConflictDoUpdate({
+        target: assistantMonths.businessId,
+        targetWhere: sql`kind = 'essai'`,
+        set: { endsAt: sql`greatest(${assistantMonths.endsAt}, excluded.ends_at)` },
+      });
   }
   const res = await db.execute<{ id: string; restants: number }>(sql`
     update assistant_months set used = used + 1

@@ -9,6 +9,7 @@ import {
   libellePaiement,
   messageAssistant,
   montantParDefaut,
+  moisDeRecharge,
   moisPlus,
   peutAnnuler,
   planifierMois,
@@ -66,6 +67,30 @@ describe("planifierMois", () => {
     const fini = mois({ startsAt: d("2026-09-01T08:00:00Z"), endsAt: d("2026-10-01T08:00:00Z") });
     const essai = mois({ kind: "essai", credits: 10, startsAt: d("2026-11-10T08:00:00Z"), endsAt: d("2026-11-24T08:00:00Z") });
     expect(planifierMois([fini, essai], 1, now)[0].startsAt).toEqual(now);
+  });
+  it("ne dérive pas d'un renouvellement à l'autre en fin de mois", () => {
+    const janvier = mois({ id: "j", startsAt: d("2027-01-31T10:00:00Z"), endsAt: d("2027-02-28T10:00:00Z") });
+    const ensuite = planifierMois([janvier], 1, d("2027-02-10T10:00:00Z"));
+    expect(ensuite).toEqual([{ startsAt: d("2027-02-28T10:00:00Z"), endsAt: d("2027-03-31T10:00:00Z") }]);
+    const mars = mois({ id: "m", startsAt: ensuite[0].startsAt, endsAt: ensuite[0].endsAt });
+    expect(planifierMois([janvier, mars], 1, d("2027-02-10T10:00:00Z"))[0].endsAt).toEqual(d("2027-04-30T10:00:00Z"));
+  });
+  it("deux mois d'un coup après un premier mois du 31 janvier : 31 mars puis 30 avril", () => {
+    const janvier = mois({ id: "j", startsAt: d("2027-01-31T10:00:00Z"), endsAt: d("2027-02-28T10:00:00Z") });
+    expect(planifierMois([janvier], 2, d("2027-02-10T10:00:00Z"))).toEqual([
+      { startsAt: d("2027-02-28T10:00:00Z"), endsAt: d("2027-03-31T10:00:00Z") },
+      { startsAt: d("2027-03-31T10:00:00Z"), endsAt: d("2027-04-30T10:00:00Z") },
+    ]);
+  });
+  it("reprend la fin actuelle quand la suite de mois ne retombe pas dessus (saisie à la main)", () => {
+    const bizarre = mois({ startsAt: d("2027-01-10T10:00:00Z"), endsAt: d("2027-02-20T10:00:00Z") });
+    expect(planifierMois([bizarre], 1, d("2027-02-10T10:00:00Z"))).toEqual([{ startsAt: d("2027-02-20T10:00:00Z"), endsAt: d("2027-03-20T10:00:00Z") }]);
+  });
+  it("repart d'aujourd'hui quand l'abonnement est expiré, même avec une longue suite de mois", () => {
+    const a = mois({ id: "a", startsAt: d("2027-01-31T10:00:00Z"), endsAt: d("2027-02-28T10:00:00Z") });
+    const b = mois({ id: "b", startsAt: d("2027-02-28T10:00:00Z"), endsAt: d("2027-03-31T10:00:00Z") });
+    const reprise = d("2027-05-15T10:00:00Z");
+    expect(planifierMois([a, b], 1, reprise)).toEqual([{ startsAt: reprise, endsAt: d("2027-06-15T10:00:00Z") }]);
   });
   it("ne dérive pas en fin de mois", () => {
     expect(planifierMois([], 3, d("2027-01-31T10:00:00Z")).map((m) => m.endsAt)).toEqual([
@@ -166,6 +191,15 @@ describe("ficheAssistant", () => {
     expect(f?.texte).toContain("50 conversations");
     expect(f?.bouton).toBe("Demander une recharge");
   });
+  it("épuisé sans mois payé ensuite : pas de promesse d'attendre", () => {
+    const f = ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [{ ...enCours, used: 250 }] }, now), o);
+    expect(f?.texte).not.toContain("attends");
+  });
+  it("épuisé avec un mois payé d'avance : on peut attendre la fin du mois", () => {
+    const avance = mois({ id: "m2", startsAt: enCours.endsAt, endsAt: d("2027-01-05T08:00:00Z") });
+    const f = ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [{ ...enCours, used: 250 }, avance] }, now), o);
+    expect(f?.texte).toContain("attends le");
+  });
   it("employé : pas de prix ni de lien", () => {
     const f = ficheAssistant(etatAssistant({ isDemo: false, plan: sousLicence, mois: [] }, now), { ...o, peutPayer: false });
     expect(f).toMatchObject({ bouton: null, lien: null });
@@ -206,6 +240,17 @@ describe("peutAnnuler", () => {
     expect(peutAnnuler({ kind: "recharge", credits: 50 }, [], { ...enCours, extraCredits: 50, used: 250 })).toBe(true);
     expect(peutAnnuler({ kind: "recharge", credits: 50 }, [], { ...enCours, extraCredits: 50, used: 251 })).toBe(false);
     expect(peutAnnuler({ kind: "recharge", credits: 50 }, [], null)).toBe(false);
+  });
+});
+
+describe("moisDeRecharge", () => {
+  it("rend le mois en cours à la date du paiement", () => {
+    expect(moisDeRecharge([enCours], d("2026-11-10T09:00:00Z"))).toBe(enCours);
+  });
+  it("rend rien quand aucun mois d'abonnement ne couvre la date (essai ignoré)", () => {
+    const essai = mois({ kind: "essai", credits: 10, startsAt: d("2026-11-01T08:00:00Z"), endsAt: d("2026-12-01T08:00:00Z") });
+    expect(moisDeRecharge([enCours, essai], d("2026-10-10T09:00:00Z"))).toBeNull();
+    expect(moisDeRecharge([essai], d("2026-11-10T09:00:00Z"))).toBeNull();
   });
 });
 

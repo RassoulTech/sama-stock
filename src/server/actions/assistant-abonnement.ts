@@ -6,12 +6,12 @@ import { z } from "zod";
 import { db } from "@/db";
 import { assistantMonths, assistantPayments, businesses } from "@/db/schema";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
-import { libellePaiement, peutAnnuler, planifierMois, type GenrePaiement } from "@/lib/domain/assistant/abonnement";
+import { libellePaiement, moisDeRecharge, peutAnnuler, planifierMois, type GenrePaiement } from "@/lib/domain/assistant/abonnement";
 import { ASSISTANT_OFFERS, ASSISTANT_RECHARGE, ASSISTANT_RENEW_MAX_MONTHS, computePlanState, type LicensePackId } from "@/lib/domain/plans";
 import { formatDate, formatFCFA } from "@/lib/format";
 import { ActionError, parse, runAction } from "../action";
 import { type AppContext, requireSuperAdminAction } from "../context";
-import { moisDeRecharge, moisDuCommerce } from "../queries/assistant";
+import { moisDuCommerce } from "../queries/assistant";
 import { logAdmin } from "../services/admin-audit";
 
 const METHODS = Object.keys(LICENSE_PAYMENT_METHODS) as [LicensePaymentMethod, ...LicensePaymentMethod[]];

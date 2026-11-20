@@ -10,6 +10,8 @@ import { creerJetonDirect, GeminiError } from "@/server/assistant/direct";
 import { consumeAssistantQuota } from "@/server/assistant/usage";
 import { listProducts } from "@/server/queries/products";
 
+export const maxDuration = 30;
+
 /**
  * Ouvre une conversation en direct : un crédit est retiré (abonnement ou essai ; rien pour une démonstration), puis une
  * clé temporaire à usage unique fige le modèle, la voix, les consignes (catalogue compris) et les outils du rôle.
@@ -61,7 +63,12 @@ export async function POST() {
       model: process.env.GEMINI_LIVE_MODEL || undefined,
       voice: process.env.GEMINI_LIVE_VOICE || undefined,
     });
-    await prevenirSiPeuDeCredits(ctx, ouverture);
+    try {
+      await prevenirSiPeuDeCredits(ctx, ouverture);
+    } catch (e) {
+      // L'alerte est un plus : la conversation est ouverte, le crédit est dû.
+      console.error("[assistant] alerte crédits", e);
+    }
     const credits = ouverture.restants === null ? null : { restants: ouverture.restants, essai: ouverture.genre === "essai" };
     return NextResponse.json({ ...session, credits }, { headers: NO_STORE });
   } catch (error) {
