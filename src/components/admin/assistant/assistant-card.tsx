@@ -46,7 +46,12 @@ export function AssistantAdminCard({
             <p className="text-xs text-muted-foreground">État</p>
             <p className="font-semibold">
               {STATUTS_ASSISTANT[etat.statut]}
-              {etat.finLe && <span className="text-muted-foreground"> · jusqu&apos;au {formatDate(etat.finLe)}</span>}
+              {etat.finLe && (
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {etat.statut === "expire" ? "depuis le" : "jusqu'au"} {formatDate(etat.finLe)}
+                </span>
+              )}
             </p>
             {etat.mois && (
               <>

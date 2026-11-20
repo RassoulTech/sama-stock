@@ -126,6 +126,7 @@ export function AnnulerPaiementAssistant({ paymentId }: { paymentId: string }) {
       title="Annuler ce paiement ?"
       description="Le paiement et les conversations qu'il ouvrait sont retirés. À faire seulement après une erreur de saisie."
       confirmLabel="Annuler le paiement"
+      cancelLabel="Garder le paiement"
       destructive
       successMessage="Paiement annulé"
       action={() => adminAnnulerPaiementAssistant(paymentId)}

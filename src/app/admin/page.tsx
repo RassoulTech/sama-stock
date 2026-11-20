@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ASSISTANT_COST_PER_CONVERSATION, PLAN_STATUS_TONES } from "@/lib/domain/plans";
 import { formatDate, formatFCFA, formatNumber, formatPhone } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { requireSuperAdmin } from "@/server/context";
 import { activationFunnel, adminStats, listAllBusinesses, listAudit, platformOverview, todoLists } from "@/server/queries/admin";
 import { aRenouveler, rentabiliteDuMois } from "@/server/queries/assistant";
 import { openAppErrorCount } from "@/server/queries/app-errors";
@@ -25,6 +26,7 @@ const DAY = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", t
 const TODAY = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Dakar" });
 
 export default async function AdminDashboardPage() {
+  await requireSuperAdmin();
   const [rows, overview, audit, sales, openErrors] = await Promise.all([
     listAllBusinesses(),
     platformOverview(),

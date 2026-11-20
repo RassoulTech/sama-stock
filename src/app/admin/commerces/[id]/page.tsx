@@ -20,6 +20,7 @@ import { PLAN_STATUS_LABELS, PLAN_STATUS_TONES, TRIAL_DAYS } from "@/lib/domain/
 import { ACTIVITIES, type Activity } from "@/lib/domain/sales";
 import { formatDate, formatFCFA, formatPhone } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { requireSuperAdmin } from "@/server/context";
 import { getBusinessForAdmin } from "@/server/queries/admin";
 import { moisDuCommerce, paiementsDuCommerce } from "@/server/queries/assistant";
 import { activeSaleFor, balanceOf, getLicenseSale } from "@/server/queries/licences";
@@ -33,6 +34,7 @@ const DAY = new Intl.DateTimeFormat("fr-FR", {
 });
 
 export default async function AdminBusinessPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireSuperAdmin();
   const { id } = await params;
   const data = await getBusinessForAdmin(id);
   if (!data) notFound();

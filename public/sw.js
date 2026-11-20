@@ -108,6 +108,7 @@ const VIBRATIONS = {
   order: [200, 80, 200],
   stock_low: [300, 120, 300],
   stock_out: [400, 150, 400, 150, 400],
+  assistant: [150, 80, 150],
   panne: [500, 200, 500, 200, 500],
 };
 

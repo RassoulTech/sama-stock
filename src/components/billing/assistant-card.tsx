@@ -40,7 +40,7 @@ export function AssistantCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {fiche && <p className="text-sm text-muted-foreground">{fiche.texte}</p>}
-        {etat.mois && (etat.statut === "actif" || etat.statut === "epuise" || etat.statut === "essai") && (
+        {(etat.statut === "essai" || (etat.mois && (etat.statut === "actif" || etat.statut === "epuise"))) && (
           <div>
             <p className="text-sm font-medium">
               {texteCredits(etat.restants, etat.statut === "essai").texte}

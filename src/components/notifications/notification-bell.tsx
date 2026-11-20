@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ClipboardList, PackageX, Settings, ShoppingCart, TriangleAlert, XCircle, type LucideIcon } from "lucide-react";
+import { Bell, ClipboardList, Mic, PackageX, Settings, ShoppingCart, TriangleAlert, XCircle, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +18,7 @@ const KIND_ICONS: Record<string, { icon: LucideIcon; tone: string }> = {
   order: { icon: ClipboardList, tone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
   stock_low: { icon: TriangleAlert, tone: "bg-saffron/15 text-warning dark:text-saffron" },
   stock_out: { icon: PackageX, tone: "bg-destructive/10 text-destructive" },
+  assistant: { icon: Mic, tone: "bg-accent text-primary" },
 };
 
 const POLL_MS = 30_000;
