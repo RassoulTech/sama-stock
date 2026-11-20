@@ -2,7 +2,7 @@ import { MessageCircle, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
-import { ficheAssistant, libellePaiement, STATUTS_ASSISTANT, texteCredits, type EtatAssistant } from "@/lib/domain/assistant/abonnement";
+import { avisGerant, ficheAssistant, libellePaiement, STATUTS_ASSISTANT, texteCredits, type EtatAssistant } from "@/lib/domain/assistant/abonnement";
 import { NOM_ASSISTANT } from "@/lib/domain/assistant/nom";
 import { ASSISTANT_OFFERS } from "@/lib/domain/plans";
 import { formatDate, formatFCFA } from "@/lib/format";
@@ -77,6 +77,23 @@ export function AssistantCard({
             ))}
           </ul>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Finch vu par un gérant (arrivé par une notification) : état et conversations restantes, sans prix ni paiements. */
+export function AssistantCardGerant({ etat }: { etat: EtatAssistant }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-semibold">
+          <Mic className="size-4 text-primary" /> Assistant {NOM_ASSISTANT}
+          <span className="ml-auto text-sm font-normal text-muted-foreground">{STATUTS_ASSISTANT[etat.statut]}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-muted-foreground">{avisGerant(etat)}</p>
       </CardContent>
     </Card>
   );
