@@ -26,9 +26,10 @@ describe("page « Ma licence » pendant l'essai", () => {
   it("donne l'offre Finch de chaque licence : installation, mois et crédits", () => {
     // Les montants s'écrivent avec des espaces insécables
     const html = render(days(5), "Quincaillerie Ndiaye").replace(/[  ]/g, " ");
-    for (const montant of ["10 000 FCFA", "5 000 FCFA", "100 conversations", "15 000 FCFA", "250 conversations", "20 000 FCFA", "500 conversations"]) {
+    for (const montant of ["10 000 FCFA", "5 000 FCFA", ">100<", "15 000 FCFA", ">250<", "20 000 FCFA", ">500<"]) {
       expect(html).toContain(montant);
     }
+    expect(html.match(/Conversations par mois/g)).toHaveLength(3);
     expect(html).toContain("50 conversations pour 3 000 FCFA");
   });
 
