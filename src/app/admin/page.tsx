@@ -1,4 +1,4 @@
-import { Activity, ArrowDownRight, ArrowUpRight, Download, ShoppingBag, Store, TriangleAlert, UserRound } from "lucide-react";
+import { Activity, ArrowDownRight, ArrowUpRight, Download, Mic, ShoppingBag, Store, TriangleAlert, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuditList } from "@/components/admin/audit-list";
@@ -10,10 +10,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatusPill } from "@/components/shared/stock-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PLAN_STATUS_TONES } from "@/lib/domain/plans";
-import { formatDate, formatFCFA, formatNumber } from "@/lib/format";
+import { ASSISTANT_COST_PER_CONVERSATION, PLAN_STATUS_TONES } from "@/lib/domain/plans";
+import { formatDate, formatFCFA, formatNumber, formatPhone } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { activationFunnel, adminStats, listAllBusinesses, listAudit, platformOverview, todoLists } from "@/server/queries/admin";
+import { aRenouveler, rentabiliteDuMois } from "@/server/queries/assistant";
 import { openAppErrorCount } from "@/server/queries/app-errors";
 import { licenseSummary, listLicenseSales } from "@/server/queries/licences";
 
@@ -31,6 +32,7 @@ export default async function AdminDashboardPage() {
     listLicenseSales(),
     openAppErrorCount(),
   ]);
+  const [finchARenouveler, finchRentabilite] = await Promise.all([aRenouveler(), rentabiliteDuMois()]);
   const lic = licenseSummary(sales);
   const stats = adminStats(rows);
   const c = overview.counts;
@@ -204,6 +206,63 @@ export default async function AdminDashboardPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-semibold">
+              <Mic className="size-4 text-primary" /> Assistant : à renouveler
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {finchARenouveler.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun abonnement Finch ne finit dans les 7 prochains jours.</p>
+            ) : (
+              <ul className="divide-y text-sm">
+                {finchARenouveler.map((r) => (
+                  <li key={r.businessId} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                    <Link href={`/admin/commerces/${r.businessId}`} className="font-medium hover:underline">
+                      {r.name}
+                    </Link>
+                    <span className="text-muted-foreground">
+                      {r.finLe < new Date() ? "Expiré le" : "Finit le"} {formatDate(r.finLe)} · {r.used}/{r.total} conversations
+                      {r.phone && ` · ${formatPhone(r.phone)}`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-semibold">Rentabilité de l&apos;assistant (ce mois-ci)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-muted-foreground">Encaissé</dt>
+                <dd className="num text-lg font-semibold">{formatFCFA(finchRentabilite.encaisse)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Conversations</dt>
+                <dd className="num text-lg font-semibold">{formatNumber(finchRentabilite.conversations)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Coût Google estimé</dt>
+                <dd className="num text-lg font-semibold">{formatFCFA(finchRentabilite.cout)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Marge</dt>
+                <dd className={cn("num text-lg font-semibold", finchRentabilite.marge < 0 && "text-destructive")}>{formatFCFA(finchRentabilite.marge)}</dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Estimation à {formatFCFA(ASSISTANT_COST_PER_CONVERSATION)} par conversation : ajustez <code>ASSISTANT_COST_PER_CONVERSATION</code> (src/lib/domain/plans.ts) avec la facture Google.
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">

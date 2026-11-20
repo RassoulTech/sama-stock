@@ -1,8 +1,8 @@
 import "server-only";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { assistantMonths, assistantPayments, user } from "@/db/schema";
-import { peutAnnuler, type GenrePaiement, type MoisAssistant } from "@/lib/domain/assistant/abonnement";
+import { assistantMonths, assistantPayments, assistantUsage, businesses, user } from "@/db/schema";
+import { peutAnnuler, rentabilite, type GenrePaiement, type MoisAssistant, type Rentabilite } from "@/lib/domain/assistant/abonnement";
 
 export type MoisEnBase = MoisAssistant & { paymentId: string | null };
 
@@ -84,4 +84,45 @@ export async function paiementsDuCommerce(businessId: string): Promise<PaiementA
     const cible = kind === "recharge" ? moisDeRecharge(mois, p.paidAt) : null;
     return { ...p, kind, annulable: i === 0 && peutAnnuler({ kind, credits: p.credits }, crees, cible) };
   });
+}
+
+export interface ARenouveler {
+  businessId: string;
+  name: string;
+  phone: string | null;
+  finLe: Date;
+  used: number;
+  total: number;
+}
+
+/** Abonnements qui finissent dans les 7 jours sans mois payé ensuite, ou expirés depuis moins de 30 jours. */
+export async function aRenouveler(): Promise<ARenouveler[]> {
+  const res = await db.execute<{ business_id: string; name: string; phone: string | null; ends_at: string | Date; used: number; total: number }>(sql`
+    select * from (
+      select distinct on (m.business_id) m.business_id, b.name, b.phone, m.ends_at, m.used, m.credits + m.extra_credits as total
+      from assistant_months m join businesses b on b.id = m.business_id
+      where m.kind = 'abonnement' and not b.is_demo
+      order by m.business_id, m.ends_at desc
+    ) d
+    where d.ends_at < now() + interval '7 days' and d.ends_at > now() - interval '30 days'
+    order by d.ends_at asc`);
+  return res.rows.map((r) => ({ businessId: r.business_id, name: r.name, phone: r.phone, finLe: new Date(r.ends_at), used: Number(r.used), total: Number(r.total) }));
+}
+
+/** Argent encaissé pour Finch et conversations du mois en cours (calendrier, Dakar = UTC), hors démonstrations. */
+export async function rentabiliteDuMois(now = new Date()): Promise<Rentabilite> {
+  const debut = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const [[encaisse], [conversations]] = await Promise.all([
+    db
+      .select({ total: sql<number>`coalesce(sum(${assistantPayments.amount}), 0)` })
+      .from(assistantPayments)
+      .innerJoin(businesses, eq(businesses.id, assistantPayments.businessId))
+      .where(and(gte(assistantPayments.paidAt, debut), eq(businesses.isDemo, false))),
+    db
+      .select({ total: sql<number>`coalesce(sum(${assistantUsage.count}), 0)` })
+      .from(assistantUsage)
+      .innerJoin(businesses, eq(businesses.id, assistantUsage.businessId))
+      .where(and(gte(assistantUsage.day, debut.toISOString().slice(0, 10)), eq(businesses.isDemo, false))),
+  ]);
+  return rentabilite(Number(encaisse?.total ?? 0), Number(conversations?.total ?? 0));
 }
