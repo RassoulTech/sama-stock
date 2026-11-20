@@ -1,0 +1,1 @@
+ALTER TABLE "businesses" DROP COLUMN "assistant_enabled";

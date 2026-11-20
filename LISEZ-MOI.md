@@ -101,6 +101,18 @@ l'accueil de l'administration, la fiche d'un commerce, l'ouverture d'une convers
 le fichier admin de la sauvegarde de nuit. Sans ces tables, ces pages et fonctions tombent ; les autres pages continuent
 de marcher. Migrer en premier ne gêne pas la version actuellement en ligne : elle ignore simplement ces tables.
 
+**⚠ Retrait de la colonne `assistant_enabled` (migration `0016_retirer_assistant_enabled`) : cette fois, l'ordre est
+inversé, le code d'abord, la migration ensuite.**
+1. Envoyez le code sur GitHub, puis attendez que Vercel ait fini le déploiement (le site en ligne tourne sur la
+   nouvelle version).
+2. Ensuite seulement, lancez `npm run db:migrate`.
+
+Pourquoi : la version actuellement en ligne lit encore cette colonne chaque fois qu'elle lit un commerce, c'est-à-dire
+sur presque toutes les pages. Si la colonne disparaît avant le déploiement, tout le site plante jusqu'à ce qu'il se
+termine. La nouvelle version marche avec ou sans la colonne. D'ici là, ne lancez pas `lancer.bat` : il applique les
+migrations au démarrage, et le `.env` pointe sur la base en ligne. Les anciennes sauvegardes, qui contiennent encore
+cette colonne, se restaurent normalement (elle est ignorée).
+
 Où mettre les réglages : sur l'ordinateur, dans `.env.local` (Next.js lit aussi `.env`, mais `.env.local` passe en
 premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settings → Environment Variables).
 - `GEMINI_API_KEY` : la clé Gemini (obligatoire).
