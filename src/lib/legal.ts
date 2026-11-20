@@ -12,7 +12,7 @@ export const LEGAL = {
   /** Contact commercial et assistance (WhatsApp et appels). */
   phone: "+221 77 383 13 64",
   whatsapp: "221773831364",
-  updatedAt: "19 octobre 2026",
+  updatedAt: "20 novembre 2026",
 } as const;
 
 export const LEGAL_PAGES = [

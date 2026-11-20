@@ -1,6 +1,7 @@
 import { ArrowLeft, Check, FlaskConical, MapPin, Package, Store, Users, X } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AssistantOffer } from "@/components/billing/assistant-offer";
 import { Logo } from "@/components/brand/logo";
 import { DemoButton } from "@/components/demo/demo-button";
 import { DEMO_LICENCE, LICENSE_PACKS, limitLabel, type PlanId } from "@/lib/domain/plans";
@@ -120,6 +121,8 @@ export default async function DemoPage() {
                     </li>
                   ))}
                 </ul>
+
+                <AssistantOffer pack={DEMO_LICENCE[id]} className="mt-5" />
 
                 <DemoButton plan={id} size="lg" variant={featured ? "default" : "outline"} className="mt-7 w-full">
                   Entrer dans la démo {plan.label}

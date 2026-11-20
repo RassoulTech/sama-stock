@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AssistantOffer, AssistantOfferNote, reponseOffreAssistant } from "@/components/billing/assistant-offer";
 import { Logo } from "@/components/brand/logo";
 import { BrandShowcase } from "@/components/landing/brand-showcase";
 import { LossCalculator } from "@/components/landing/loss-calculator";
@@ -43,7 +44,9 @@ import {
   TeamVisual,
   WhatsAppReceipt,
 } from "@/components/landing/visuals";
+import { NOM_ASSISTANT } from "@/lib/domain/assistant/nom";
 import {
+  ASSISTANT_OFFERS,
   LICENSE_ORDER,
   LICENSE_PACKS,
   licenceFeatures,
@@ -192,6 +195,10 @@ const FAQ = [
     a: `La maintenance devient facultative : de ${formatFCFA(LICENSE_PACKS.boutique.maintenancePrice)} à ${formatFCFA(LICENSE_PACKS.business.maintenancePrice)} tous les 6 mois selon votre forfait. Sans elle, votre application continue de fonctionner normalement.`,
   },
   {
+    q: `Combien coûte l'assistant vocal ${NOM_ASSISTANT} ?`,
+    a: reponseOffreAssistant(),
+  },
+  {
     q: "Puis-je payer en plusieurs fois ?",
     a: "Oui : un acompte à la commande et le reste à l'installation, par Wave, Orange Money ou en espèces. Vous recevez une facture à votre nom.",
   },
@@ -288,6 +295,19 @@ function structuredData() {
             name: `Licence ${LICENSE_PACKS[id].label} (paiement unique)`,
             price: LICENSE_PACKS[id].price,
             priceCurrency: "XOF",
+            url: `${SITE_URL}/#tarifs`,
+          })),
+          ...LICENSE_ORDER.map((id) => ({
+            "@type": "Offer",
+            name: `Assistant vocal ${NOM_ASSISTANT}, licence ${LICENSE_PACKS[id].label} (abonnement mensuel, ${ASSISTANT_OFFERS[id].monthlyCredits} conversations)`,
+            price: ASSISTANT_OFFERS[id].monthlyPrice,
+            priceCurrency: "XOF",
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: ASSISTANT_OFFERS[id].monthlyPrice,
+              priceCurrency: "XOF",
+              unitCode: "MON",
+            },
             url: `${SITE_URL}/#tarifs`,
           })),
         ],
@@ -720,7 +740,7 @@ export default async function HomePage() {
                   Payez une fois. <span className="whitespace-nowrap">Gardez-la</span> pour toujours.
                 </>
               }
-              text={`Le prix comprend l'installation, votre logo, l'import de vos produits, la formation et ${MAINTENANCE_INCLUDED_MONTHS} mois d'assistance. Il peut se payer en deux fois.`}
+              text={`Le prix comprend l'installation, votre logo, l'import de vos produits, la formation et ${MAINTENANCE_INCLUDED_MONTHS} mois d'assistance. Il peut se payer en deux fois. L'assistant vocal ${NOM_ASSISTANT} est en option, avec son propre abonnement mensuel.`}
             />
               <div className="mt-10 grid gap-4 md:grid-cols-3">
                 {LICENSE_ORDER.map((id) => {
@@ -757,6 +777,7 @@ export default async function HomePage() {
                           </li>
                         ))}
                       </ul>
+                      <AssistantOffer pack={id} className="mt-7" />
                       <a
                         href={packHref(id)}
                         target="_blank"
@@ -779,6 +800,7 @@ export default async function HomePage() {
                 <ShieldCheck className="size-4 text-primary" /> Acompte à la commande, solde à l&apos;installation · Wave, Orange Money ou
                 espèces · facture à votre nom
               </p>
+              <AssistantOfferNote className="mt-3" />
             <p className="mx-auto mt-6 max-w-xl text-center text-sm text-muted-foreground">
               Envie d&apos;essayer d&apos;abord ?{" "}
               <Link href={signupHref} className="font-medium text-primary hover:underline">

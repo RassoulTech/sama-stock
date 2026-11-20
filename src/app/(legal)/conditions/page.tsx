@@ -1,8 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { texteOffreAssistant } from "@/components/billing/assistant-offer";
 import { ContactLine, LegalPage } from "@/components/legal/legal-page";
 import { pageMetadata } from "@/lib/seo";
-import { formatLimit, LICENSE_ORDER, LICENSE_PACKS, limitLabel, MAINTENANCE_INCLUDED_MONTHS, TRIAL, TRIAL_DAYS } from "@/lib/domain/plans";
+import { NOM_ASSISTANT } from "@/lib/domain/assistant/nom";
+import {
+  ASSISTANT_RECHARGE,
+  ASSISTANT_TRIAL_CREDITS,
+  formatLimit,
+  LICENSE_ORDER,
+  LICENSE_PACKS,
+  limitLabel,
+  MAINTENANCE_INCLUDED_MONTHS,
+  TRIAL,
+  TRIAL_DAYS,
+} from "@/lib/domain/plans";
 import { formatFCFA } from "@/lib/format";
 import { LEGAL } from "@/lib/legal";
 
@@ -71,8 +83,38 @@ export default function ConditionsPage() {
           Les prix sont indiqués en francs CFA (FCFA). Le prix peut être convenu avec vous : il figure sur votre devis.
         </li>
         <li>
-          <strong>L&apos;application ne s&apos;arrête jamais</strong>, même sans maintenance. Il n&apos;y a pas d&apos;abonnement
-          ni de prélèvement automatique.
+          <strong>L&apos;application ne s&apos;arrête jamais</strong>, même sans maintenance. La licence n&apos;a pas
+          d&apos;abonnement, et il n&apos;y a aucun prélèvement automatique.
+        </li>
+      </ul>
+
+      <h3>Assistant vocal {NOM_ASSISTANT} (en option)</h3>
+      <p>
+        {NOM_ASSISTANT}, l&apos;assistant qui comprend le wolof et le français, se paie à part de la licence, chaque mois.
+        Son offre suit votre licence :
+      </p>
+      <ul>
+        {LICENSE_ORDER.map((id) => (
+          <li key={id}>
+            <strong>Licence {LICENSE_PACKS[id].label}</strong> : {texteOffreAssistant(id)}.
+          </li>
+        ))}
+      </ul>
+      <ul>
+        <li>
+          L&apos;installation se paie une fois, à la mise en service ; chaque mois se paie ensuite d&apos;avance, par Wave,
+          Orange Money, espèces ou virement. Il n&apos;y a pas de prélèvement automatique.
+        </li>
+        <li>
+          1 crédit = 1 conversation, compté à l&apos;ouverture. Une conversation que le service vocal refuse ne compte pas.
+        </li>
+        <li>
+          Les crédits non utilisés sont perdus à la fin du mois. Une recharge de {ASSISTANT_RECHARGE.credits} conversations
+          coûte {formatFCFA(ASSISTANT_RECHARGE.price)} et reste valable jusqu&apos;à la fin du mois en cours.
+        </li>
+        <li>
+          Pendant l&apos;essai gratuit, {ASSISTANT_TRIAL_CREDITS} conversations sont offertes. Sans mois payé, {NOM_ASSISTANT}{" "}
+          s&apos;arrête ; le reste de l&apos;application continue de fonctionner normalement.
         </li>
       </ul>
 

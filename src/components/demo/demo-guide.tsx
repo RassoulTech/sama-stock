@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   HandCoins,
   Lock,
+  Mic,
   PackageX,
   ShoppingCart,
   UserCog,
@@ -13,7 +14,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { texteOffreAssistant } from "@/components/billing/assistant-offer";
 import { Card, CardContent } from "@/components/ui/card";
+import { NOM_ASSISTANT } from "@/lib/domain/assistant/nom";
 import { DEMO_LICENCE, LICENSE_PACKS, limitLabel, type PlanId } from "@/lib/domain/plans";
 import { cn } from "@/lib/utils";
 import { DemoButton } from "./demo-button";
@@ -104,6 +107,12 @@ export function DemoGuide({ plan, businessName, pitch }: { plan: PlanId; busines
               </li>
             ))}
           </ul>
+          <p className="mt-3 flex gap-2 text-sm">
+            <Mic className="mt-0.5 size-4 shrink-0 text-primary" />
+            <span>
+              Assistant vocal {NOM_ASSISTANT} en option, payé chaque mois : {texteOffreAssistant(DEMO_LICENCE[plan])}.
+            </span>
+          </p>
           <p className="mt-4 text-xs font-medium text-muted-foreground">Voir une autre licence</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {ORDER.filter((p) => p !== plan).map((p) => (

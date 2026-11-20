@@ -1,4 +1,5 @@
 import { Check, Clock, Lock, MessageCircle, ShieldCheck } from "lucide-react";
+import { AssistantOffer, AssistantOfferNote } from "@/components/billing/assistant-offer";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { LICENSE_ORDER, LICENSE_PACKS, licenceFeatures, type LicensePackId, type PlanState } from "@/lib/domain/plans";
@@ -75,6 +76,7 @@ export function BuyLicence({ plan, businessName }: { plan: PlanState; businessNa
                   </li>
                 ))}
               </ul>
+              <AssistantOffer pack={id} className="mt-6" />
               <a
                 href={salesLink(message(id))}
                 target="_blank"
@@ -90,6 +92,7 @@ export function BuyLicence({ plan, businessName }: { plan: PlanState; businessNa
       <p className="mt-6 flex flex-wrap items-center justify-center gap-2 text-center text-sm text-muted-foreground">
         <ShieldCheck className="size-4 text-primary" /> Acompte à la commande, solde à l&apos;installation · facture à votre nom
       </p>
+      <AssistantOfferNote className="mt-3" />
     </>
   );
 }

@@ -18,7 +18,18 @@ describe("page « Ma licence » pendant l'essai", () => {
     for (const label of ["Licence Boutique", "Licence Pro", "Licence Business"]) expect(html).toContain(label);
     expect(html).toContain("Une seule fois.");
     expect(html).toMatch(/href="https:\/\/wa\.me\/\d+\?text=[^"]*Quincaillerie%20Ndiaye/);
-    expect(html).not.toMatch(/abonnement|\/ mois/i);
+    // La licence se paie une fois : seul l'assistant Finch, en option, est un abonnement mensuel.
+    expect(html).not.toMatch(/\/ mois/i);
+    expect(html.match(/Abonnement à part de la licence/g)).toHaveLength(3);
+  });
+
+  it("donne l'offre Finch de chaque licence : installation, mois et crédits", () => {
+    // Les montants s'écrivent avec des espaces insécables
+    const html = render(days(5), "Quincaillerie Ndiaye").replace(/[  ]/g, " ");
+    for (const montant of ["10 000 FCFA", "5 000 FCFA", "100 conversations", "15 000 FCFA", "250 conversations", "20 000 FCFA", "500 conversations"]) {
+      expect(html).toContain(montant);
+    }
+    expect(html).toContain("50 conversations pour 3 000 FCFA");
   });
 
   it("annonce la fin de l'essai (consultation seule)", () => {
