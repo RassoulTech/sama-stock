@@ -113,6 +113,13 @@
       "when": 1795117927500,
       "tag": "0015_assistant_abonnement",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795179882569,
+      "tag": "0016_retirer_assistant_enabled",
+      "breakpoints": true
     }
   ]
 }

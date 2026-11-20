@@ -61,8 +61,6 @@ export const businesses = pgTable("businesses", {
   /** Mention libre en bas des documents (conditions de paiement, remerciements…). */
   documentFooter: text("document_footer"),
   quoteValidityDays: integer("quote_validity_days").notNull().default(15),
-  /** Assistant vocal (wolof / français) : activé commerce par commerce par l'administrateur. */
-  assistantEnabled: boolean("assistant_enabled").notNull().default(false),
   createdAt: createdAt(),
 });
 
