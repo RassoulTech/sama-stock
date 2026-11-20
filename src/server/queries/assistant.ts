@@ -1,14 +1,14 @@
 import "server-only";
 import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { db, type DbOrTx } from "@/db";
 import { assistantMonths, assistantPayments, assistantUsage, businesses, user } from "@/db/schema";
 import { moisDeRecharge, peutAnnuler, rentabilite, type GenrePaiement, type MoisAssistant, type Rentabilite } from "@/lib/domain/assistant/abonnement";
 
 export type MoisEnBase = MoisAssistant & { paymentId: string | null };
 
-/** Fenêtres de crédits d'un commerce, de la plus ancienne à la plus récente. */
-export async function moisDuCommerce(businessId: string): Promise<MoisEnBase[]> {
-  const rows = await db
+/** Fenêtres de crédits d'un commerce, de la plus ancienne à la plus récente (dans `exec` : la transaction qui écrit). */
+export async function moisDuCommerce(businessId: string, exec: DbOrTx = db): Promise<MoisEnBase[]> {
+  const rows = await exec
     .select({
       id: assistantMonths.id,
       kind: assistantMonths.kind,
