@@ -104,12 +104,20 @@ premier) ; en ligne, dans les variables d'environnement du projet Vercel (Settin
 - `GEMINI_API_KEY` : la clé Gemini (obligatoire).
 - `GEMINI_LIVE_MODEL` / `GEMINI_LIVE_VOICE` : facultatifs, modèle et voix du dialogue en direct
   (`gemini-3.1-flash-live-preview` et `Kore` par défaut).
-- `ASSISTANT_DAILY_LIMIT` : facultatif, nombre de conversations par commerce et par jour (60 par défaut).
+- `ASSISTANT_DAILY_LIMIT` : facultatif, limite de sécurité de conversations par commerce et par jour (60 par défaut), en plus des crédits.
 
 1. **Clé gratuite Gemini** : sur https://aistudio.google.com/apikey, créez une clé et collez-la dans `GEMINI_API_KEY`
    (`.env.local` sur l'ordinateur, variables Vercel pour la version en ligne).
-2. **Activation** : dans l'administration, ouvrez la fiche du commerce, puis **« Activer l'assistant »**. Le bouton
-   micro apparaît dans son application.
+2. **Abonnement** : Finch se paie à part de la licence, chaque mois. L'offre suit la licence : Boutique 100
+   conversations pour 5 000 F par mois (activation 10 000 F), Pro 250 pour 10 000 F (activation 15 000 F), Business
+   500 pour 15 000 F (activation 20 000 F) ; recharge de 50 conversations pour 3 000 F. 1 crédit = 1 conversation ; les
+   crédits non utilisés sont perdus en fin de mois. Dans l'administration, fiche du commerce → « Assistant Finch » :
+   **Activer** (une fois, avec les premiers mois), **Renouveler** (1 à 12 mois, à la suite des mois payés) ou
+   **Recharge**, avec le montant réellement reçu ; le dernier paiement saisi s'annule tant que ses crédits n'ont pas
+   servi. L'accueil de l'administration liste les abonnements à renouveler et la rentabilité du mois. Pendant l'essai
+   gratuit, 10 conversations sont offertes ; les démonstrations restent gratuites (20 par jour). Sans abonnement, le
+   micro ouvre une fiche avec un bouton WhatsApp vers Sama Stock. Prix : `src/lib/domain/plans.ts`. Rappels (3 jours
+   avant la fin, le jour de la fin) : tâche Vercel `/api/assistant/rappels` à 9 h.
 3. **Utilisation** : un toucher sur le micro ouvre la **conversation à la voix** avec **Finch**, le nom de l'assistant
    (il se présente quand on le salue, dit son nom quand on le lui demande et comprend « Finch, … » ; le nom se change
    dans `src/lib/domain/assistant/nom.ts`). On parle normalement, en wolof ou en
@@ -165,7 +173,7 @@ Toucher l'écran pendant une tâche reprend la main ; ce qui est rempli reste af
   tapez `window.__journalAssistant = []` avant de toucher le micro.
 
 Limites :
-- 60 conversations par commerce et par jour (`ASSISTANT_DAILY_LIMIT`) ; 20 dans les boutiques de démonstration.
+- Crédits de l'abonnement, plus une limite de sécurité de 60 conversations par jour (`ASSISTANT_DAILY_LIMIT`) ; 20 par jour dans les boutiques de démonstration.
 - Offre gratuite de Gemini : nombre de conversations limité, et Google peut utiliser ces échanges ; à passer en offre
   payante avant d'ouvrir à tous les commerces.
 - Voix wolof de Google : compréhensible, accent à juger sur le terrain.
