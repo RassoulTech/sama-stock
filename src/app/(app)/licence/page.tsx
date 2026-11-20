@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AssistantCard } from "@/components/billing/assistant-card";
+import { AssistantCard, AssistantCardGerant } from "@/components/billing/assistant-card";
 import { BuyLicence } from "@/components/billing/buy-licence";
 import { LicenseView } from "@/components/billing/license-view";
 import { etatAssistant } from "@/lib/domain/assistant/abonnement";
@@ -13,9 +13,15 @@ export const metadata: Metadata = { title: "Ma licence" };
 /**
  * Licence achetée : « Votre application » (maintenance, paiements). Pendant l'essai : les licences à acheter.
  * Dans les deux cas, l'abonnement de l'assistant Finch en dessous.
+ * Les notifications de Finch mènent ici, pour le propriétaire comme pour les gérants : un gérant n'est donc pas renvoyé
+ * au tableau de bord, il voit où en est Finch et qu'il faut prévenir le propriétaire (ni prix ni paiements).
  */
 export default async function LicencePage() {
-  const ctx = await requireContext("billing.manage");
+  const ctx = await requireContext();
+  if (!ctx.can("billing.manage")) {
+    const etat = etatAssistant({ isDemo: ctx.business.isDemo, plan: ctx.plan, mois: await moisDuCommerce(ctx.business.id) });
+    return <AssistantCardGerant etat={etat} />;
+  }
   const [mois, paiements] = await Promise.all([moisDuCommerce(ctx.business.id), paiementsDuCommerce(ctx.business.id)]);
   const etat = etatAssistant({ isDemo: ctx.business.isDemo, plan: ctx.plan, mois });
   const finch = <AssistantCard etat={etat} paiements={paiements} boutique={ctx.business.name} support={LEGAL.whatsapp} />;

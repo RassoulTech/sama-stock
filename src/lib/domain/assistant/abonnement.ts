@@ -274,6 +274,19 @@ export function rappelPour(finLe: Date, now = new Date()): "bientot" | "termine"
   return null;
 }
 
+/**
+ * « Ma licence » vue par un gérant, qui y arrive en touchant une notification de Finch : ni prix ni paiements, seulement
+ * où en est Finch et qui prévenir.
+ */
+export function avisGerant(etat: EtatAssistant): string {
+  const credits =
+    etat.mois && (etat.statut === "actif" || etat.statut === "epuise")
+      ? `${texteCredits(etat.restants, false).texte}${etat.finLe ? ` jusqu'au ${formatDate(etat.finLe)}` : ""}. `
+      : "";
+  return `${credits}Seul le propriétaire de la boutique gère l'abonnement de ${NOM_ASSISTANT} : préviens-le.`;
+}
+
+/** Le lien mène à « Ma licence » : le propriétaire y paie, un gérant y lit qui prévenir (voir `avisGerant`). */
 export function messageAssistant(rappel: RappelAssistant, finLe?: Date): NotifyMessage {
   const href = "/licence";
   switch (rappel) {

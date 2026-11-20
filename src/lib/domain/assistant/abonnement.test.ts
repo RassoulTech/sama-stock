@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ASSISTANT_OFFERS, ASSISTANT_RECHARGE, ASSISTANT_TRIAL_CREDITS } from "../plans";
 import { formatFCFA } from "@/lib/format";
 import {
+  avisGerant,
   boutonAssistantVisible,
   etatAssistant,
   ficheAssistant,
@@ -272,5 +273,21 @@ describe("rappels", () => {
   it("écrit des messages qui mènent à la page Licence", () => {
     expect(messageAssistant("dix")).toMatchObject({ kind: "assistant", href: "/licence" });
     expect(messageAssistant("bientot", fin).body).toContain("22");
+  });
+});
+
+describe("avisGerant", () => {
+  // Les notifications de Finch mènent à « Ma licence » : un gérant y lit qui prévenir, sans prix ni paiements.
+  it("dit au gérant de prévenir le propriétaire, avec les conversations restantes", () => {
+    const etat = etatAssistant({ isDemo: false, plan: sousLicence, mois: [mois({ ...enCours, used: 240 })] }, now);
+    const avis = avisGerant(etat);
+    expect(avis).toContain("10 conversations restantes");
+    expect(avis).toContain("préviens-le");
+    expect(avis).not.toMatch(/\bF\b|FCFA/);
+  });
+  it("sans mois en cours, seulement qui prévenir", () => {
+    const etat = etatAssistant({ isDemo: false, plan: sousLicence, mois: [mois({ startsAt: d("2026-10-01T08:00:00Z"), endsAt: d("2026-11-01T08:00:00Z") })] }, now);
+    expect(etat.statut).toBe("expire");
+    expect(avisGerant(etat)).toBe("Seul le propriétaire de la boutique gère l'abonnement de Finch : préviens-le.");
   });
 });
