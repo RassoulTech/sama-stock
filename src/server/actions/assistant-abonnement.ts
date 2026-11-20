@@ -3,13 +3,14 @@
 import { and, desc, eq, gt, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { db } from "@/db";
+import { db, type Tx } from "@/db";
 import { assistantMonths, assistantPayments, businesses } from "@/db/schema";
 import { LICENSE_PAYMENT_METHODS, type LicensePaymentMethod } from "@/lib/domain/admin";
 import { libellePaiement, moisDeRecharge, peutAnnuler, planifierMois, type GenrePaiement } from "@/lib/domain/assistant/abonnement";
 import { ASSISTANT_OFFERS, ASSISTANT_RECHARGE, ASSISTANT_RENEW_MAX_MONTHS, computePlanState, type LicensePackId } from "@/lib/domain/plans";
 import { formatDate, formatFCFA } from "@/lib/format";
 import { ActionError, parse, runAction } from "../action";
+import { verrouFinch } from "../assistant/verrou";
 import { type AppContext, requireSuperAdminAction } from "../context";
 import { moisDuCommerce } from "../queries/assistant";
 import { logAdmin } from "../services/admin-audit";
@@ -38,8 +39,8 @@ async function commerceSousLicence(businessId: string): Promise<LicensePackId> {
   return offre;
 }
 
-async function dejaActive(businessId: string): Promise<boolean> {
-  const [p] = await db
+async function dejaActive(tx: Tx, businessId: string): Promise<boolean> {
+  const [p] = await tx
     .select({ id: assistantPayments.id })
     .from(assistantPayments)
     .where(and(eq(assistantPayments.businessId, businessId), eq(assistantPayments.kind, "activation")))
@@ -47,10 +48,17 @@ async function dejaActive(businessId: string): Promise<boolean> {
   return Boolean(p);
 }
 
-/** Enregistre l'argent reçu et ouvre les mois qui suivent la fin actuelle (ou aujourd'hui). */
+/**
+ * Enregistre l'argent reçu et ouvre les mois qui suivent la fin actuelle (ou aujourd'hui). Verrou d'abord : sur un double
+ * clic, la seconde saisie attend la première, puis voit son activation et ses mois (pas de mois en double).
+ */
 async function ajouterMois(ctx: AppContext, businessId: string, offre: LicensePackId, kind: "activation" | "mois", data: z.infer<typeof moisSchema>) {
-  const fenetres = planifierMois(await moisDuCommerce(businessId), data.months);
   await db.transaction(async (tx) => {
+    await verrouFinch(tx, businessId);
+    const active = await dejaActive(tx, businessId);
+    if (kind === "activation" && active) throw new ActionError("Finch est déjà activé : utilisez « Renouveler ».");
+    if (kind === "mois" && !active) throw new ActionError("Activez d'abord Finch (activation et premiers mois).");
+    const fenetres = planifierMois(await moisDuCommerce(businessId, tx), data.months);
     const [p] = await tx
       .insert(assistantPayments)
       .values({ businessId, kind, months: data.months, amount: data.amount, method: data.method, note: data.note || null, recordedBy: ctx.user.id })
@@ -72,7 +80,6 @@ export async function adminActiverAssistant(businessId: string, input: z.input<t
     const ctx = await requireSuperAdminAction();
     const data = parse(moisSchema, input);
     const offre = await commerceSousLicence(businessId);
-    if (await dejaActive(businessId)) throw new ActionError("Finch est déjà activé : utilisez « Renouveler ».");
     await ajouterMois(ctx, businessId, offre, "activation", data);
     revalidatePath("/admin", "layout");
     return null;
@@ -85,7 +92,6 @@ export async function adminRenouvelerAssistant(businessId: string, input: z.inpu
     const ctx = await requireSuperAdminAction();
     const data = parse(moisSchema, input);
     const offre = await commerceSousLicence(businessId);
-    if (!(await dejaActive(businessId))) throw new ActionError("Activez d'abord Finch (activation et premiers mois).");
     await ajouterMois(ctx, businessId, offre, "mois", data);
     revalidatePath("/admin", "layout");
     return null;
@@ -99,13 +105,14 @@ export async function adminRechargerAssistant(businessId: string, input: z.input
     const data = parse(rechargeSchema, input);
     await commerceSousLicence(businessId);
     const now = new Date();
-    const [mois] = await db
-      .select({ id: assistantMonths.id, endsAt: assistantMonths.endsAt })
-      .from(assistantMonths)
-      .where(and(eq(assistantMonths.businessId, businessId), eq(assistantMonths.kind, "abonnement"), lte(assistantMonths.startsAt, now), gt(assistantMonths.endsAt, now)))
-      .limit(1);
-    if (!mois) throw new ActionError("Aucun mois en cours : renouvelez d'abord l'abonnement.");
     await db.transaction(async (tx) => {
+      await verrouFinch(tx, businessId);
+      const [mois] = await tx
+        .select({ id: assistantMonths.id, endsAt: assistantMonths.endsAt })
+        .from(assistantMonths)
+        .where(and(eq(assistantMonths.businessId, businessId), eq(assistantMonths.kind, "abonnement"), lte(assistantMonths.startsAt, now), gt(assistantMonths.endsAt, now)))
+        .limit(1);
+      if (!mois) throw new ActionError("Aucun mois en cours : renouvelez d'abord l'abonnement.");
       await tx
         .update(assistantMonths)
         .set({ extraCredits: sql`${assistantMonths.extraCredits} + ${ASSISTANT_RECHARGE.credits}` })
@@ -135,30 +142,41 @@ export async function adminRechargerAssistant(businessId: string, input: z.input
 export async function adminAnnulerPaiementAssistant(paymentId: string) {
   return runAction(async () => {
     const ctx = await requireSuperAdminAction();
-    const [p] = await db.select().from(assistantPayments).where(eq(assistantPayments.id, paymentId));
-    if (!p) throw new ActionError("Paiement introuvable.");
-    const [dernier] = await db
-      .select({ id: assistantPayments.id })
-      .from(assistantPayments)
-      .where(eq(assistantPayments.businessId, p.businessId))
-      .orderBy(desc(assistantPayments.createdAt))
-      .limit(1);
-    if (dernier?.id !== p.id) throw new ActionError("Seul le dernier paiement saisi peut être annulé.");
-    const kind: GenrePaiement = p.kind === "activation" || p.kind === "recharge" ? p.kind : "mois";
-    const mois = await moisDuCommerce(p.businessId);
-    const crees = mois.filter((m) => m.paymentId === p.id);
-    const cible = kind === "recharge" ? moisDeRecharge(mois, p.paidAt) : null;
-    if (!peutAnnuler({ kind, credits: p.credits }, crees, cible)) {
-      throw new ActionError("Des conversations ont déjà été utilisées avec ce paiement : il ne peut plus être annulé.");
-    }
+    // Le commerce seulement (il ne change jamais), pour savoir quel verrou prendre ; tout le reste se lit après lui.
+    const [cible] = await db.select({ businessId: assistantPayments.businessId }).from(assistantPayments).where(eq(assistantPayments.id, paymentId));
+    if (!cible) throw new ActionError("Paiement introuvable.");
     await db.transaction(async (tx) => {
-      if (cible) {
-        await tx
+      await verrouFinch(tx, cible.businessId);
+      const [p] = await tx.select().from(assistantPayments).where(eq(assistantPayments.id, paymentId));
+      if (!p) throw new ActionError("Ce paiement vient d'être annulé.");
+      const [dernier] = await tx
+        .select({ id: assistantPayments.id })
+        .from(assistantPayments)
+        .where(eq(assistantPayments.businessId, p.businessId))
+        .orderBy(desc(assistantPayments.createdAt))
+        .limit(1);
+      if (dernier?.id !== p.id) throw new ActionError("Seul le dernier paiement saisi peut être annulé.");
+      const kind: GenrePaiement = p.kind === "activation" || p.kind === "recharge" ? p.kind : "mois";
+      const mois = await moisDuCommerce(p.businessId, tx);
+      const crees = mois.filter((m) => m.paymentId === p.id);
+      const moisRecharge = kind === "recharge" ? moisDeRecharge(mois, p.paidAt) : null;
+      const utilise = new ActionError("Des conversations ont déjà été utilisées avec ce paiement : il ne peut plus être annulé.");
+      if (!peutAnnuler({ kind, credits: p.credits }, crees, moisRecharge)) throw utilise;
+      // Gardes en base : une conversation peut s'ouvrir entre la lecture et l'écriture (elle ne prend pas le verrou) ;
+      // dans ce cas on n'annule rien.
+      if (moisRecharge) {
+        const [repris] = await tx
           .update(assistantMonths)
           .set({ extraCredits: sql`${assistantMonths.extraCredits} - ${p.credits}` })
-          .where(eq(assistantMonths.id, cible.id));
+          .where(and(eq(assistantMonths.id, moisRecharge.id), sql`${assistantMonths.credits} + ${assistantMonths.extraCredits} - ${p.credits} >= ${assistantMonths.used}`))
+          .returning({ id: assistantMonths.id });
+        if (!repris) throw utilise;
       }
-      await tx.delete(assistantMonths).where(eq(assistantMonths.paymentId, p.id));
+      const supprimes = await tx
+        .delete(assistantMonths)
+        .where(and(eq(assistantMonths.paymentId, p.id), eq(assistantMonths.used, 0)))
+        .returning({ id: assistantMonths.id });
+      if (supprimes.length !== crees.length) throw utilise;
       await tx.delete(assistantPayments).where(eq(assistantPayments.id, p.id));
       await logAdmin(tx, ctx, {
         action: "assistant",
